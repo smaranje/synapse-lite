@@ -1,0 +1,4 @@
+Flask
+# If you were to use a real local LLM:
+# transformers
+# torch # or tensorflow

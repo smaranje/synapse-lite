@@ -1,0 +1,4 @@
+streamlit
+pandas
+requests # For calling the Flask LLM service
+plotly # For charts (used implicitly by st.bar_chart)
