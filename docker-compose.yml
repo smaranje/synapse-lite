@@ -24,10 +24,8 @@ services:
     image: confluentinc/cp-kafka:7.5.0 # Using a stable Confluent Kafka image
     container_name: kafka
     ports:
-      # 9092: For external connections from your host machine (e.g., if you use a Kafka client outside Docker)
-      - "9092:9092"
-      # 29092: For internal communication between Docker containers (e.g., Spark, Data Generator)
-      - "29092:29092"
+      - "9092:9092" # For external connections from your host machine (e.g., if you use a Kafka client outside Docker)
+      - "29092:29092" # For internal communication between Docker containers (e.g., Spark, Data Generator)
     depends_on:
       - zookeeper # Kafka must start after Zookeeper
     environment:
@@ -67,8 +65,6 @@ services:
 
   # Spark Master: The coordinator for the Spark cluster.
   spark-master:
-    # 'build' instruction tells Docker Compose to build an image from the Dockerfile
-    # in the './spark_app' directory (relative to this docker-compose.yml file).
     build:
       context: ./spark_app
       dockerfile: Dockerfile
@@ -77,88 +73,112 @@ services:
       - "8080:8080" # Spark Web UI
       - "7077:7077" # Spark Master's internal communication port
     environment:
-      SPARK_MODE: master # Set this container as Spark master
-      SPARK_RPC_AUTHENTICATION_ENABLED: "false" # For demo simplicity, disable authentication
+      SPARK_MODE: master
+      SPARK_RPC_AUTHENTICATION_ENABLED: "false"
       SPARK_RPC_ENCRYPTION_ENABLED: "false"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
-      SPARK_DRIVER_MEMORY: 2g # Allocate memory for the Spark driver (adjust as per your system)
-      SPARK_WORKER_MEMORY: 2g # Allocate memory for workers (used by master to pass configs)
-      SPARK_DAEMON_JAVA_OPTS: "-Xms1024m -Xmx2048m" # JVM options for the master daemon
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_WORKER_MEMORY: 2g
+      SPARK_DAEMON_JAVA_OPTS: "-Xms1024m -Xmx2048m"
+      SPARK_MASTER_HOST: 0.0.0.0 # Explicitly listen on all interfaces
     volumes:
-      - spark_master_data:/opt/bitnami/spark/data # Persistent data for Spark master
-      - ./spark_app:/app # Mount your local spark_app code into the container
+      - spark_master_data:/opt/bitnami/spark/data
+      - ./spark_app:/app
+    healthcheck: # Health check for Spark Master readiness
+      test: ["CMD-SHELL", "nc -z localhost 7077 || exit 1"] # Check if RPC port is open
+      interval: 5s # Check every 5 seconds
+      timeout: 5s # Wait up to 5 seconds for a response
+      retries: 10 # Retry 10 times before marking unhealthy (50 seconds total)
+      start_period: 30s # Wait 30 seconds before starting health checks (give time to boot)
 
   # Spark Worker: The executor nodes for Spark jobs.
   spark-worker:
     build:
-      context: ./spark_app # Workers use the same image as the master
+      context: ./spark_app
       dockerfile: Dockerfile
     container_name: spark-worker
     depends_on:
-      - spark-master # Workers must start after the master
+      spark-master: # Wait for Spark Master to be healthy before starting worker
+        condition: service_healthy
     environment:
-      SPARK_MODE: worker # Set this container as a Spark worker
-      SPARK_MASTER_URL: spark://spark-master:7077 # How worker finds the master (using service name)
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
       SPARK_RPC_AUTHENTICATION_ENABLED: "false"
       SPARK_RPC_ENCRYPTION_ENABLED: "false"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
-      SPARK_WORKER_MEMORY: 2g # Allocate memory for this worker (adjust as per your system)
-      SPARK_WORKER_CORES: 1 # Allocate CPU cores for this worker (adjust as per your system)
-      SPARK_DAEMON_JAVA_OPTS: "-Xms1024m -Xmx2048m" # JVM options for the worker daemon
+      SPARK_WORKER_MEMORY: 2g
+      SPARK_WORKER_CORES: 1
+      SPARK_DAEMON_JAVA_OPTS: "-Xms1024m -Xmx2048m"
     volumes:
-      - ./spark_app:/app # Mount your local spark_app code into the container
+      - ./spark_app:/app
+
+  # Spark Application: Runs your PySpark streaming job to process transactions.
+  spark-app:
+    build:
+      context: ./spark_app
+      dockerfile: Dockerfile
+    container_name: spark-app
+    depends_on:
+      kafka:
+        condition: service_started # Kafka only needs to be started
+      spark-master:
+        condition: service_healthy # IMPORTANT: Wait for Spark Master to be HEALTHY
+    environment:
+      SPARK_MASTER_URL: spark://spark-master:7077
+      KAFKA_BROKER: kafka:29092
+      KAFKA_TOPIC: transactions
+    volumes:
+      - ./spark_app:/app
+    # CMD is in Dockerfile (shell form: CMD bash -c "...")
 
   # Data Generator: Python service to generate synthetic transactions and push to Kafka.
   data-generator:
     build:
-      context: ./data # Build from the 'data' directory
-      dockerfile: Dockerfile # Use the Dockerfile inside 'data/'
+      context: ./data
+      dockerfile: Dockerfile
     container_name: data-generator
     depends_on:
       - kafka # Must start after Kafka is ready
     environment:
-      KAFKA_BROKER: kafka:29092 # Internal Kafka address for the Python Kafka client
-      KAFKA_TOPIC: transactions # Kafka topic to publish to
-    command: python synthetic_transactions.py # Command to execute when container starts
+      KAFKA_BROKER: kafka:29092
+      KAFKA_TOPIC: transactions
+    command: bash -c "python bitcoin_mempool_consumer.py | kafka-console-producer --broker-list kafka:29092 --topic transactions"
 
   # Flask LLM Service: Microservice for AI-generated SAR drafts.
   flask-llm-service:
     build:
-      context: ./ai_service # Build from the 'ai_service' directory
-      dockerfile: Dockerfile # Use the Dockerfile inside 'ai_service/'
+      context: ./ai_service
+      dockerfile: Dockerfile
     container_name: flask-llm-service
     ports:
-      - "8000:5000" # Mapped to 8000 on host to avoid conflict with macOS ControlCenter.
-                    # Internal container port remains 5000.
+      - "8000:5000"
     depends_on:
-      - neo4j # (Future: if it needs graph data at startup)
-      - cassandra # (Future: if it retrieves alerts directly)
+      - neo4j
+      - cassandra
     environment:
-      # These environment variables are passed to the Flask app, even if not fully utilized by stub
-      NEO4J_URI: bolt://neo4j:7687 # Internal Neo4j address
+      NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: password
-      CASSANDRA_CONTACT_POINTS: cassandra # Internal Cassandra address
+      CASSANDRA_CONTACT_POINTS: cassandra
 
   # Streamlit Dashboard: Frontend UI for displaying alerts and interacting with services.
   streamlit-dashboard:
     build:
-      context: ./streamlit_app # Build from the 'streamlit_app' directory
-      dockerfile: Dockerfile # Use the Dockerfile inside 'streamlit_app/'
+      context: ./streamlit_app
+      dockerfile: Dockerfile
     container_name: streamlit-dashboard
     ports:
-      - "8501:8501" # Default Streamlit port, exposed to host
+      - "8501:8501"
     depends_on:
-      - cassandra # (Future: if it fetches alerts from Cassandra)
-      - neo4j # (Future: if it visualizes graphs from Neo4j)
-      - flask-llm-service # Streamlit needs to communicate with Flask service
+      - cassandra
+      - neo4j
+      - flask-llm-service
     environment:
-      # Environment variables passed to the Streamlit app
       CASSANDRA_CONTACT_POINTS: cassandra
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: password
-      LLM_SERVICE_URL: http://flask-llm-service:5000 # Internal Flask service address (internal port is 5000)
+      LLM_SERVICE_URL: http://flask-llm-service:5000
 
 # Define named volumes for persistent data storage across container restarts
 volumes:

@@ -1,1 +1,2 @@
 kafka-python
+websocket-client # Make sure this line is here

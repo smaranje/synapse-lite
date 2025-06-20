@@ -1,34 +1,71 @@
 # spark_app/streaming_app.py
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, window, count, when, lit
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType, LongType, IntegerType
+from pyspark.sql.functions import from_json, col, lit, sum as pyspark_sum, coalesce, when
+from pyspark.sql.types import (
+    StructType, StructField, StringType, LongType, IntegerType, ArrayType,
+    BooleanType, DoubleType
+)
 from pyspark.ml.feature import VectorAssembler
-from pyspark.ml.classification import LogisticRegressionModel
+# No LogisticRegressionModel import needed if not actually loading a model
+# from pyspark.ml.classification import LogisticRegressionModel
 import os
 import json
 import time
+import random # Added for simulating feature generation and scores
 
 # --- Configuration ---
 KAFKA_BROKER = os.environ.get('KAFKA_BROKER', 'kafka:29092') # From docker-compose env
 KAFKA_TOPIC = os.environ.get('KAFKA_TOPIC', 'transactions')
 
-# Define schema for the incoming Kafka messages (transactions)
+# Define the schema for the incoming Bitcoin transaction JSON payload
+# This schema accurately reflects the structure provided from your bitcoin_mempool_consumer.py
 transaction_schema = StructType([
-    StructField("transaction_id", StringType(), True),
-    StructField("sender_account", StringType(), True),
-    StructField("receiver_account", StringType(), True),
-    StructField("amount", DoubleType(), True),
-    StructField("currency", StringType(), True),
-    StructField("timestamp", LongType(), True),
-    StructField("transaction_type", StringType(), True)
+    StructField("lock_time", LongType(), True),
+    StructField("ver", IntegerType(), True),
+    StructField("size", IntegerType(), True),
+    StructField("inputs", ArrayType(
+        StructType([
+            StructField("sequence", LongType(), True),
+            StructField("prev_out", StructType([
+                StructField("spent", BooleanType(), True),
+                StructField("tx_index", LongType(), True),
+                StructField("type", IntegerType(), True), # 'type' can be null
+                StructField("addr", StringType(), True), # 'addr' can be null for some types
+                StructField("value", LongType(), True),
+                StructField("n", IntegerType(), True),
+                StructField("script", StringType(), True)
+            ]), True),
+            StructField("script", StringType(), True)
+        ])
+    ), True),
+    StructField("time", LongType(), True),
+    StructField("tx_index", LongType(), True),
+    StructField("vin_sz", IntegerType(), True), # Number of inputs
+    StructField("hash", StringType(), True), # Transaction hash
+    StructField("vout_sz", IntegerType(), True), # Number of outputs
+    StructField("relayed_by", StringType(), True),
+    StructField("out", ArrayType(
+        StructType([
+            StructField("spent", BooleanType(), True),
+            StructField("tx_index", LongType(), True),
+            StructField("type", IntegerType(), True), # 'type' can be null
+            StructField("addr", StringType(), True), # 'addr' can be null for some types
+            StructField("value", LongType(), True),
+            StructField("n", IntegerType(), True),
+            StructField("script", StringType(), True)
+        ])
+    ), True),
+    # This is the custom timestamp added by your consumer script
+    StructField("producer_timestamp_ms", LongType(), True)
 ])
+
 
 # Initialize Spark Session
 # Using 'spark-master' as the master address, as defined in docker-compose.yml
 spark = SparkSession.builder \
-    .appName("SynapseLiteFraudDetection") \
+    .appName("BitcoinMempoolFraudDetection") \
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0") \
-    .config("spark.sql.shuffle.partitions", "2") # Reduce partitions for small demo
+    .config("spark.sql.shuffle.partitions", "2") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN") # Reduce verbosity of Spark logs
@@ -43,75 +80,133 @@ df_transactions = spark.readStream \
     .option("startingOffsets", "latest") \
     .load()
 
-# Parse the JSON value from Kafka
+# Parse the JSON value from Kafka using the defined schema
 parsed_transactions = df_transactions.selectExpr("CAST(value AS STRING) as json_value") \
     .select(from_json(col("json_value"), transaction_schema).alias("data")) \
-    .select("data.*")
+    .select("data.*") # Select all fields from the parsed 'data' struct
 
-# Add a processing time timestamp for windowing operations
-parsed_transactions = parsed_transactions.withColumn("processing_time", col("timestamp").cast("timestamp"))
+# Add a processing time timestamp for windowing operations (using producer_timestamp_ms)
+parsed_transactions = parsed_transactions.withColumn("processing_time", (col("producer_timestamp_ms") / 1000).cast("timestamp"))
 
 
-# --- Feature Engineering (Simple for Demo) ---
-# Example: transaction amount, and potential future features
-# For a real system, you'd calculate sender/receiver velocity, frequency, average amount, etc.
-features_df = parsed_transactions.withColumn("feature_amount", col("amount"))
-# Dummy features for ML model input later
-features_df = features_df.withColumn("feature_tx_count_daily", lit(random.randint(1, 100)).cast(DoubleType()))
-features_df = features_df.withColumn("feature_sender_avg_amt", lit(random.uniform(100.0, 10000.0)).cast(DoubleType()))
+# --- Feature Engineering ---
+# Calculate total input value by summing 'value' from all 'prev_out' in 'inputs'
+# Explode the inputs array to sum values, then group back by transaction hash
+# Use coalesce to handle cases where sum might be null (e.g., if inputs array is empty)
+total_input_value_df = parsed_transactions \
+    .withColumn("input_exploded", col("inputs")) \
+    .withColumn("prev_out_value", col("input_exploded.prev_out.value")) \
+    .select(col("hash"), col("prev_out_value"))
+
+# We need to handle the array of values from prev_out.value and sum them up
+# This requires a UDF or more complex Spark SQL array functions
+# Let's flatten the array of arrays and sum
+def sum_array_elements(arr):
+    if arr is None:
+        return 0
+    total = 0
+    for inner_arr in arr:
+        if inner_arr is not None:
+            for val in inner_arr:
+                if val is not None:
+                    total += val
+    return total
+
+sum_array_elements_udf = spark.udf.register("sum_array_elements", sum_array_elements, LongType())
+
+
+# Calculate total input value
+# Use a custom UDF to sum values within the array of structs
+# Note: col("inputs.prev_out.value") will give an array of LongType
+# We need to filter out nulls if any, before summing
+# For robustness, we will collect all prev_out values into a list and sum them
+total_input_values_agg = parsed_transactions.withColumn(
+    "total_input_value",
+    sum_array_elements_udf(col("inputs.prev_out.value"))
+)
+
+# Calculate total output value
+total_output_values_agg = total_input_values_agg.withColumn(
+    "total_output_value",
+    sum_array_elements_udf(col("out.value"))
+)
+
+# Calculate transaction fee
+# Ensure values are not null before subtraction; default to 0 if null
+features_df = total_output_values_agg.withColumn(
+    "transaction_fee",
+    (col("total_input_value") - col("total_output_value")).cast(LongType())
+)
+
+# Calculate fee per byte (handle division by zero for size)
+features_df = features_df.withColumn(
+    "fee_per_byte",
+    when(col("size") > 0, col("transaction_fee").cast(DoubleType()) / col("size")).otherwise(0.0)
+)
+
+# Use vin_sz and vout_sz directly as features
+features_df = features_df.withColumn("num_inputs", col("vin_sz"))
+features_df = features_df.withColumn("num_outputs", col("vout_sz"))
+
+# Renaming for consistency with 'feature_' prefix for ML input
+features_df = features_df.withColumn("feature_total_input_value", col("total_input_value").cast(DoubleType()))
+features_df = features_df.withColumn("feature_transaction_fee", col("transaction_fee").cast(DoubleType()))
+features_df = features_df.withColumn("feature_fee_per_byte", col("fee_per_byte"))
+features_df = features_df.withColumn("feature_num_inputs", col("num_inputs").cast(DoubleType()))
+features_df = features_df.withColumn("feature_num_outputs", col("num_outputs").cast(DoubleType()))
 
 
 # --- ML Model Loading and Scoring (Dummy) ---
-# In a real scenario, model.py would train and save a model.
-# Here, we simulate a model application.
 try:
-    # Attempt to load a dummy model if it exists (e.g., from a prior run or build)
-    # For a simple demo, we're not actually training/loading a model here,
-    # but the structure shows where you would.
-    # Replace with your actual model loading logic if you train one in model.py
-    # and make it accessible (e.g., via mounted volume or Spark's distributed cache).
-    print("Simulating ML Model Scoring...")
-    # This is a dummy score. In reality, it would be from a loaded model.
-    # Load a dummy ML model from model.py for actual inference
-    # from model import load_dummy_model # Assuming model.py exposes a function
-    # dummy_model = load_dummy_model()
+    print("Simulating ML Model Scoring with Bitcoin transaction features...")
 
     # Define the features to be used by the ML model
-    feature_columns = ["feature_amount", "feature_tx_count_daily", "feature_sender_avg_amt"]
+    feature_columns = [
+        "feature_total_input_value",
+        "feature_transaction_fee",
+        "feature_fee_per_byte",
+        "feature_num_inputs",
+        "feature_num_outputs"
+    ]
     assembler = VectorAssembler(inputCols=feature_columns, outputCol="features")
     ml_input_df = assembler.transform(features_df)
 
-    # Simulate ML prediction: If amount is small and transaction type is transfer, higher fraud score
+    # Simulate ML prediction:
+    # A higher fraud score if fee_per_byte is very low, or if there's a large discrepancy
+    # between input and output values relative to transaction size, or high num_outputs.
     ml_scored_df = ml_input_df.withColumn(
         "ml_fraud_score",
-        when((col("amount") < 100) & (col("transaction_type") == "transfer"), 0.95)
+        when((col("feature_fee_per_byte") < 100) & (col("feature_num_outputs") > 5), 0.90) # Low fee/byte & many outputs
+        .when((col("feature_transaction_fee") < 1000) & (col("feature_total_input_value") > 1000000000), 0.85) # Large input, small fee
         .otherwise(random.uniform(0.01, 0.3)) # Low score for normal txns
     )
     print("ML Model Scoring simulated.")
 except Exception as e:
     print(f"Error simulating ML model: {e}. Proceeding without ML scoring for now.")
-    ml_scored_df = features_df.withColumn("ml_fraud_score", lit(0.0).cast(DoubleType())) # Default if ML fails
+    # Default to a low score if ML simulation fails
+    ml_scored_df = features_df.withColumn("ml_fraud_score", lit(0.0).cast(DoubleType()))
 
 
-# --- Smurfing Detection (Rule-based for Demo) ---
-# Basic rule: Flag transactions if sender/receiver accounts are "smurfing accounts" and amount is low.
-# This will be replaced by Neo4j graph analysis in a more advanced version.
-smurfing_threshold_amount = 100.0
-smurfing_keyword = "SMURF" # From how we generated synthetic data
+# --- Smurfing/Suspicious Pattern Detection (Rule-based for Demo) ---
+# For Bitcoin mempool data, "smurfing" would typically involve complex graph analysis
+# of address clusters. For this demo, we'll use a simpler rule based on available features:
+# Flag transactions that have a high number of outputs with relatively small values
+# (distributing funds to many addresses, potentially for layering).
+suspicious_outputs_threshold = 5 # More than 5 outputs
+small_value_per_output_threshold = 50000 # Average value per output < 0.0005 BTC (50,000 satoshis)
 
 smurfing_detected_df = ml_scored_df.withColumn(
     "is_smurfing_rule",
     when(
-        (col("amount") < smurfing_threshold_amount) &
-        (col("transaction_type") == "transfer") &
-        ((col("sender_account").like(f"%{smurfing_keyword}%")) | (col("receiver_account").like(f"%{smurfing_keyword}%"))),
+        (col("num_outputs") > suspicious_outputs_threshold) &
+        (col("total_output_value") / col("num_outputs") < small_value_per_output_threshold),
         True
     ).otherwise(False)
 )
-print("Smurfing detection rules applied.")
+print("Smurfing/Suspicious pattern detection rules applied.")
 
 # --- Combine Flags and Generate Alerts ---
-# An alert is generated if either the ML score is high or the smurfing rule is triggered.
+# An alert is generated if either the ML score is high or the smurfing/suspicious rule is triggered.
 alerts_df = smurfing_detected_df.withColumn(
     "is_alert",
     (col("ml_fraud_score") > 0.8) | col("is_smurfing_rule")
@@ -119,35 +214,38 @@ alerts_df = smurfing_detected_df.withColumn(
 
 # Select relevant columns for the alert
 final_alerts = alerts_df.filter(col("is_alert")).select(
-    col("transaction_id"),
-    col("sender_account"),
-    col("receiver_account"),
-    col("amount"),
-    col("timestamp"),
+    col("hash").alias("transaction_hash"), # Use 'hash' as transaction_id
+    col("size"),
+    col("time").alias("transaction_timestamp"), # Original Bitcoin timestamp
+    col("vin_sz").alias("num_inputs"),
+    col("vout_sz").alias("num_outputs"),
+    col("total_input_value"),
+    col("total_output_value"),
+    col("transaction_fee"),
+    col("fee_per_byte"),
     col("ml_fraud_score"),
     col("is_smurfing_rule"),
-    lit(int(time.time() * 1000)).alias("alert_timestamp") # When alert was generated
+    lit(int(time.time() * 1000)).alias("alert_timestamp_ms") # When alert was generated
 )
 
 # --- SHAP Explanation (Simulated/Placeholder) ---
 # In a real system, SHAP would be calculated for high-risk transactions.
-# For demo, we'll simulate top features.
-def get_shap_features(score, amount, is_smurfing):
-    # Dummy SHAP logic: amount is always a top feature.
-    # If smurfing, then account types are important.
-    # If high ML score, some other random feature might be important.
+# For demo, we'll simulate top features based on the flags.
+def get_shap_features(ml_score, fee_per_byte, num_outputs, is_smurfing):
     features = []
-    if amount < 200 and is_smurfing:
-        features.append({"name": "LowAmount", "contribution": 0.4})
-        features.append({"name": "SmurfPatternDetected", "contribution": 0.3})
-        features.append({"name": "AccountActivity", "contribution": 0.2})
-    elif score > 0.8:
-        features.append({"name": "HighMLScore", "contribution": 0.5})
-        features.append({"name": "TransactionFrequency", "contribution": 0.3})
-        features.append({"name": "SenderGeography", "contribution": 0.1})
+    if is_smurfing:
+        features.append({"name": "HighNumberOfOutputs", "contribution": 0.4})
+        features.append({"name": "LowValuePerOutput", "contribution": 0.3})
+    elif ml_score > 0.8:
+        if fee_per_byte < 100:
+            features.append({"name": "VeryLowFeePerByte", "contribution": 0.5})
+        elif num_outputs > 5:
+            features.append({"name": "ManyOutputsMLTrigger", "contribution": 0.4})
+        else:
+            features.append({"name": "UnusualMLPattern", "contribution": 0.6})
     else:
-        features.append({"name": "TransactionAmount", "contribution": round(random.uniform(0.1, 0.6), 2)})
-        features.append({"name": "HistoricalAvg", "contribution": round(random.uniform(0.05, 0.3), 2)})
+        features.append({"name": "TransactionFee", "contribution": round(random.uniform(0.1, 0.6), 2)})
+        features.append({"name": "TransactionSize", "contribution": round(random.uniform(0.05, 0.3), 2)})
 
     # Sort by contribution and take top 3
     features_sorted = sorted(features, key=lambda x: x['contribution'], reverse=True)[:3]
@@ -158,27 +256,22 @@ spark.udf.register("get_shap_features_udf", get_shap_features, StringType())
 
 final_alerts_with_shap = final_alerts.withColumn(
     "shap_features_json",
-    col("ml_fraud_score").cast(DoubleType()), # Pass ML score as first arg
-    col("amount").cast(DoubleType()), # Pass amount as second arg
-    col("is_smurfing_rule").cast(BooleanType()), # Pass smurfing rule as third arg
-).withColumn(
-    "shap_features_json",
-    spark.udf.register("get_shap_features_udf", get_shap_features, StringType())(
-        col("ml_fraud_score"), col("amount"), col("is_smurfing_rule")
+    # Pass the relevant columns as arguments to the UDF
+    spark.udf.get_shap_features_udf(
+        col("ml_fraud_score"),
+        col("fee_per_byte"),
+        col("num_outputs"),
+        col("is_smurfing_rule")
     )
 )
 
 
 # --- Write Alerts (Currently to Console, later to Cassandra) ---
-# For a quick start, we'll print to console.
-# In a real system, you'd write to Cassandra, and Neo4j would be updated separately
-# to build the graph.
-
 query = final_alerts_with_shap.writeStream \
     .outputMode("append") \
     .format("console") \
     .option("truncate", "false") \
-    .trigger(processingTime="5 seconds") # Process micro-batches every 5 seconds
+    .trigger(processingTime="5 seconds") \
     .start()
 
 print("Spark Streaming query started. Alerts will be printed to console.")
