@@ -2,3 +2,4 @@ pyspark==3.5.0 # Ensure this matches the Spark image version if you use bitnami/
 kafka-python # For Kafka client within Spark
 scikit-learn # For ML model if you build a real one
 shap # For SHAP if you implement it
+neo4j==5.20.0
