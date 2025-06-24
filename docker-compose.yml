@@ -1,4 +1,4 @@
-# docker-compose.yml - Full Stack for GCP VM (32GB RAM)
+# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Memory Adjusted
 
 services:
   # Zookeeper: Essential for Kafka to function.
@@ -86,7 +86,7 @@ services:
       timeout: 5s
       retries: 20 # Increased retries
       start_period: 60s # Increased start_period
-    mem_limit: 2.5g # Adjusted for 32GB VM
+    mem_limit: 3g # Adjusted from 2.5g to give more room
 
   # Neo4j Initializer: Runs Cypher scripts to set up constraints/indexes.
   neo4j-initializer:
@@ -120,7 +120,7 @@ services:
       timeout: 10s
       retries: 30 # Increased retries
       start_period: 180s # CRITICAL: Increased to 3 minutes
-    mem_limit: 2g # Standard memory, now possible on 32GB VM
+    mem_limit: 6g # CRITICAL: Increased from 2g to 6g for stable startup
 
   # Cassandra Initializer: Runs CQL scripts to set up keyspaces/tables.
   cassandra-initializer:
@@ -163,7 +163,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 45s
-    mem_limit: 2.5g # Overall container memory limit
+    mem_limit: 4g # Adjusted from 2.5g for more stability
 
   # Spark Worker: The executor nodes for Spark jobs.
   spark-worker:
@@ -186,7 +186,7 @@ services:
     volumes:
       - ./spark_app:/app
     command: /opt/bitnami/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    mem_limit: 2.5g # Overall container memory limit
+    mem_limit: 4g # Adjusted from 2.5g for more stability
 
   # Spark Application: Runs your PySpark streaming job.
   spark-app:
@@ -223,7 +223,7 @@ services:
               "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,com.datastax.spark:spark-cassandra-connector_2.12:3.5.0",
               "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar", # Neo4j JAR included
               "/usr/bin/python3", "/app/streaming_app.py"]
-    mem_limit: 3g # Overall container memory limit
+    mem_limit: 5g # Adjusted from 3g for more stability
 
   # Data Generator: Python service to generate synthetic transactions and push to Kafka.
   data-generator:
