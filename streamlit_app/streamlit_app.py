@@ -1,4 +1,3 @@
-# streamlit_app/streamlit_app.py - Full Stack version with Neo4j integration (Enhanced Live Dashboard with Analytics Section)
 import streamlit as st
 import pandas as pd
 import requests
@@ -8,6 +7,7 @@ from neo4j import GraphDatabase, basic_auth
 import os
 import random # For mock data generation
 from datetime import datetime, timedelta
+import html # Import the html module
 
 # Configuration for Flask LLM service
 LLM_SERVICE_URL = os.environ.get('LLM_SERVICE_URL', 'http://flask-llm-service:5000/generate-sar')
@@ -657,17 +657,17 @@ elif page_selection == "Transactions":
             st.markdown(f"""
                 <tr>
                     <td>
-                        <div class="tx-hash">{row["Transaction"].split('\n')[0]}</div>
-                        <div class="tx-from">{row["Transaction"].split('\n')[1]}</div>
+                        <div class="tx-hash">{html.escape(row["Transaction"].split('\n')[0])}</div>
+                        <div class="tx-from">{html.escape(row["Transaction"].split('\n')[1])}</div>
                     </td>
                     <td>
-                        <div class="tx-amount">{row["Amount"].split('\n')[0]}</div>
-                        <div class="tx-usd">{row["Amount"].split('\n')[1]}</div>
+                        <div class="tx-amount">{html.escape(row["Amount"].split('\n')[0])}</div>
+                        <div class="tx-usd">{html.escape(row["Amount"].split('\n')[1])}</div>
                     </td>
-                    <td><span class="risk-score {risk_class}">{row["Risk"]}</span></td>
-                    <td><span class="tx-status {status_class}">{row["Status"]}</span></td>
-                    <td><div class="tx-time">{row["Time"]}</div></td>
-                    <td>{row["Actions"]}</td>
+                    <td><span class="risk-score {risk_class}">{html.escape(row["Risk"])}</span></td>
+                    <td><span class="tx-status {status_class}">{html.escape(row["Status"])}</span></td>
+                    <td><div class="tx-time">{html.escape(row["Time"])}</div></td>
+                    <td>{html.escape(row["Actions"])}</td>
                 </tr>
             """, unsafe_allow_html=True)
         
@@ -849,12 +849,12 @@ elif page_selection == "Alerts":
                     <div class="alert-content">
                         <h5>
                             <span class="alert-category {alert_severity_class}">{alert_severity_class.capitalize()}</span>
-                            Alert: {tx_hash_display}
+                            Alert: {html.escape(tx_hash_display)}
                         </h5>
-                        <p>{alert_description}</p>
+                        <p>{html.escape(alert_description)}</p>
                         <div class="alert-meta">
-                            <span>Type: {alert_type}</span> | 
-                            <span>Time: {alert_timestamp}</span>
+                            <span>Type: {html.escape(alert_type)}</span> | 
+                            <span>Time: {html.escape(alert_timestamp)}</span>
                         </div>
                     </div>
                     <div class="alert-actions">
@@ -882,11 +882,11 @@ elif page_selection == "Alerts":
     with alert_details_col:
         st.markdown("### Alert Details")
         if selected_alert_hash:
-            st.write(f"Displaying details for: **{selected_alert_hash[:12]}...**")
+            st.write(f"Displaying details for: **{html.escape(selected_alert_hash[:12])}...**")
             
             selected_alert = st.session_state.get("selected_alert_for_details")
             if selected_alert:
-                st.markdown(f"**Transaction Hash:** `{selected_alert.get('transaction_hash', 'N/A')}`")
+                st.markdown(f"**Transaction Hash:** `{html.escape(selected_alert.get('transaction_hash', 'N/A'))}`")
                 
                 severity = "Low"
                 if selected_alert.get("ml_fraud_score", 0) > 0.9 or selected_alert.get("is_smurfing_rule", False):
@@ -900,8 +900,8 @@ elif page_selection == "Alerts":
                 
                 st.markdown(f"**ML Fraud Score:** {selected_alert.get('ml_fraud_score', 'N/A'):.4f}")
                 st.markdown(f"**Smurfing Rule Triggered:** {'Yes' if selected_alert.get('is_smurfing_rule') else 'No'}")
-                st.markdown(f"**Alert Time:** {pd.to_datetime(selected_alert.get('alert_timestamp_ms', 0), unit='ms').strftime('%Y-%m-%d %H:%M:%S')}")
-                st.markdown(f"**Transaction Time:** {pd.to_datetime(selected_alert.get('transaction_timestamp', 0), unit='ms').strftime('%Y-%m-%d %H:%M:%S')}")
+                st.markdown(f"**Alert Time:** {html.escape(pd.to_datetime(selected_alert.get('alert_timestamp_ms', 0), unit='ms').strftime('%Y-%m-%d %H:%M:%S'))}")
+                st.markdown(f"**Transaction Time:** {html.escape(pd.to_datetime(selected_alert.get('transaction_timestamp', 0), unit='ms').strftime('%Y-%m-%d %H:%M:%S'))}")
                 
                 st.markdown("---")
                 st.markdown("#### Transaction Details:")
@@ -919,12 +919,12 @@ elif page_selection == "Alerts":
                     shap_features = json.loads(selected_alert.get("shap_features_json", "{}"))
                     if shap_features:
                         for feature, value in shap_features.items():
-                            st.write(f"- **{feature}:** {value:.4f}")
+                            st.write(f"- **{html.escape(feature)}:** {value:.4f}")
                     else:
                         st.info("No SHAP feature data available for this alert.")
                 except json.JSONDecodeError:
                     st.error("Error decoding SHAP features JSON.")
-                    st.write(selected_alert.get("shap_features_json", "Invalid JSON"))
+                    st.write(html.escape(selected_alert.get("shap_features_json", "Invalid JSON")))
 
                 st.markdown("---")
                 st.markdown("#### Actions:")
@@ -1055,8 +1055,8 @@ elif page_selection == "Analytics":
             st.markdown(f"""
             <div class="top-risk-address-item">
                 <div class="address-info">
-                    <div class="address-hash">{alert_type['type']}</div>
-                    <div class="tx-count">{alert_type['count']} incidents ({alert_type['percentage']})</div>
+                    <div class="address-hash">{html.escape(alert_type['type'])}</div>
+                    <div class="tx-count">{html.escape(str(alert_type['count']))} incidents ({html.escape(alert_type['percentage'])})</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -1073,12 +1073,12 @@ elif page_selection == "Analytics":
     for address_data in top_risk_addresses:
         st.markdown(f"""
             <div class="top-risk-address-item">
-                <span class="rank">#{address_data['rank']}</span>
+                <span class="rank">#{html.escape(str(address_data['rank']))}</span>
                 <div class="address-info">
-                    <div class="address-hash">{address_data['address']}</div>
-                    <div class="tx-count">{address_data['transactions']} transactions</div>
+                    <div class="address-hash">{html.escape(address_data['address'])}</div>
+                    <div class="tx-count">{html.escape(str(address_data['transactions']))} transactions</div>
                 </div>
-                <span class="risk-score {address_data['risk_level']}">{address_data['risk_level'].capitalize()}</span>
+                <span class="risk-score {html.escape(address_data['risk_level'])}">{html.escape(address_data['risk_level'].capitalize())}</span>
             </div>
         """, unsafe_allow_html=True)
     st.markdown("</div></div>", unsafe_allow_html=True)
