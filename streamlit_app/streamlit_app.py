@@ -1,4 +1,4 @@
-# streamlit_app/streamlit_app.py - Full Stack version with Neo4j integration (Enhanced Live Dashboard with Transaction Monitor)
+# streamlit_app/streamlit_app.py - Full Stack version with Neo4j integration (Enhanced Live Dashboard with Analytics Section)
 import streamlit as st
 import pandas as pd
 import requests
@@ -180,6 +180,96 @@ st.markdown("""
         font-size: 0.9rem;
         color: #bbb;
     }
+    /* Styles for Security Alerts section */
+    .alert-list-card {
+        background-color: #2a2a2a;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #444;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .alert-list-card .alert-content {
+        flex-grow: 1;
+    }
+    .alert-list-card .alert-content h5 {
+        margin-top: 0;
+        margin-bottom: 5px;
+        color: #f0f0f0;
+    }
+    .alert-list-card .alert-content p {
+        font-size: 0.9rem;
+        color: #bbb;
+        margin-bottom: 5px;
+    }
+    .alert-list-card .alert-meta {
+        font-size: 0.75rem;
+        color: #888;
+    }
+    .alert-list-card .alert-actions {
+        margin-left: 15px;
+    }
+    /* Styles for Analytics section */
+    .analytics-card {
+        background-color: #2a2a2a;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #444;
+        margin-bottom: 20px;
+    }
+    .analytics-card h4 {
+        margin-top: 0;
+        color: #f0f0f0;
+    }
+    .analytics-metric-label {
+        color: #bbb;
+        font-size: 0.9rem;
+    }
+    .analytics-metric-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #f0f0f0;
+    }
+    .analytics-metric-delta {
+        font-size: 0.8rem;
+        color: #999;
+    }
+    .risk-distribution-label {
+        font-size: 0.9rem;
+        color: #e0e0e0;
+    }
+    .risk-distribution-value {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #f0f0f0;
+    }
+    .top-risk-address-item {
+        background-color: #3a3a3a;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .top-risk-address-item .rank {
+        font-weight: bold;
+        color: #f0f0f0;
+        margin-right: 10px;
+    }
+    .top-risk-address-item .address-info {
+        flex-grow: 1;
+    }
+    .top-risk-address-item .address-hash {
+        font-weight: bold;
+        color: #f0f0f0;
+    }
+    .top-risk-address-item .tx-count {
+        font-size: 0.8rem;
+        color: #bbb;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -260,6 +350,65 @@ def generate_mock_transaction_data(num_transactions=10):
             "Actions": "🔗" # Placeholder for link/details
         })
     return pd.DataFrame(transactions)
+
+# Function to generate mock data for Fraud Analytics
+def generate_mock_analytics_data():
+    # Fraud Detection Trends
+    trend_data = []
+    for i in range(7): # Last 7 days
+        day = (datetime.now() - timedelta(days=i)).strftime("%a")
+        total_tx = random.randint(100, 600)
+        total_alerts = random.randint(0, 10)
+        avg_fraud_rate = random.uniform(0.0, 0.5) # Percentage
+        trend_data.append({
+            "Day": day,
+            "Total Transactions": total_tx,
+            "Total Alerts": total_alerts,
+            "Avg Fraud Rate": avg_fraud_rate
+        })
+    fraud_trends_df = pd.DataFrame(trend_data).set_index("Day").sort_index()
+
+    # Risk Score Distribution
+    risk_dist_data = {
+        "Low (0-39)": random.randint(400, 500),
+        "Medium (40-69)": random.randint(0, 50),
+        "High (70-89)": random.randint(0, 20),
+        "Critical (90-100)": random.randint(0, 5)
+    }
+    total_risk_dist_tx = sum(risk_dist_data.values())
+    risk_dist_df = pd.DataFrame([
+        {"Category": k, "Transactions": v, "Percentage": f"{(v/total_risk_dist_tx)*100:.1f}%"}
+        for k, v in risk_dist_data.items()
+    ])
+
+    # Alert Types (for bar chart)
+    alert_types_data = {
+        "High Value": random.uniform(0.5, 1.0),
+        "Blacklisted Address": random.uniform(0.5, 1.0),
+        "Rapid Transactions": random.uniform(0.5, 1.0),
+        "Suspicious Pattern": random.uniform(0.5, 1.0)
+    }
+    alert_types_df = pd.DataFrame([
+        {"Type": k, "Value": v} for k, v in alert_types_data.items()
+    ])
+
+    # Top Alert Types (for list)
+    top_alert_types = [
+        {"type": "High Value", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
+        {"type": "Blacklisted Address", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
+        {"type": "Rapid Transactions", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
+        {"type": "Suspicious Pattern", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"}
+    ]
+    random.shuffle(top_alert_types) # Shuffle for variety
+
+    # Top Risk Addresses
+    top_risk_addresses = [
+        {"rank": 1, "address": "1A1zP1eP5QG...", "transactions": random.randint(100, 300), "risk_level": "high"},
+        {"rank": 2, "address": "3FUgJcM4uJG...", "transactions": random.randint(50, 200), "risk_level": "critical"},
+        {"rank": 3, "address": "bc1qxwz7y8...", "transactions": random.randint(20, 100), "risk_level": "high"},
+    ]
+
+    return fraud_trends_df, risk_dist_df, alert_types_df, top_alert_types, top_risk_addresses
 
 
 @st.cache_resource
@@ -541,14 +690,59 @@ elif page_selection == "Transactions":
 
 
 elif page_selection == "Alerts":
-    st.header("Recent Fraud Alerts (Detailed View)")
+    st.header("Security Alerts")
+    st.markdown("Monitor and investigate suspicious activity and fraud attempts")
 
-    # Function to fetch alerts directly from Neo4j
-    def fetch_alerts_data_from_neo4j():
+    # Top row with refresh button
+    alert_top_row_cols = st.columns([0.8, 0.2])
+    with alert_top_row_cols[1]:
+        if st.button("Refresh", key="alerts_refresh_btn_top"):
+            st.cache_data.clear() # Clear cache to refetch data
+            st.rerun()
+    
+    st.markdown("---")
+
+    # Metrics for Security Alerts
+    alert_metric_cols = st.columns(4)
+    total_alerts_count = 4 # Mock value
+    open_alerts_count = 2 # Mock value
+    critical_alerts_count = 2 # Mock value
+    investigating_alerts_count = 1 # Mock value
+
+    with alert_metric_cols[0]:
+        st.metric(label="Total Alerts", value=total_alerts_count)
+    with alert_metric_cols[1]:
+        st.metric(label="Open", value=open_alerts_count)
+    with alert_metric_cols[2]:
+        st.metric(label="Critical", value=critical_alerts_count)
+    with alert_metric_cols[3]:
+        st.metric(label="Investigating", value=investigating_alerts_count)
+
+    st.markdown("---")
+
+    # Search and Filter Row for Alerts
+    alert_search_filter_cols = st.columns([0.4, 0.2, 0.2, 0.2])
+    with alert_search_filter_cols[0]:
+        st.text_input("Search alerts...", key="alert_search_input", label_visibility="collapsed")
+    with alert_search_filter_cols[1]:
+        st.selectbox("All Status", ["All Status", "Open", "Closed", "Investigating"], key="alert_status_filter")
+    with alert_search_filter_cols[2]:
+        st.selectbox("All Severity", ["All Severity", "Low", "Medium", "High", "Critical"], key="alert_severity_filter")
+    with alert_search_filter_cols[3]:
+        st.selectbox("All Types", ["All Types", "Smurfing", "High Value", "Blacklisted Address", "Rapid Transactions", "Suspicious Pattern"], key="alert_type_filter")
+
+    st.markdown("---")
+
+    # Alert List and Details
+    alert_list_col, alert_details_col = st.columns([0.7, 0.3])
+
+    with alert_list_col:
+        st.markdown("### ") # Empty header for alignment
+        # Fetch alerts from Neo4j for the list
+        alerts_data = []
         if neo4j_driver:
             try:
                 with neo4j_driver.session() as session:
-                    # Query Neo4j for Transaction nodes that are flagged as alerts
                     query = """
                     MATCH (tx:Transaction)
                     WHERE tx.ml_fraud_score IS NOT NULL AND tx.ml_fraud_score > 0.0
@@ -558,7 +752,6 @@ elif page_selection == "Alerts":
                     LIMIT 100
                     """
                     result = session.run(query)
-                    alerts_data = []
                     for record in result:
                         tx_node = record["tx"]
                         # Map Neo4j node properties to the expected alert dictionary format
@@ -580,190 +773,241 @@ elif page_selection == "Alerts":
                             "outputAddresses": [] # Placeholder, fetched in detail view
                         }
                         alerts_data.append(alert_dict)
-                    return alerts_data
             except Exception as e:
                 st.error(f"Error fetching alerts from Neo4j: {e}. Please ensure Spark is writing alert data to Neo4j Transaction nodes with relevant properties.")
-                return []
+                alerts_data = [] # Ensure alerts_data is empty on error
         else:
             st.warning("Neo4j driver not connected. Cannot fetch live alerts.")
-            return []
+            alerts_data = [] # Ensure alerts_data is empty if no driver
 
-    # Use a container for alerts to allow for updates
-    alerts_container = st.container()
-
-    if st.button("Refresh Alerts", key="detailed_refresh_btn"):
-        st.cache_data.clear() # Clear cache to refetch data
-        st.rerun() # Rerun the app to show updated data
-
-    with alerts_container:
-        alerts_data = fetch_alerts_data_from_neo4j() # Call the Neo4j alert fetching function
-        if alerts_data:
-            alerts_df = pd.DataFrame(alerts_data)
-            
-            # Convert timestamps and ensure correct types
-            if 'transaction_timestamp' in alerts_df.columns and alerts_df['transaction_timestamp'].dtype == 'int64':
-                alerts_df["timestamp_readable"] = pd.to_datetime(alerts_df["transaction_timestamp"], unit='ms')
-            else:
-                alerts_df["timestamp_readable"] = pd.NaT # Not a Time
-
-            if 'alert_timestamp_ms' in alerts_df.columns and alerts_df['alert_timestamp_ms'].dtype == 'int64':
-                alerts_df["alert_timestamp_readable"] = pd.to_datetime(alerts_df["alert_timestamp_ms"], unit='ms')
-            else:
-                alerts_df["alert_timestamp_readable"] = pd.NaT # Not a Time
-
-            # Filter out alerts without a hash (primary key) if any malformed data sneaks in
-            alerts_df = alerts_df.dropna(subset=['transaction_hash'])
-
-            # Sort by alert_timestamp_readable if it exists and is valid, otherwise by transaction_hash
-            if 'alert_timestamp_readable' in alerts_df.columns and not alerts_df['alert_timestamp_readable'].isnull().all():
-                alerts_df = alerts_df.sort_values(by="alert_timestamp_readable", ascending=False)
-            else:
-                st.warning("`alert_timestamp_ms` column not found or not in expected format for sorting. Sorting by transaction hash.")
-                alerts_df = alerts_df.sort_values(by="transaction_hash", ascending=False) # Fallback sort
-
-            # Display alerts as an interactive table
-            display_cols = [
-                "alert_timestamp_readable", "transaction_hash", "num_inputs", "num_outputs",
-                "total_input_value", "total_output_value", "transaction_fee",
-                "fee_per_byte", "ml_fraud_score", "is_smurfing_rule"
+        # Generate mock alerts if no live data or for demonstration
+        if not alerts_data:
+            st.info("No live alerts from Neo4j. Displaying mock alerts for demonstration.")
+            alerts_data = [
+                {
+                    "transaction_hash": "0xabc123def4567890abc123def4567890abc123def4567890",
+                    "ml_fraud_score": 0.95, "is_smurfing_rule": True,
+                    "alert_timestamp_ms": int(time.time() * 1000) - random.randint(10000, 3600000),
+                    "type": "High Value",
+                    "description": "High-value transaction with suspicious pattern indicators",
+                    "risk_score_display": "95"
+                },
+                {
+                    "transaction_hash": "0xdef456ghi7890123def456ghi7890123def456ghi7890123",
+                    "ml_fraud_score": 0.90, "is_smurfing_rule": False,
+                    "alert_timestamp_ms": int(time.time() * 1000) - random.randint(10000, 3600000),
+                    "type": "Blacklisted Address",
+                    "description": "Transaction involving known blacklisted address with mixing service connection",
+                    "risk_score_display": "90"
+                },
+                {
+                    "transaction_hash": "0x1234567890abcdef1234567890abcdef1234567890abcd",
+                    "ml_fraud_score": 0.75, "is_smurfing_rule": False,
+                    "alert_timestamp_ms": int(time.time() * 1000) - random.randint(10000, 3600000),
+                    "type": "Rapid Transactions",
+                    "description": "Rapid transaction pattern detected from source address",
+                    "risk_score_display": "75"
+                },
+                {
+                    "transaction_hash": "0x567890abcdef1234567890abcdef1234567890abcdef",
+                    "ml_fraud_score": 0.55, "is_smurfing_rule": False,
+                    "alert_timestamp_ms": int(time.time() * 1000) - random.randint(10000, 3600000),
+                    "type": "Suspicious Pattern",
+                    "description": "Unusual transaction timing pattern",
+                    "risk_score_display": "55"
+                }
             ]
-            display_cols_present = [col for col in display_cols if col in alerts_df.columns]
-
-            st.dataframe(alerts_df[display_cols_present].set_index("alert_timestamp_readable"), use_container_width=True)
-
-            st.markdown("---")
-            st.subheader("Alert Details and Explanations")
-
-            selected_alert_hash = st.selectbox(
-                "Select an Alert to View Details and Generate SAR:",
-                alerts_df["transaction_hash"].tolist(),
-                key="alert_selectbox"
-            )
-
-            selected_alert = alerts_df[alerts_df["transaction_hash"] == selected_alert_hash].iloc[0].to_dict()
-
-            if selected_alert:
-                st.write(f"**Transaction Hash:** {selected_alert['transaction_hash']}")
-                st.write(f"**Size:** {selected_alert.get('size', 'N/A')} bytes")
-                st.write(f"**Number of Inputs:** {selected_alert.get('num_inputs', 'N/A')}")
-                st.write(f"**Number of Outputs:** {selected_alert.get('num_outputs', 'N/A')}")
-                st.write(f"**Total Input Value:** {selected_alert.get('total_input_value', 'N/A')}")
-                st.write(f"**Total Output Value:** {selected_alert.get('total_output_value', 'N/A')}")
-                st.write(f"**Transaction Fee:** {selected_alert.get('transaction_fee', 'N/A')}")
-                st.write(f"**Fee Per Byte:** {selected_alert.get('fee_per_byte', 'N/A'):.4f}" if isinstance(selected_alert.get('fee_per_byte'), (int, float)) else f"**Fee Per Byte:** {selected_alert.get('fee_per_byte', 'N/A')}")
-                st.write(f"**ML Fraud Score:** {selected_alert.get('ml_fraud_score', 'N/A'):.2f}" if isinstance(selected_alert.get('ml_fraud_score'), (int, float)) else f"**ML Fraud Score:** {selected_alert.get('ml_fraud_score', 'N/A')}")
-                st.write(f"**Smurfing Rule Triggered:** {'Yes' if selected_alert.get('is_smurfing_rule') else 'No'}")
-                
-                if 'transaction_timestamp' in selected_alert and selected_alert['transaction_timestamp'] is not None:
-                    st.write(f"**Transaction Time:** {pd.to_datetime(selected_alert['transaction_timestamp'], unit='ms')}")
-                if 'alert_timestamp_ms' in selected_alert and selected_alert['alert_timestamp_ms'] is not None:
-                    st.write(f"**Alert Generated At:** {pd.to_datetime(selected_alert['alert_timestamp_ms'], unit='ms')}")
-
-                st.markdown("#### Top Features Driving this Alert (SHAP Insights)")
-                shap_features_data = []
-                # Ensure shap_features_json is a string before loading
-                if selected_alert.get('shap_features_json') and isinstance(selected_alert['shap_features_json'], str):
-                    try:
-                        shap_features_data = json.loads(selected_alert['shap_features_json'])
-                    except json.JSONDecodeError:
-                        st.error("Error parsing SHAP features JSON.")
-                
-                shap_data_df = pd.DataFrame(shap_features_data)
-                if not shap_data_df.empty:
-                    shap_data_df = shap_data_df.sort_values(by="contribution", ascending=True)
-                    st.bar_chart(shap_data_df.set_index("name")["contribution"])
+            # Convert timestamps for mock data
+            for alert in alerts_data:
+                alert['alert_timestamp_readable'] = pd.to_datetime(alert['alert_timestamp_ms'], unit='ms').strftime("%b %d, %H:%M")
+                if alert['ml_fraud_score'] > 0.9:
+                    alert['severity_level'] = 'critical'
+                elif alert['ml_fraud_score'] > 0.7:
+                    alert['severity_level'] = 'high'
+                elif alert['ml_fraud_score'] > 0.5:
+                    alert['severity_level'] = 'medium'
                 else:
-                    st.info("No SHAP features available for this alert or not applicable.")
-
-                st.markdown("#### Graph Visual (Neo4j)")
-                if neo4j_driver:
-                    with neo4j_driver.session() as session:
-                        try:
-                            # Fetch related nodes for the selected transaction hash
-                            query = """
-                            MATCH (tx:Transaction {hash: $transaction_hash})
-                            OPTIONAL MATCH (addr_in:Address)-[:SENT]->(tx)
-                            OPTIONAL MATCH (tx)-[:SENT_TO]->(addr_out:Address)
-                            RETURN tx, COLLECT(DISTINCT addr_in) AS inputAddresses, COLLECT(DISTINCT addr_out) AS outputAddresses
-                            """
-                            result = session.run(query, transaction_hash=selected_alert_hash).single()
-                            input_addresses = []
-                            output_addresses = []
-                            if result:
-                                tx_node = result["tx"]
-                                input_addresses = [a['id'] for a in result["inputAddresses"]] if result["inputAddresses"] else []
-                                output_addresses = [a['id'] for a in result["outputAddresses"]] if result["outputAddresses"] else []
-
-                                st.write(f"**Central Transaction:** `{tx_node['hash']}`")
-                                st.write(f"**Input Addresses ({len(input_addresses)}):**")
-                                if input_addresses:
-                                    st.code("\n".join([f"- {a}" for a in input_addresses]))
-                                else:
-                                    st.write("No input addresses found.")
-
-                                st.write(f"**Output Addresses ({len(output_addresses)}):**")
-                                if output_addresses:
-                                    st.code("\n".join([f"- {a}" for a in output_addresses]))
-                                else:
-                                    st.write("No output addresses found.")
-                                
-                                # You could embed a Neo4j Bloom/Browser link here if you wanted
-                                st.info(f"Explore this transaction and its connections in the Neo4j Browser at `http://<YOUR_VM_PUBLIC_IP>:7474`")
-
-                            else:
-                                st.info("No graph data found for this transaction.")
-                        except Exception as e:
-                            st.error(f"Error querying Neo4j for graph data: {e}")
-                else:
-                    st.warning("Neo4j driver not connected. Graph visualization will not be available.")
-
-                st.markdown("---")
-                st.subheader("AI-Generated SAR Draft")
-
-                if st.button("Generate SAR Draft with LLM", key="generate_sar_btn"):
-                    with st.spinner("Generating SAR draft..."):
-                        try:
-                            # Prepare alert data for Flask service
-                            alert_payload = {
-                                "transaction_hash": selected_alert.get('transaction_hash'),
-                                "size": selected_alert.get('size'),
-                                "transaction_timestamp": selected_alert.get('transaction_timestamp'),
-                                "num_inputs": selected_alert.get('num_inputs'),
-                                "num_outputs": selected_alert.get('num_outputs'),
-                                "total_input_value": selected_alert.get('total_input_value'),
-                                "total_output_value": selected_alert.get('total_output_value'),
-                                "transaction_fee": selected_alert.get('transaction_fee'),
-                                "fee_per_byte": selected_alert.get('fee_per_byte'),
-                                "ml_fraud_score": selected_alert.get('ml_fraud_score'),
-                                "is_smurfing_rule": selected_alert.get('is_smurfing_rule'),
-                                "alert_timestamp_ms": selected_alert.get('alert_timestamp_ms'),
-                                "shap_features_json": selected_alert.get('shap_features_json')
-                            }
-                            # Add input/output addresses to payload for LLM service to potentially use
-                            alert_payload['inputAddresses'] = input_addresses
-                            alert_payload['outputAddresses'] = output_addresses
-                            
-                            # Filter out None values from payload
-                            alert_payload = {k: v for k, v in alert_payload.items() if v is not None}
-
-                            response = requests.post(LLM_SERVICE_URL, json=alert_payload, timeout=60) # Increased timeout for LLM
-                            response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-                            sar_data = response.json()
-                            st.text_area("Draft SAR", sar_data.get("sar_draft", "Error: Could not generate SAR."), height=300)
-                        except requests.exceptions.ConnectionError:
-                            st.error(f"Error: Could not connect to the Flask LLM service at {LLM_SERVICE_URL}. Is it running?")
-                        except requests.exceptions.Timeout:
-                            st.error(f"Error: Flask LLM service timed out after 60 seconds. It might be busy or unresponsive.")
-                        except requests.exceptions.RequestException as e:
-                            st.error(f"An error occurred while calling the LLM service: {e}")
-                        except Exception as e:
-                            st.error(f"An unexpected error occurred: {e}")
+                    alert['severity_level'] = 'low'
+                
+        # Display alerts as cards
+        if alerts_data:
+            for alert in alerts_data:
+                st.markdown(f"""
+                <div class="alert-list-card">
+                    <div class="alert-content">
+                        <h5>
+                            <span class="alert-category {alert.get('severity_level', 'low')}">{alert.get('severity_level', 'low').capitalize()}</span>
+                            {alert.get('type', 'Unknown Alert')}
+                        </h5>
+                        <p>{alert.get('description', 'No description available.')}</p>
+                        <p class="alert-meta">Risk: {alert.get('risk_score_display', 'N/A')} • {alert.get('alert_timestamp_readable', 'N/A')}</p>
+                    </div>
+                    <div class="alert-actions">
+                        <span style="font-size: 1.5rem; cursor: pointer;">&#128065;</span> <!-- Eye icon -->
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.info("No alerts to display. Please ensure Spark is processing data and writing alert-related transaction properties to Neo4j.")
 
+    with alert_details_col:
+        st.markdown("### ") # Empty header for alignment
+        st.markdown("""
+        <div style="background-color: #2a2a2a; padding: 20px; border-radius: 10px; border: 1px solid #444; height: 100%;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <img src="https://placehold.co/80x80/000/FFF?text=! " style="border-radius: 50%; margin-bottom: 15px;">
+                <p style="text-align: center; color: #bbb;">Select an alert to view details</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 elif page_selection == "Analytics":
     st.header("Fraud Analytics")
-    st.info("This section would provide various analytics and visualizations related to fraud patterns. (Not implemented in this iteration)")
+    st.markdown("Advanced insights and trends in Bitcoin fraud detection")
+
+    # Top row with date filter and export button
+    analytics_top_row_cols = st.columns([0.7, 0.15, 0.15])
+    with analytics_top_row_cols[1]:
+        st.selectbox("Last 7 days", ["Last 7 days", "Last 30 days", "Last 90 days", "All time"], key="analytics_time_filter")
+    with analytics_top_row_cols[2]:
+        st.button("Export Report", key="analytics_export_btn")
+    
+    st.markdown("---")
+
+    # Top Metrics for Analytics
+    analytics_metric_cols = st.columns(6)
+    total_transactions_analytics = 500 # Mock value
+    total_alerts_analytics = 4 # Mock value
+    fraud_rate = 0.8 # Mock value
+    avg_risk_score_analytics = 9.8 # Mock value
+    critical_alerts_analytics = 2 # Mock value
+    resolution_rate = 25.0 # Mock value
+    high_risk_addresses_analytics = 2 # Mock value
+
+    with analytics_metric_cols[0]:
+        st.metric(label="Total Transactions", value=total_transactions_analytics, delta="Monitored")
+    with analytics_metric_cols[1]:
+        st.metric(label="Total Alerts", value=total_alerts_analytics, delta="Generated")
+    with analytics_metric_cols[2]:
+        st.metric(label="Fraud Rate", value=f"{fraud_rate:.1f}%", delta="Detection rate")
+    with analytics_metric_cols[3]:
+        st.metric(label="Avg Risk Score", value=f"{avg_risk_score_analytics:.1f}", delta="0-100 scale")
+    with analytics_metric_cols[4]:
+        st.metric(label="Critical Alerts", value=critical_alerts_analytics, delta="High priority")
+    with analytics_metric_cols[5]:
+        st.metric(label="Resolution Rate", value=f"{resolution_rate:.1f}%", delta="Resolved alerts")
+        # st.metric(label="High Risk Addresses", value=high_risk_addresses_analytics, delta="Monitored") # From screenshot, but only 6 metrics fit well
+
+    st.markdown("---")
+
+    # Fraud Detection Trends
+    st.subheader("📈 Fraud Detection Trends")
+    fraud_trends_df, risk_dist_df, alert_types_df, top_alert_types, top_risk_addresses = generate_mock_analytics_data()
+    
+    trends_chart_cols = st.columns([0.2, 0.8])
+    with trends_chart_cols[0]:
+        st.metric(label="Total Transactions", value=fraud_trends_df["Total Transactions"].sum())
+        st.metric(label="Total Alerts", value=fraud_trends_df["Total Alerts"].sum())
+        st.metric(label="Avg Fraud Rate", value=f"{fraud_trends_df['Avg Fraud Rate'].mean():.1f}%")
+    with trends_chart_cols[1]:
+        st.line_chart(fraud_trends_df[["Total Transactions", "Total Alerts", "Avg Fraud Rate"]], use_container_width=True)
+
+    st.markdown("---")
+
+    # Risk Score Distribution
+    st.subheader("📊 Risk Score Distribution")
+    risk_dist_chart_cols = st.columns(2)
+    with risk_dist_chart_cols[0]:
+        # Streamlit doesn't have a native donut chart, using a bar chart to represent distribution
+        st.bar_chart(risk_dist_df.set_index("Category")["Transactions"], use_container_width=True)
+    with risk_dist_chart_cols[1]:
+        st.markdown("#### ") # Empty header for alignment
+        for index, row in risk_dist_df.iterrows():
+            st.markdown(f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span class="risk-distribution-label">{row['Category']}</span>
+                <span class="risk-distribution-value">{row['Transactions']} transactions ({row['Percentage']})</span>
+            </div>
+            """, unsafe_allow_html=True)
+        # Add a placeholder for the circle chart if needed
+        st.markdown("""
+        <div style="display: flex; justify-content: center; align-items: center; height: 150px;">
+            <div style="width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(
+                #28a745 0% 70%, /* Low */
+                #17a2b8 70% 85%, /* Medium */
+                #ffc107 85% 95%, /* High */
+                #dc3545 95% 100% /* Critical */
+            ); border: 5px solid #444;"></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+    st.markdown("---")
+
+    # Alert Analysis and Top Risk Addresses
+    alert_analysis_col, top_risk_addresses_col = st.columns(2)
+
+    with alert_analysis_col:
+        st.subheader("⚠️ Alert Analysis")
+        st.markdown("#### Alert Types")
+        st.bar_chart(alert_types_df.set_index("Type"), use_container_width=True)
+
+        st.markdown("#### Severity Breakdown")
+        severity_breakdown_cols = st.columns(3)
+        with severity_breakdown_cols[0]:
+            st.markdown("""
+            <div class="analytics-card">
+                <p class="analytics-metric-label">Critical</p>
+                <p class="analytics-metric-value">2</p>
+                <p class="analytics-metric-delta">50.0%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with severity_breakdown_cols[1]:
+            st.markdown("""
+            <div class="analytics-card">
+                <p class="analytics-metric-label">High</p>
+                <p class="analytics-metric-value">1</p>
+                <p class="analytics-metric-delta">25.0%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with severity_breakdown_cols[2]:
+            st.markdown("""
+            <div class="analytics-card">
+                <p class="analytics-metric-label">Medium</p>
+                <p class="analytics-metric-value">1</p>
+                <p class="analytics-metric-delta">25.0%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("#### Top Alert Types")
+        for i, alert_type in enumerate(top_alert_types):
+            st.markdown(f"""
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: bold; margin-right: 10px;">{i+1}</span>
+                <div style="flex-grow: 1;">
+                    <p style="margin: 0; color: #f0f0f0;">{alert_type['type']}</p>
+                </div>
+                <span style="color: #bbb;">{alert_type['count']}</span>
+                <span style="font-size: 0.8rem; color: #999; margin-left: 5px;">({alert_type['percentage']})</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+
+    with top_risk_addresses_col:
+        st.subheader("🎯 Top Risk Addresses")
+        for address_info in top_risk_addresses:
+            st.markdown(f"""
+            <div class="top-risk-address-item">
+                <span class="rank">{address_info['rank']}</span>
+                <div class="address-info">
+                    <div class="address-hash">{address_info['address']}</div>
+                    <div class="tx-count">{address_info['transactions']} transactions</div>
+                </div>
+                <span class="alert-category {address_info['risk_level']}">{address_info['risk_level'].capitalize()}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
 
 elif page_selection == "Settings":
     st.header("Settings")
