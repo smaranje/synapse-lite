@@ -10,7 +10,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # --- CRITICAL FIX: Create app.py directly in the Dockerfile to ensure correct indentation and f-string escaping ---
-# This bypasses any issues with host file system or copy-paste errors.
+# Using properly escaped inner quotes to resolve SyntaxError
 RUN echo '# ai_service/app.py - Updated for Neo4j context and f-string fix' > app.py && \
     echo 'from flask import Flask, request, jsonify' >> app.py && \
     echo 'import os' >> app.py && \
@@ -38,7 +38,7 @@ RUN echo '# ai_service/app.py - Updated for Neo4j context and f-string fix' > ap
     echo 'cassandra_cluster = None' >> app.py && \
     echo 'try:' >> app.py && \
     echo '    cassandra_cluster = Cluster(CASSANDRA_CONTACT_POINTS)' >> app.py && \
-    echo '    # For a simple demo, we won"t strictly verify session here, but useful for context.' >> app.py && \
+    echo '    # For a simple demo, we won\"t strictly verify session here, but useful for context.' >> app.py && \
     echo '    print("Cassandra cluster object created for Flask service.")' >> app.py && \
     echo 'except Exception as e:' >> app.py && \
     echo '    print(f"Failed to create Cassandra cluster object in Flask service: {e}")' >> app.py && \
@@ -75,13 +75,13 @@ RUN echo '# ai_service/app.py - Updated for Neo4j context and f-string fix' > ap
     echo '                tx_props = dict(result["tx"])' >> app.py && \
     echo "                context_data.append(f\"Transaction (Hash: {tx_props.get('hash', 'N/A')}, ML Score: {tx_props.get('mlFraudScore', 'N/A')}, Smurfing Rule: {tx_props.get('isSmurfingRule', 'N/A')})\")" >> app.py && \
     echo '                ' >> app.py && \
-    echo '                input_addresses = [item["address"] for item in result["inputs"] if item["address"]]' >> app.py && \
+    echo "                input_addresses = [item[\"address\"] for item in result[\"inputs\"] if item[\"address\"]]" >> app.py && \
     echo '                if input_addresses:' >> app.py && \
-    echo '                    context_data.append(f"Involved input addresses: {', '.join(input_addresses)}")' >> app.py && \
+    echo "                    context_data.append(f\"Involved input addresses: {', '.join(input_addresses)}\")" >> app.py && \
     echo '                ' >> app.py && \
-    echo '                output_addresses = [item["address"] for item in result["outputs"] if item["address"]]' >> app.py && \
+    echo "                output_addresses = [item[\"address\"] for item in result[\"outputs\"] if item[\"address\"]]" >> app.py && \
     echo '                if output_addresses:' >> app.py && \
-    echo '                    context_data.append(f"Involved output addresses: {', '.join(output_addresses)}")' >> app.py && \
+    echo "                    context_data.append(f\"Involved output addresses: {', '.join(output_addresses)}\")" >> app.py && \
     echo '                ' >> app.py && \
     echo '                # You could add more complex queries here, e.g., finding common counterparties' >> app.py && \
     echo '                ' >> app.py && \
