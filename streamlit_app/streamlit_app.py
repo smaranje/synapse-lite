@@ -397,7 +397,7 @@ def generate_mock_analytics_data():
         {"type": "High Value", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
         {"type": "Blacklisted Address", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
         {"type": "Rapid Transactions", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
-        {"type": "Suspicious Pattern", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"}
+        {"type": "Suspicious Pattern", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
     ]
     random.shuffle(top_alert_types) # Shuffle for variety
 
@@ -657,12 +657,12 @@ elif page_selection == "Transactions":
             st.markdown(f"""
                 <tr>
                     <td>
-                        <div class="tx-hash">{row["Transaction"].split('\\n')[0]}</div>
-                        <div class="tx-from">{row["Transaction"].split('\\n')[1]}</div>
+                        <div class="tx-hash">{row["Transaction"].split('\n')[0]}</div>
+                        <div class="tx-from">{row["Transaction"].split('\n')[1]}</div>
                     </td>
                     <td>
-                        <div class="tx-amount">{row["Amount"].split('\\n')[0]}</div>
-                        <div class="tx-usd">{row["Amount"].split('\\n')[1]}</div>
+                        <div class="tx-amount">{row["Amount"].split('\n')[0]}</div>
+                        <div class="tx-usd">{row["Amount"].split('\n')[1]}</div>
                     </td>
                     <td><span class="risk-score {risk_class}">{row["Risk"]}</span></td>
                     <td><span class="tx-status {status_class}">{row["Status"]}</span></td>
