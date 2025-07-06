@@ -134,6 +134,8 @@ services:
       retries: 20
       start_period: 90s
     mem_limit: 8g
+    # FIX: Clear the image ENTRYPOINT to ensure our command is used
+    entrypoint: [""]
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "0.0.0.0", "--port", "7077", "--webui-port", "8080"]
 
 
@@ -157,6 +159,8 @@ services:
       SPARK_WORKER_CORES: 4 # Applied suggestion: Increased worker cores
     volumes:
       - ./spark_app:/app
+    # FIX: Clear the image ENTRYPOINT to ensure our command is used
+    entrypoint: [""]
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
     mem_limit: 8g
 
@@ -183,8 +187,9 @@ services:
     volumes:
       - ./spark_app:/app
     # FIX: Implemented "Option B: Bypass the Bitnami entry-point entirely"
-    entrypoint: ["/opt/bitnami/spark/bin/spark-submit"]
-    command: ["--master", "spark://spark-master:7077",
+    entrypoint: [""] # CRITICAL: Clear the image ENTRYPOINT
+    command: ["/opt/bitnami/spark/bin/spark-submit",
+              "--master", "spark://spark-master:7077",
               "--deploy-mode", "client",
               "--conf", "spark.driver.memory=4g",
               "--conf", "spark.executor.memory=4g",
@@ -226,8 +231,9 @@ services:
       NEO4J_PASSWORD: password
       GEMINI_API_KEY: ""
     mem_limit: 2g
-    # FIX: Corrected command to run the Flask application (as a list for robustness)
-    command: ["python3", "app.py"]
+    # FIX: Corrected command to run the Flask application with Gunicorn
+    entrypoint: [""] # CRITICAL: Clear the image ENTRYPOINT
+    command: ["gunicorn", "-b", "0.0.0.0:5000", "app:app", "--workers", "2"]
     healthcheck: # Added healthcheck as suggested, pointing to the new /health endpoint
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 10s

@@ -1,4 +1,5 @@
-Flask
-# If you were to use a real local LLM:
-# transformers
-# torch # or tensorflow
+flask
+google-generativeai
+neo4j
+cassandra-driver # Even if not used, keep for consistency if it was there
+gunicorn # NEW: Added for running the Flask app
