@@ -1,4 +1,4 @@
-# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Explicit Spark Master/Worker Commands
+# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Cassandra 3.11.13
 
 services:
   # Zookeeper: Essential for Kafka to function.
@@ -105,24 +105,25 @@ services:
     command: /app/init_neo4j.sh
     restart: on-failure
 
-  # Cassandra: NoSQL database for storing alerts.
+  # Cassandra: NoSQL database for storing alerts. (CHANGED TO 3.11.13)
   cassandra:
-    image: cassandra:4.1.3
+    image: cassandra:3.11.13 # Changed from 4.1.3 to 3.11.13
     container_name: cassandra
     ports:
       - "9042:9042"
     volumes:
       - cassandra_data:/var/lib/cassandra
     environment:
-      CASSANDRA_MAX_HEAP_SIZE: 10G
-      CASSANDRA_HEAP_NEWSIZE: 2G
+      # Cassandra 3.x is less memory hungry, so we can reduce these
+      CASSANDRA_MAX_HEAP_SIZE: 4G # Reduced from 14G
+      CASSANDRA_HEAP_NEWSIZE: 800M # Reduced from 4G
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES;' || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 40
-      start_period: 300s
-    mem_limit: 14g
+      start_period: 180s # Reduced from 300s, 3.x starts faster
+    mem_limit: 6g # Reduced from 18g, should be sufficient for 3.x
 
   # Cassandra Initializer: Runs CQL scripts to set up keyspaces/tables.
   cassandra-initializer:
@@ -135,6 +136,7 @@ services:
         condition: service_healthy # Ensure Cassandra is healthy before initializing
     volumes:
       - ./cassandra_initializer/cql_scripts:/cql_scripts
+    # Added a more robust wait for Cassandra 3.x entrypoint
     command: bash -c 'until cqlsh cassandra 9042 -u cassandra -p cassandra -e "DESCRIBE KEYSPACES;"; do echo "Waiting for Cassandra for schema init..."; sleep 5; done; echo "Cassandra is up. Initializing schema..."; cqlsh cassandra 9042 -u cassandra -p cassandra -f /cql_scripts/init.cql'
     restart: on-failure
 
@@ -166,7 +168,6 @@ services:
       retries: 20
       start_period: 90s
     mem_limit: 8g
-    # CRITICAL FIX: Explicitly run the Spark Master daemon
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "0.0.0.0", "--port", "7077", "--webui-port", "8080"]
 
 
@@ -190,7 +191,6 @@ services:
       SPARK_DAEMON_JAVA_OPTS: "-Xms4g -Xmx6g"
     volumes:
       - ./spark_app:/app
-    # CRITICAL FIX: Explicitly run the Spark Worker daemon
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
     mem_limit: 8g
 
