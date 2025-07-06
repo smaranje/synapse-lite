@@ -396,7 +396,7 @@ elif page_selection == "Alerts":
                 "fee_per_byte", "ml_fraud_score", "is_smurfing_rule"
             ]
             # Ensure all display_cols actually exist in the DataFrame before selecting
-            display_cols_present = [col for col col in display_cols if col in alerts_df.columns]
+            display_cols_present = [col for col in display_cols if col in alerts_df.columns]
 
             st.dataframe(alerts_df[display_cols_present].set_index("alert_timestamp_readable"), use_container_width=True)
 
