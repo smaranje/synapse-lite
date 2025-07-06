@@ -5,18 +5,13 @@ FROM python:3.9-slim-buster
 
 WORKDIR /app
 
-# Install system dependencies (if any, though python:slim-buster is quite minimal)
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     # Add any other system dependencies here if needed, e.g., git, build-essential
-#     && rm -rf /var/lib/apt/lists/*
-
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --- CRITICAL FIX: Create app.py directly in the Dockerfile to ensure correct indentation ---
+# --- CRITICAL FIX: Create app.py directly in the Dockerfile to ensure correct indentation and f-string escaping ---
 # This bypasses any issues with host file system or copy-paste errors.
-RUN echo '# ai_service/app.py - Updated for Neo4j context' > app.py && \
+RUN echo '# ai_service/app.py - Updated for Neo4j context and f-string fix' > app.py && \
     echo 'from flask import Flask, request, jsonify' >> app.py && \
     echo 'import os' >> app.py && \
     echo 'import json' >> app.py && \
@@ -78,7 +73,7 @@ RUN echo '# ai_service/app.py - Updated for Neo4j context' > app.py && \
     echo '            result = session.run(query, transaction_hash=transaction_hash).single()' >> app.py && \
     echo '            if result:' >> app.py && \
     echo '                tx_props = dict(result["tx"])' >> app.py && \
-    echo '                context_data.append(f"Transaction (Hash: {tx_props.get("hash", "N/A")}, ML Score: {tx_props.get("mlFraudScore", "N/A")}, Smurfing Rule: {tx_props.get("isSmurfingRule", "N/A")})")' >> app.py && \
+    echo "                context_data.append(f\"Transaction (Hash: {tx_props.get('hash', 'N/A')}, ML Score: {tx_props.get('mlFraudScore', 'N/A')}, Smurfing Rule: {tx_props.get('isSmurfingRule', 'N/A')})\")" >> app.py && \
     echo '                ' >> app.py && \
     echo '                input_addresses = [item["address"] for item in result["inputs"] if item["address"]]' >> app.py && \
     echo '                if input_addresses:' >> app.py && \
@@ -156,15 +151,6 @@ RUN echo '# ai_service/app.py - Updated for Neo4j context' > app.py && \
     echo '' >> app.py && \
     echo '    Based on these details, draft a concise SAR highlighting the key suspicious activities.' >> app.py && \
     echo '    """' >> app.py && \
-    echo '' >> app.py && \
-    echo '    try:' >> app.py && \
-    echo '        # Call the Gemini API' >> app.py && \
-    echo '        response = model.generate_content(prompt)' >> app.py && \
-    echo '        sar_draft = response.text' >> app.py && \
-    echo '        return jsonify({"sar_draft": sar_draft})' >> app.py && \
-    echo '    except Exception as e:' >> app.py && \
-    echo '        print(f"Error generating content from LLM: {e}")' >> app.py && \
-    echo '        return jsonify({"error": f"Failed to generate SAR draft from LLM: {e}"}), 500' >> app.py && \
     echo '' >> app.py && \
     echo 'if __name__ == "__main__":' >> app.py && \
     echo '    app.run(host="0.0.0.0", port=5000)' >> app.py

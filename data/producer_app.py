@@ -33,7 +33,13 @@ def produce_messages():
         return
 
     print(f"Starting to produce messages to Kafka topic: {KAFKA_TOPIC}")
-    for line in sys.stdin:
+    # CRITICAL FIX: Add a continuous loop
+    while True:
+        line = sys.stdin.readline() # Read one line at a time
+        if not line:
+            # If stdin is closed, break the loop. For continuous data, stdin should remain open.
+            print("Stdin closed. Stopping data production.")
+            break
         try:
             data = json.loads(line.strip())
             producer.send(KAFKA_TOPIC, value=data)
@@ -45,8 +51,8 @@ def produce_messages():
         time.sleep(0.1) # Small delay to avoid overwhelming Kafka
 
     producer.flush()
-    producer.close()
-    print("Finished producing messages.")
+    # producer.close() # Keep producer open for continuous streaming
+    print("Finished producing messages (if stdin closed).")
 
 if __name__ == "__main__":
     produce_messages()

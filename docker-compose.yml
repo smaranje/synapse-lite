@@ -191,6 +191,7 @@ services:
               "--conf", "spark.executor.memory=4g",
               "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0",
               "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
+              "--conf", "spark.jars.ivy=/tmp/.ivy2", # CRITICAL FIX: Ivy cache directory
               "/app/streaming_app.py"]
     mem_limit: 8g
 
@@ -207,7 +208,8 @@ services:
       KAFKA_BROKER: kafka:29092
       KAFKA_TOPIC: transactions
     entrypoint: [""] # CRITICAL: Wipe default entrypoint
-    command: ["python3", "producer_app.py"] # Directly run producer_app.py
+    # CRITICAL FIX: Reverting to bash -c for piping as direct list doesn't support it
+    command: bash -c "python3 bitcoin_mempool_consumer.py | python3 producer_app.py"
     mem_limit: 1.5g
 
   # Flask LLM Service: Microservice for AI-generated SAR drafts.

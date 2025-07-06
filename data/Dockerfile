@@ -13,4 +13,5 @@ RUN pip install --no-cache-dir -r requirements.txt kafka-python
 COPY bitcoin_mempool_consumer.py .
 COPY producer_app.py .
 
-CMD ["python3", "producer_app.py"]
+# The CMD is now handled by docker-compose.yml's command/entrypoint override
+# CMD ["python3", "producer_app.py"]
