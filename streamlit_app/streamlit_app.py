@@ -629,6 +629,8 @@ elif page_selection == "Transactions":
     # Transaction Table and Details
     tx_table_col, tx_details_col = st.columns([0.7, 0.3])
 
+# ... (inside the Transactions section) ...
+
     with tx_table_col:
         st.markdown("### Transactions")
         transactions_df = generate_mock_transaction_data()
@@ -654,15 +656,26 @@ elif page_selection == "Transactions":
             risk_class = row["Risk_Level"] # Use the Risk_Level for CSS class
             status_class = row["Status"]
             
+            # --- FIX STARTS HERE ---
+            # Pre-split the transaction and amount strings
+            tx_parts = row["Transaction"].split('\n')
+            tx_hash_display = tx_parts[0] if len(tx_parts) > 0 else ""
+            tx_from_display = tx_parts[1] if len(tx_parts) > 1 else ""
+
+            amount_parts = row["Amount"].split('\n')
+            amount_btc_display = amount_parts[0] if len(amount_parts) > 0 else ""
+            amount_usd_display = amount_parts[1] if len(amount_parts) > 1 else ""
+            # --- FIX ENDS HERE ---
+            
             st.markdown(f"""
                 <tr>
                     <td>
-                        <div class="tx-hash">{html.escape(row["Transaction"].split('\n')[0])}</div>
-                        <div class="tx-from">{html.escape(row["Transaction"].split('\n')[1])}</div>
+                        <div class="tx-hash">{html.escape(tx_hash_display)}</div>
+                        <div class="tx-from">{html.escape(tx_from_display)}</div>
                     </td>
                     <td>
-                        <div class="tx-amount">{html.escape(row["Amount"].split('\n')[0])}</div>
-                        <div class="tx-usd">{html.escape(row["Amount"].split('\n')[1])}</div>
+                        <div class="tx-amount">{html.escape(amount_btc_display)}</div>
+                        <div class="tx-usd">{html.escape(amount_usd_display)}</div>
                     </td>
                     <td><span class="risk-score {risk_class}">{html.escape(row["Risk"])}</span></td>
                     <td><span class="tx-status {status_class}">{html.escape(row["Status"])}</span></td>
@@ -676,6 +689,8 @@ elif page_selection == "Transactions":
             </table>
         </div>
         """, unsafe_allow_html=True)
+
+# ... (rest of the code) ...
 
     with tx_details_col:
         st.markdown("### ") # Empty header for alignment
