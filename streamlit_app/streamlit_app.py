@@ -1,4 +1,4 @@
-# streamlit_app/streamlit_app.py - Full Stack version with Neo4j integration (Enhanced Live Dashboard with Risk Trends)
+# streamlit_app/streamlit_app.py - Full Stack version with Neo4j integration (Enhanced Live Dashboard with Transaction Monitor)
 import streamlit as st
 import pandas as pd
 import requests
@@ -131,6 +131,55 @@ st.markdown("""
         color: #888;
         text-align: right;
     }
+    /* Styles for Transaction Monitor */
+    .transaction-card {
+        background-color: #2a2a2a;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #444;
+    }
+    .transaction-card .tx-hash {
+        font-weight: bold;
+        color: #f0f0f0;
+    }
+    .transaction-card .tx-from {
+        font-size: 0.8rem;
+        color: #bbb;
+    }
+    .transaction-card .tx-amount {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #f0f0f0;
+    }
+    .transaction-card .tx-usd {
+        font-size: 0.9rem;
+        color: #999;
+    }
+    .transaction-card .risk-score {
+        font-size: 0.9rem;
+        padding: 3px 8px;
+        border-radius: 5px;
+        font-weight: bold;
+        display: inline-block;
+    }
+    .risk-score.low { background-color: #28a745; color: white; }
+    .risk-score.medium { background-color: #17a2b8; color: white; }
+    .risk-score.high { background-color: #ffc107; color: #333; }
+    .risk-score.critical { background-color: #dc3545; color: white; }
+    .transaction-card .tx-status {
+        font-size: 0.9rem;
+        padding: 3px 8px;
+        border-radius: 5px;
+        font-weight: bold;
+        display: inline-block;
+    }
+    .tx-status.confirmed { background-color: #28a745; color: white; }
+    .tx-status.pending { background-color: #ffc107; color: #333; }
+    .transaction-card .tx-time {
+        font-size: 0.9rem;
+        color: #bbb;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -182,6 +231,35 @@ def generate_mock_risk_trends_data():
     high_risk_tx_df = pd.DataFrame(high_risk_tx_data).set_index("Hour").sort_index()
 
     return avg_risk_df, high_risk_tx_df
+
+# Function to generate mock data for Transaction Monitor
+def generate_mock_transaction_data(num_transactions=10):
+    transactions = []
+    for _ in range(num_transactions):
+        tx_hash = ''.join(random.choices('0123456789abcdef', k=random.randint(20, 30)))
+        from_address = ''.join(random.choices('0123456789abcdef', k=random.randint(30, 40)))
+        amount_btc = round(random.uniform(0.0001, 50.0), 4)
+        amount_usd = round(amount_btc * 65000, 2)
+        risk_score_val = random.randint(1, 100)
+        risk_level = ""
+        if risk_score_val > 80: risk_level = "critical"
+        elif risk_score_val > 50: risk_level = "high"
+        elif risk_score_val > 20: risk_level = "medium"
+        else: risk_level = "low"
+        
+        status = random.choice(["confirmed", "pending"])
+        tx_time = (datetime.now() - timedelta(minutes=random.randint(1, 60))).strftime("%b %d, %H:%M")
+
+        transactions.append({
+            "Transaction": f"{tx_hash[:8]}...\nFrom: {from_address[:8]}...",
+            "Amount": f"{amount_btc:.4f} BTC\n${amount_usd:,.2f}",
+            "Risk": f"{risk_score_val}", # Just the score for the table
+            "Risk_Level": risk_level, # For styling
+            "Status": status,
+            "Time": tx_time,
+            "Actions": "🔗" # Placeholder for link/details
+        })
+    return pd.DataFrame(transactions)
 
 
 @st.cache_resource
@@ -350,6 +428,116 @@ if page_selection == "Dashboard":
     with trends_col2:
         st.markdown("#### High Risk Transactions")
         st.line_chart(high_risk_tx_df, use_container_width=True)
+
+
+elif page_selection == "Transactions":
+    st.header("Transaction Monitor")
+    st.markdown("Real-time Bitcoin transaction analysis and fraud detection")
+
+    # Top row with refresh/export buttons
+    top_row_cols = st.columns([0.7, 0.1, 0.1, 0.1])
+    with top_row_cols[1]:
+        st.button("Refresh", key="tx_monitor_refresh_btn")
+    with top_row_cols[2]:
+        st.button("Export", key="tx_monitor_export_btn")
+    
+    st.markdown("---")
+
+    # Metrics for Transaction Monitor
+    tx_metric_cols = st.columns(5)
+    total_tx_count = 220 # Mock value
+    live_tx_count = 20 # Mock value
+    flagged_tx_count = 0 # Mock value
+    high_risk_tx_count = 0 # Mock value
+    total_tx_value = 182.64 # Mock value
+
+    with tx_metric_cols[0]:
+        st.metric(label="Total Transactions", value=total_tx_count, delta="20 Live")
+    with tx_metric_cols[1]:
+        st.metric(label="Live", value=live_tx_count)
+    with tx_metric_cols[2]:
+        st.metric(label="Flagged", value=flagged_tx_count)
+    with tx_metric_cols[3]:
+        st.metric(label="High Risk", value=high_risk_tx_count)
+    with tx_metric_cols[4]:
+        st.metric(label="Total Value", value=f"{total_tx_value:.2f} BTC")
+
+    st.markdown("---")
+
+    # Search and Filter Row
+    search_filter_cols = st.columns([0.5, 0.15, 0.15, 0.15, 0.05])
+    with search_filter_cols[0]:
+        st.text_input("Search by hash, address...", key="tx_search_input", label_visibility="collapsed")
+    with search_filter_cols[1]:
+        st.selectbox("All Status", ["All Status", "Confirmed", "Pending"], key="tx_status_filter")
+    with search_filter_cols[2]:
+        st.selectbox("All Risk", ["All Risk", "Low", "Medium", "High", "Critical"], key="tx_risk_filter")
+    with search_filter_cols[3]:
+        st.selectbox("All Time", ["All Time", "Last Hour", "Last 24h", "Last Week"], key="tx_time_filter")
+
+    st.markdown("---")
+
+    # Transaction Table and Details
+    tx_table_col, tx_details_col = st.columns([0.7, 0.3])
+
+    with tx_table_col:
+        st.markdown("### Transactions")
+        transactions_df = generate_mock_transaction_data()
+        
+        # Manually render DataFrame to apply custom styling per row/cell
+        st.markdown("""
+        <div class="stDataFrame">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Transaction</th>
+                        <th>Amount</th>
+                        <th>Risk</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """, unsafe_allow_html=True)
+        
+        for index, row in transactions_df.iterrows():
+            risk_class = row["Risk_Level"] # Use the Risk_Level for CSS class
+            status_class = row["Status"]
+            
+            st.markdown(f"""
+                <tr>
+                    <td>
+                        <div class="tx-hash">{row["Transaction"].split('\\n')[0]}</div>
+                        <div class="tx-from">{row["Transaction"].split('\\n')[1]}</div>
+                    </td>
+                    <td>
+                        <div class="tx-amount">{row["Amount"].split('\\n')[0]}</div>
+                        <div class="tx-usd">{row["Amount"].split('\\n')[1]}</div>
+                    </td>
+                    <td><span class="risk-score {risk_class}">{row["Risk"]}</span></td>
+                    <td><span class="tx-status {status_class}">{row["Status"]}</span></td>
+                    <td><div class="tx-time">{row["Time"]}</div></td>
+                    <td>{row["Actions"]}</td>
+                </tr>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("""
+                </tbody>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with tx_details_col:
+        st.markdown("### ") # Empty header for alignment
+        st.markdown("""
+        <div style="background-color: #2a2a2a; padding: 20px; border-radius: 10px; border: 1px solid #444; height: 100%;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <img src="https://placehold.co/80x80/000/FFF?text=₿" style="border-radius: 50%; margin-bottom: 15px;">
+                <p style="text-align: center; color: #bbb;">Select a transaction to view details</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 elif page_selection == "Alerts":
@@ -572,10 +760,6 @@ elif page_selection == "Alerts":
                             st.error(f"An unexpected error occurred: {e}")
         else:
             st.info("No alerts to display. Please ensure Spark is processing data and writing alert-related transaction properties to Neo4j.")
-
-elif page_selection == "Transactions":
-    st.header("Transaction Details")
-    st.info("This section would display detailed transaction information. (Not implemented in this iteration)")
 
 elif page_selection == "Analytics":
     st.header("Fraud Analytics")
