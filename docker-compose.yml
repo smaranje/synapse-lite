@@ -34,7 +34,6 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # FIX: Changed listener names to INTERNAL and EXTERNAL for robustness
       KAFKA_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
@@ -183,7 +182,7 @@ services:
       NEO4J_PASSWORD: password
     volumes:
       - ./spark_app:/app
-    # FIX: Corrected Python path for spark-submit
+    # FIX: Corrected Spark-submit command for PySpark application (Option C from your analysis)
     command: ["/opt/bitnami/spark/bin/spark-submit",
               "--master", "spark://spark-master:7077",
               "--deploy-mode", "client",
@@ -191,7 +190,7 @@ services:
               "--conf", "spark.executor.memory=4g",
               "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0",
               "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
-              "/opt/bitnami/python/bin/python3", "/app/streaming_app.py"] # Corrected Python path
+              "/app/streaming_app.py"] # The Python script is the last argument, no --class needed
     mem_limit: 8g
 
   # Data Generator: Python service to generate synthetic transactions and push to Kafka.
@@ -213,7 +212,7 @@ services:
   flask-llm-service:
     build:
       context: ./ai_service
-      dockerfile: Dockerfile # This Dockerfile will now create app.py
+      dockerfile: Dockerfile # This Dockerfile creates app.py with correct indentation
     container_name: flask-llm-service
     ports:
       - "8000:5000"
@@ -226,6 +225,8 @@ services:
       NEO4J_PASSWORD: password
       GEMINI_API_KEY: ""
     mem_limit: 2g
+    # FIX: Corrected command to run the Flask application (as a list for robustness)
+    command: ["python3", "app.py"]
 
   # Streamlit Dashboard: Frontend UI for displaying alerts and interacting with services.
   streamlit-dashboard:
@@ -241,7 +242,7 @@ services:
       flask-llm-service:
         condition: service_started
     environment:
-      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_URI: bolt://neo4J:7687
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: password
       LLM_SERVICE_URL: http://flask-llm-service:5000
