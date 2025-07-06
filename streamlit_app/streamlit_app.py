@@ -4,9 +4,6 @@ import pandas as pd
 import requests
 import json
 import time
-from cassandra.cluster import Cluster, ResultSet
-from cassandra.auth import PlainTextAuthProvider
-from cassandra.query import dict_factory
 from neo4j import GraphDatabase, basic_auth
 import os
 
