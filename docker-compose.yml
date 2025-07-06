@@ -35,7 +35,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAFTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     volumes:
@@ -181,6 +181,7 @@ services:
       NEO4J_PASSWORD: password
     volumes:
       - ./spark_app:/app
+    # FIX: Corrected Python path for spark-submit
     command: ["/opt/bitnami/spark/bin/spark-submit",
               "--master", "spark://spark-master:7077",
               "--deploy-mode", "client",
@@ -188,7 +189,7 @@ services:
               "--conf", "spark.executor.memory=4g",
               "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0",
               "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
-              "/usr/bin/python3", "/app/streaming_app.py"]
+              "/opt/bitnami/python/bin/python3", "/app/streaming_app.py"] # Corrected Python path
     mem_limit: 8g
 
   # Data Generator: Python service to generate synthetic transactions and push to Kafka.
@@ -210,7 +211,7 @@ services:
   flask-llm-service:
     build:
       context: ./ai_service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile # This Dockerfile will now create app.py
     container_name: flask-llm-service
     ports:
       - "8000:5000"
