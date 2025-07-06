@@ -1,4 +1,4 @@
-# streamlit_app/streamlit_app.py - Full Stack version with Neo4j integration (Enhanced Live Dashboard)
+# streamlit_app/streamlit_app.py - Full Stack version with Neo4j integration (Enhanced Live Dashboard with Risk Trends)
 import streamlit as st
 import pandas as pd
 import requests
@@ -7,6 +7,7 @@ import time
 from neo4j import GraphDatabase, basic_auth
 import os
 import random # For mock data generation
+from datetime import datetime, timedelta
 
 # Configuration for Flask LLM service
 LLM_SERVICE_URL = os.environ.get('LLM_SERVICE_URL', 'http://flask-llm-service:5000/generate-sar')
@@ -159,6 +160,29 @@ def generate_mock_mempool_data(num_transactions=5):
         })
     return pd.DataFrame(data)
 
+# Function to generate mock data for Risk Analysis Trends
+def generate_mock_risk_trends_data():
+    # Average Risk Score by Hour (last 24 hours)
+    avg_risk_data = []
+    high_risk_tx_data = []
+    now = datetime.now()
+    for i in range(24):
+        hour_ago = now - timedelta(hours=i)
+        hour_label = hour_ago.strftime("%H:00")
+        
+        # Mock average risk score (e.g., 5-15)
+        avg_score = random.uniform(5, 15)
+        avg_risk_data.append({"Hour": hour_label, "Average Risk Score": avg_score})
+
+        # Mock high risk transactions count (e.g., 0-5)
+        high_risk_count = random.randint(0, 5)
+        high_risk_tx_data.append({"Hour": hour_label, "High Risk Transactions": high_risk_count})
+
+    avg_risk_df = pd.DataFrame(avg_risk_data).set_index("Hour").sort_index()
+    high_risk_tx_df = pd.DataFrame(high_risk_tx_data).set_index("Hour").sort_index()
+
+    return avg_risk_df, high_risk_tx_df
+
 
 @st.cache_resource
 def get_neo4j_driver():
@@ -175,7 +199,8 @@ neo4j_driver = get_neo4j_driver()
 
 # Sidebar Navigation
 with st.sidebar:
-    st.image("https://placehold.co/150x50/000/FFF?text=Synapse-Lite", use_column_width=True) # Placeholder for logo
+    # Changed use_column_width to use_container_width
+    st.image("https://placehold.co/150x50/000/FFF?text=Synapse-Lite", use_container_width=True) # Placeholder for logo
     st.markdown("## Navigation")
     page_selection = st.radio(
         "Go to",
@@ -308,6 +333,25 @@ if page_selection == "Dashboard":
     
     st.button("View All Alerts", key="view_all_alerts_btn") # Button to navigate to full alerts page
 
+    st.markdown("---")
+
+    # Risk Analysis Trends Section
+    st.subheader("📈 Risk Analysis Trends")
+    st.markdown("---")
+    
+    avg_risk_df, high_risk_tx_df = generate_mock_risk_trends_data()
+
+    trends_col1, trends_col2 = st.columns(2)
+
+    with trends_col1:
+        st.markdown("#### Average Risk Score by Hour")
+        st.line_chart(avg_risk_df, use_container_width=True)
+
+    with trends_col2:
+        st.markdown("#### High Risk Transactions")
+        st.line_chart(high_risk_tx_df, use_container_width=True)
+
+
 elif page_selection == "Alerts":
     st.header("Recent Fraud Alerts (Detailed View)")
 
@@ -395,7 +439,6 @@ elif page_selection == "Alerts":
                 "total_input_value", "total_output_value", "transaction_fee",
                 "fee_per_byte", "ml_fraud_score", "is_smurfing_rule"
             ]
-            # Ensure all display_cols actually exist in the DataFrame before selecting
             display_cols_present = [col for col in display_cols if col in alerts_df.columns]
 
             st.dataframe(alerts_df[display_cols_present].set_index("alert_timestamp_readable"), use_container_width=True)
