@@ -145,4 +145,4 @@ def generate_sar():
         return jsonify({"error": f"Failed to generate SAR draft from LLM: {e}"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000) 
