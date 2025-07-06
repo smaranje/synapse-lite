@@ -1,4 +1,4 @@
-# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Cassandra and its dependents commented out
+# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Spark JVM and Neo4j Initializer Fixes
 
 services:
   # Zookeeper: Essential for Kafka to function.
@@ -152,10 +152,11 @@ services:
       SPARK_RPC_AUTHENTICATION_ENABLED: "false"
       SPARK_RPC_ENCRYPTION_ENABLED: "false"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
-      SPARK_DRIVER_MEMORY: 4g
-      SPARK_WORKER_MEMORY: 4g
-      SPARK_DAEMON_JAVA_OPTS: "-Xms4g -Xmx6g"
+      # FIX: Removed -Xms/-Xmx from SPARK_DAEMON_JAVA_OPTS as it's deprecated for this setting
+      SPARK_DAEMON_JAVA_OPTS: "" # Set to empty string
       SPARK_MASTER_HOST: 0.0.0.0
+      SPARK_DRIVER_MEMORY: 4g # Ensure driver memory is set
+      SPARK_WORKER_MEMORY: 4g # Ensure worker memory is set
     volumes:
       - spark_master_data:/opt/bitnami/spark/data
       - ./spark_app:/app
@@ -184,9 +185,10 @@ services:
       SPARK_RPC_AUTHENTICATION_ENABLED: "false"
       SPARK_RPC_ENCRYPTION_ENABLED: "false"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
+      # FIX: Removed -Xms/-Xmx from SPARK_DAEMON_JAVA_OPTS as it's deprecated for this setting
+      SPARK_DAEMON_JAVA_OPTS: "" # Set to empty string
       SPARK_WORKER_MEMORY: 4g
       SPARK_WORKER_CORES: 1
-      SPARK_DAEMON_JAVA_OPTS: "-Xms4g -Xmx6g"
     volumes:
       - ./spark_app:/app
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
@@ -294,5 +296,5 @@ volumes:
   zookeeper_log:
   kafka_data:
   neo4j_data:
-  # cassandra_data: # Comment out Cassandra data volume as well
+  # cassandra_data:
   spark_master_data:
