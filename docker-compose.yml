@@ -120,7 +120,7 @@ services:
       SPARK_RPC_AUTHENTICATION_ENABLED: "false"
       SPARK_RPC_ENCRYPTION_ENABLED: "false"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
-      SPARK_DAEMON_JAVA_OPTS: "" # FIX: Removed -Xms/-Xmx from SPARK_DAEMON_JAVA_OPTS
+      SPARK_DAEMON_JAVA_OPTS: ""
       SPARK_MASTER_HOST: 0.0.0.0
       SPARK_DRIVER_MEMORY: 4g
       SPARK_WORKER_MEMORY: 4g
@@ -134,10 +134,8 @@ services:
       retries: 20
       start_period: 90s
     mem_limit: 8g
-    # FIX: Clear the image ENTRYPOINT to ensure our command is used
-    entrypoint: [""]
+    entrypoint: [""] # CRITICAL: Wipe Bitnami entrypoint
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "0.0.0.0", "--port", "7077", "--webui-port", "8080"]
-
 
   # Spark Worker: The executor nodes for Spark jobs.
   spark-worker:
@@ -154,13 +152,12 @@ services:
       SPARK_RPC_AUTHENTICATION_ENABLED: "false"
       SPARK_RPC_ENCRYPTION_ENABLED: "false"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
-      SPARK_DAEMON_JAVA_OPTS: "" # FIX: Removed -Xms/-Xmx from SPARK_DAEMON_JAVA_OPTS
+      SPARK_DAEMON_JAVA_OPTS: ""
       SPARK_WORKER_MEMORY: 4g
-      SPARK_WORKER_CORES: 4 # Applied suggestion: Increased worker cores
+      SPARK_WORKER_CORES: 4
     volumes:
       - ./spark_app:/app
-    # FIX: Clear the image ENTRYPOINT to ensure our command is used
-    entrypoint: [""]
+    entrypoint: [""] # CRITICAL: Wipe Bitnami entrypoint
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
     mem_limit: 8g
 
@@ -175,7 +172,7 @@ services:
         condition: service_completed_successfully
       spark-master:
         condition: service_healthy
-      neo4j-initializer: # Depend on the initializer completing its job
+      neo4j-initializer:
         condition: service_completed_successfully
     environment:
       SPARK_MASTER_URL: spark://spark-master:7077
@@ -186,8 +183,7 @@ services:
       NEO4J_PASSWORD: password
     volumes:
       - ./spark_app:/app
-    # FIX: Implemented "Option B: Bypass the Bitnami entry-point entirely"
-    entrypoint: [""] # CRITICAL: Clear the image ENTRYPOINT
+    entrypoint: [""] # CRITICAL: Wipe Bitnami entrypoint
     command: ["/opt/bitnami/spark/bin/spark-submit",
               "--master", "spark://spark-master:7077",
               "--deploy-mode", "client",
@@ -195,14 +191,14 @@ services:
               "--conf", "spark.executor.memory=4g",
               "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0",
               "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
-              "/app/streaming_app.py"] # The Python script is the last argument
+              "/app/streaming_app.py"]
     mem_limit: 8g
 
   # Data Generator: Python service to generate synthetic transactions and push to Kafka.
   data-generator:
     build:
       context: ./data
-      dockerfile: Dockerfile # This Dockerfile will now install kafka-python
+      dockerfile: Dockerfile
     container_name: data-generator
     depends_on:
       kafka-topic-initializer:
@@ -210,15 +206,15 @@ services:
     environment:
       KAFKA_BROKER: kafka:29092
       KAFKA_TOPIC: transactions
-    # FIX: Changed command to pipe output to the new Python producer script
-    command: bash -c "python3 bitcoin_mempool_consumer.py | python3 producer_app.py"
+    entrypoint: [""] # CRITICAL: Wipe default entrypoint
+    command: ["python3", "producer_app.py"] # Directly run producer_app.py
     mem_limit: 1.5g
 
   # Flask LLM Service: Microservice for AI-generated SAR drafts.
   flask-llm-service:
     build:
       context: ./ai_service
-      dockerfile: Dockerfile # This Dockerfile creates app.py with correct indentation
+      dockerfile: Dockerfile
     container_name: flask-llm-service
     ports:
       - "8000:5000"
@@ -231,14 +227,13 @@ services:
       NEO4J_PASSWORD: password
       GEMINI_API_KEY: ""
     mem_limit: 2g
-    # FIX: Corrected command to run the Flask application with Gunicorn
-    entrypoint: [""] # CRITICAL: Clear the image ENTRYPOINT
+    entrypoint: [""] # CRITICAL: Wipe default entrypoint
     command: ["gunicorn", "-b", "0.0.0.0:5000", "app:app", "--workers", "2"]
-    healthcheck: # Added healthcheck as suggested, pointing to the new /health endpoint
+    healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 10s
       retries: 5
-      start_period: 20s # Give it some time to start up
+      start_period: 20s
 
   # Streamlit Dashboard: Frontend UI for displaying alerts and interacting with services.
   streamlit-dashboard:
@@ -254,7 +249,7 @@ services:
       flask-llm-service:
         condition: service_started
     environment:
-      NEO4J_URI: bolt://neo4j:7687 # FIX: Corrected typo from neo4J to neo4j
+      NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: password
       LLM_SERVICE_URL: http://flask-llm-service:5000
