@@ -1,4 +1,4 @@
-# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Memory & Healthcheck Adjusted
+# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Explicit Spark Master/Worker Commands
 
 services:
   # Zookeeper: Essential for Kafka to function.
@@ -18,7 +18,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 30s # Increased for initial startup stability
+      start_period: 30s
     mem_limit: 1g
 
   # Kafka: The real-time message broker for transactions.
@@ -45,7 +45,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 60s # Increased for initial startup stability
+      start_period: 60s
     mem_limit: 2g
 
   # Kafka Topic Initializer: Ensures the 'transactions' topic exists.
@@ -77,16 +77,15 @@ services:
     environment:
       NEO4J_AUTH: neo4j/password # Default credentials (change in production!)
       NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
-      # Increase heap size for better performance (3GB is common for demo)
-      NEO4J_server_memory_heap_initial__size: 2G # Increased
-      NEO4J_server_memory_heap_max__size: 3G    # Increased
+      NEO4J_server_memory_heap_initial__size: 2G
+      NEO4J_server_memory_heap_max__size: 3G
     healthcheck: # Health check for Neo4j
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 20
-      start_period: 90s # Increased start_period
-    mem_limit: 4g # Adjusted from 3g to give more room
+      start_period: 90s
+    mem_limit: 4g
 
   # Neo4j Initializer: Runs Cypher scripts to set up constraints/indexes.
   neo4j-initializer:
@@ -114,13 +113,16 @@ services:
       - "9042:9042"
     volumes:
       - cassandra_data:/var/lib/cassandra
-    healthcheck: # Health check for Cassandra (significantly increased start_period)
+    environment:
+      CASSANDRA_MAX_HEAP_SIZE: 10G
+      CASSANDRA_HEAP_NEWSIZE: 2G
+    healthcheck:
       test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES;' || exit 1"]
-      interval: 15s # Increased interval
+      interval: 15s
       timeout: 10s
-      retries: 40 # Increased retries
-      start_period: 240s # CRITICAL: Increased to 4 minutes (was 3)
-    mem_limit: 8g # CRITICAL: Increased from 6g to 8g for stable startup
+      retries: 40
+      start_period: 300s
+    mem_limit: 14g
 
   # Cassandra Initializer: Runs CQL scripts to set up keyspaces/tables.
   cassandra-initializer:
@@ -150,20 +152,23 @@ services:
       SPARK_RPC_AUTHENTICATION_ENABLED: "false"
       SPARK_RPC_ENCRYPTION_ENABLED: "false"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
-      SPARK_DRIVER_MEMORY: 2g # Increased
-      SPARK_WORKER_MEMORY: 2g # Increased
-      SPARK_DAEMON_JAVA_OPTS: "-Xms2g -Xmx4g" # JVM options increased
+      SPARK_DRIVER_MEMORY: 4g
+      SPARK_WORKER_MEMORY: 4g
+      SPARK_DAEMON_JAVA_OPTS: "-Xms4g -Xmx6g"
       SPARK_MASTER_HOST: 0.0.0.0
     volumes:
       - spark_master_data:/opt/bitnami/spark/data
       - ./spark_app:/app
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 7077 || exit 1"]
-      interval: 10s # Increased
+      interval: 10s
       timeout: 10s
       retries: 20
-      start_period: 60s # Increased
-    mem_limit: 6g # Adjusted from 4g for more stability
+      start_period: 90s
+    mem_limit: 8g
+    # CRITICAL FIX: Explicitly run the Spark Master daemon
+    command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "0.0.0.0", "--port", "7077", "--webui-port", "8080"]
+
 
   # Spark Worker: The executor nodes for Spark jobs.
   spark-worker:
@@ -180,13 +185,14 @@ services:
       SPARK_RPC_AUTHENTICATION_ENABLED: "false"
       SPARK_RPC_ENCRYPTION_ENABLED: "false"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
-      SPARK_WORKER_MEMORY: 2g # Increased
+      SPARK_WORKER_MEMORY: 4g
       SPARK_WORKER_CORES: 1
-      SPARK_DAEMON_JAVA_OPTS: "-Xms2g -Xmx4g" # JVM options increased
+      SPARK_DAEMON_JAVA_OPTS: "-Xms4g -Xmx6g"
     volumes:
       - ./spark_app:/app
-    command: /opt/bitnami/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    mem_limit: 6g # Adjusted from 4g for more stability
+    # CRITICAL FIX: Explicitly run the Spark Worker daemon
+    command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    mem_limit: 8g
 
   # Spark Application: Runs your PySpark streaming job.
   spark-app:
@@ -218,12 +224,12 @@ services:
     command: ["/opt/bitnami/spark/bin/spark-submit",
               "--master", "spark://spark-master:7077",
               "--deploy-mode", "client",
-              "--conf", "spark.driver.memory=2g", # Increased
-              "--conf", "spark.executor.memory=2g", # Increased
+              "--conf", "spark.driver.memory=4g",
+              "--conf", "spark.executor.memory=4g",
               "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,com.datastax.spark:spark-cassandra-connector_2.12:3.5.0",
-              "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar", # Neo4j JAR included
+              "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
               "/usr/bin/python3", "/app/streaming_app.py"]
-    mem_limit: 7g # Adjusted from 5g for more stability
+    mem_limit: 8g
 
   # Data Generator: Python service to generate synthetic transactions and push to Kafka.
   data-generator:
@@ -238,7 +244,7 @@ services:
       KAFKA_BROKER: kafka:29092
       KAFKA_TOPIC: transactions
     command: bash -c "python3 bitcoin_mempool_consumer.py | kafka-console-producer --broker-list kafka:29092 --topic transactions"
-    mem_limit: 1g # Adjusted from 512m
+    mem_limit: 1.5g
 
   # Flask LLM Service: Microservice for AI-generated SAR drafts.
   flask-llm-service:
@@ -259,7 +265,7 @@ services:
       NEO4J_PASSWORD: password
       CASSANDRA_CONTACT_POINTS: cassandra
       GEMINI_API_KEY: "" # This will be set via your host environment variable on the VM
-    mem_limit: 1.5g # Adjusted from 1g
+    mem_limit: 2g
 
   # Streamlit Dashboard: Frontend UI for displaying alerts and interacting with services.
   streamlit-dashboard:
@@ -282,7 +288,7 @@ services:
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: password
       LLM_SERVICE_URL: http://flask-llm-service:5000
-    mem_limit: 2g # Adjusted from 1.5g
+    mem_limit: 2.5g
 
 # Define named volumes for persistent data storage across container restarts
 volumes:
