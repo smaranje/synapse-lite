@@ -6,16 +6,21 @@ NEO4J_URI=${NEO4J_URI:-"bolt://neo4j:7687"}
 NEO4J_USERNAME=${NEO4J_USERNAME:-"neo4j"}
 NEO4J_PASSWORD=${NEO4J_PASSWORD:-"password"}
 
-echo "Waiting for Neo4j to be available at ${NEO4J_URI}..."
-# Wait for Neo4j to be ready
-/var/lib/neo4j/bin/neo4j-admin server status --uri="${NEO4J_URI}" --auth="${NEO4J_USERNAME}/${NEO4J_PASSWORD}" --wait-for-server=60s
+# Extract host and port from NEO4J_URI for netcat check
+NEO4J_HOST=$(echo $NEO4J_URI | sed -e 's|bolt://||g' -e 's|:.*||g')
+NEO4J_PORT=$(echo $NEO4J_URI | sed -e 's|.*:||g')
 
-if [ $? -ne 0 ]; then
-    echo "Neo4j did not start in time. Exiting."
-    exit 1
-fi
+echo "Waiting for Neo4j to be available at ${NEO4J_HOST}:${NEO4J_PORT}..."
 
-echo "Neo4j is up. Running initialization scripts..."
+# Wait for Neo4j's Bolt port to be open using netcat (nc)
+# The healthcheck in docker-compose.yml for neo4j service should ideally handle this,
+# but this provides an additional layer of robustness for the initializer script.
+until nc -z ${NEO4J_HOST} ${NEO4J_PORT}; do
+  echo "Still waiting for Neo4j Bolt port ${NEO4J_PORT}..."
+  sleep 5
+done
+
+echo "Neo4j Bolt port is open. Running initialization scripts..."
 
 # Run Cypher scripts to create constraints and indexes
 # Add constraints for nodes to ensure uniqueness and optimize lookups
