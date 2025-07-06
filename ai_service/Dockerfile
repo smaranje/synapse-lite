@@ -77,11 +77,11 @@ RUN echo '# ai_service/app.py - Updated for Neo4j context and f-string fix' > ap
     echo '                ' >> app.py && \
     echo '                input_addresses = [item["address"] for item in result["inputs"] if item["address"]]' >> app.py && \
     echo '                if input_addresses:' >> app.py && \
-    echo '                    context_data.append(f"Involved input addresses: {", ".join(input_addresses)}")' >> app.py && \
+    echo '                    context_data.append(f"Involved input addresses: {', '.join(input_addresses)}")' >> app.py && \
     echo '                ' >> app.py && \
     echo '                output_addresses = [item["address"] for item in result["outputs"] if item["address"]]' >> app.py && \
     echo '                if output_addresses:' >> app.py && \
-    echo '                    context_data.append(f"Involved output addresses: {", ".join(output_addresses)}")' >> app.py && \
+    echo '                    context_data.append(f"Involved output addresses: {', '.join(output_addresses)}")' >> app.py && \
     echo '                ' >> app.py && \
     echo '                # You could add more complex queries here, e.g., finding common counterparties' >> app.py && \
     echo '                ' >> app.py && \
