@@ -154,7 +154,7 @@ services:
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "false"
       SPARK_DAEMON_JAVA_OPTS: "" # FIX: Removed -Xms/-Xmx from SPARK_DAEMON_JAVA_OPTS
       SPARK_WORKER_MEMORY: 4g
-      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_CORES: 4 # Applied suggestion: Increased worker cores
     volumes:
       - ./spark_app:/app
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
@@ -182,22 +182,22 @@ services:
       NEO4J_PASSWORD: password
     volumes:
       - ./spark_app:/app
-    # FIX: Corrected Spark-submit command for PySpark application (Option C from your analysis)
-    command: ["/opt/bitnami/spark/bin/spark-submit",
-              "--master", "spark://spark-master:7077",
+    # FIX: Implemented "Option B: Bypass the Bitnami entry-point entirely"
+    entrypoint: ["/opt/bitnami/spark/bin/spark-submit"]
+    command: ["--master", "spark://spark-master:7077",
               "--deploy-mode", "client",
               "--conf", "spark.driver.memory=4g",
               "--conf", "spark.executor.memory=4g",
               "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0",
               "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
-              "/app/streaming_app.py"] # The Python script is the last argument, no --class needed
+              "/app/streaming_app.py"] # The Python script is the last argument
     mem_limit: 8g
 
   # Data Generator: Python service to generate synthetic transactions and push to Kafka.
   data-generator:
     build:
       context: ./data
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile # This Dockerfile will now install kafka-python
     container_name: data-generator
     depends_on:
       kafka-topic-initializer:
@@ -205,7 +205,8 @@ services:
     environment:
       KAFKA_BROKER: kafka:29092
       KAFKA_TOPIC: transactions
-    command: bash -c "python3 bitcoin_mempool_consumer.py | kafka-console-producer --broker-list kafka:29092 --topic transactions"
+    # FIX: Changed command to pipe output to the new Python producer script
+    command: bash -c "python3 bitcoin_mempool_consumer.py | python3 producer_app.py"
     mem_limit: 1.5g
 
   # Flask LLM Service: Microservice for AI-generated SAR drafts.
@@ -227,6 +228,11 @@ services:
     mem_limit: 2g
     # FIX: Corrected command to run the Flask application (as a list for robustness)
     command: ["python3", "app.py"]
+    healthcheck: # Added healthcheck as suggested, pointing to the new /health endpoint
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      retries: 5
+      start_period: 20s # Give it some time to start up
 
   # Streamlit Dashboard: Frontend UI for displaying alerts and interacting with services.
   streamlit-dashboard:
@@ -242,7 +248,7 @@ services:
       flask-llm-service:
         condition: service_started
     environment:
-      NEO4J_URI: bolt://neo4J:7687
+      NEO4J_URI: bolt://neo4j:7687 # FIX: Corrected typo from neo4J to neo4j
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: password
       LLM_SERVICE_URL: http://flask-llm-service:5000

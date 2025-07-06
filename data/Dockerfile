@@ -1,32 +1,23 @@
-    # data/Dockerfile
-    # Use a Confluent Kafka Tools image as base, which already includes kafka-console-producer
-    # This is more robust as it relies on a managed image for Kafka tools
-    FROM confluentinc/cp-kafka:7.5.0
+# data/Dockerfile
+# This Dockerfile builds the image for your data-generator service.
 
-    # Install Python on top of the Confluent image using yum (for RHEL/CentOS-based images)
-    # Temporarily switch to root to install packages
-    USER root
-    RUN yum update -y && yum install -y python3 python3-pip \
-        && yum clean all \
-        && rm -rf /var/cache/yum
+FROM python:3.9-slim-buster
 
-    # REMOVED: RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
-    # This command caused the "primary link for python must be /usr/bin/unversioned-python" error
-    # because it's not compatible with this specific base image's Python setup.
-    # We will explicitly use 'python3' in the docker-compose command.
+WORKDIR /app
 
-    WORKDIR /app
+# Install system dependencies needed for kafka-python (librdkafka-dev is not needed for pure python client)
+# If you encounter issues, you might need build-essential and librdkafka-dev, but let's try without first
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     build-essential \
+#     librdkafka-dev \
+#     && rm -rf /var/lib/apt/lists/*
 
-    # Install Python dependencies from requirements.txt
-    COPY requirements.txt .
-    # ********* CRITICAL FIX: Use pip3 instead of pip *********
-    RUN pip3 install --no-cache-dir -r requirements.txt
+# Install Python dependencies, including kafka-python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt kafka-python
 
-    # Copy the Bitcoin mempool consumer script
-    COPY bitcoin_mempool_consumer.py .
+# Copy the new Python producer script and the original consumer script
+COPY bitcoin_mempool_consumer.py .
+COPY producer_app.py .
 
-    # No need to manually download/extract Kafka tools or set PATH,
-    # as the base image already provides them.
-
-    # Switch back to the default user of the base image (usually 'appuser' with UID 1000 for Confluent images)
-    USER 1000
+CMD ["python3", "producer_app.py"]

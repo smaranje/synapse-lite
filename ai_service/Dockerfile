@@ -15,6 +15,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # --- CRITICAL FIX: Create app.py directly in the Dockerfile to ensure correct indentation ---
+# This bypasses any issues with host file system or copy-paste errors.
 RUN echo '# ai_service/app.py - Updated for Neo4j context' > app.py && \
     echo 'from flask import Flask, request, jsonify' >> app.py && \
     echo 'import os' >> app.py && \
@@ -93,9 +94,13 @@ RUN echo '# ai_service/app.py - Updated for Neo4j context' > app.py && \
     echo '            else:' >> app.py && \
     echo '                return "No specific graph context found for this transaction."' >> app.py && \
     echo '    except Exception as e:' >> app.py && \
-    echo '        print(f"Error fetching Neo4j context for {transaction_hash}: {e}")' >> app.py && \
+    echo '        print(f"Error generating content from LLM: {e}")' >> app.py && \
     echo '        return f"Error fetching graph context: {e}"' >> app.py && \
     echo '' >> app.py && \
+    echo '' >> app.py && \
+    echo '@app.route("/health")' >> app.py && \
+    echo 'def health_check():' >> app.py && \
+    echo '    return jsonify({"status": "ok"}), 200' >> app.py && \
     echo '' >> app.py && \
     echo '@app.route("/generate-sar", methods=["POST"])' >> app.py && \
     echo 'def generate_sar():' >> app.py && \
