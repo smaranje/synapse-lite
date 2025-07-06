@@ -1,4 +1,4 @@
-# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Cassandra 3.11.13
+# docker-compose.yml - Full Stack for GCP VM (32GB RAM) - Cassandra and its dependents commented out
 
 services:
   # Zookeeper: Essential for Kafka to function.
@@ -105,40 +105,38 @@ services:
     command: /app/init_neo4j.sh
     restart: on-failure
 
-  # Cassandra: NoSQL database for storing alerts. (CHANGED TO 3.11.13)
-  cassandra:
-    image: cassandra:3.11.13 # Changed from 4.1.3 to 3.11.13
-    container_name: cassandra
-    ports:
-      - "9042:9042"
-    volumes:
-      - cassandra_data:/var/lib/cassandra
-    environment:
-      # Cassandra 3.x is less memory hungry, so we can reduce these
-      CASSANDRA_MAX_HEAP_SIZE: 4G # Reduced from 14G
-      CASSANDRA_HEAP_NEWSIZE: 800M # Reduced from 4G
-    healthcheck:
-      test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES;' || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 40
-      start_period: 180s # Reduced from 300s, 3.x starts faster
-    mem_limit: 6g # Reduced from 18g, should be sufficient for 3.x
+  # Cassandra: NoSQL database for storing alerts. (COMMENTED OUT)
+  # cassandra:
+  #   image: cassandra:3.11.13
+  #   container_name: cassandra
+  #   ports:
+  #     - "9042:9042"
+  #   volumes:
+  #     - cassandra_data:/var/lib/cassandra
+  #   environment:
+  #     CASSANDRA_MAX_HEAP_SIZE: 4G
+  #     CASSANDRA_HEAP_NEWSIZE: 800M
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES;' || exit 1"]
+  #     interval: 15s
+  #     timeout: 10s
+  #     retries: 40
+  #     start_period: 180s
+  #   mem_limit: 6g
 
-  # Cassandra Initializer: Runs CQL scripts to set up keyspaces/tables.
-  cassandra-initializer:
-    build:
-      context: ./cassandra_initializer
-      dockerfile: Dockerfile
-    container_name: cassandra-initializer
-    depends_on:
-      cassandra:
-        condition: service_healthy # Ensure Cassandra is healthy before initializing
-    volumes:
-      - ./cassandra_initializer/cql_scripts:/cql_scripts
-    # Added a more robust wait for Cassandra 3.x entrypoint
-    command: bash -c 'until cqlsh cassandra 9042 -u cassandra -p cassandra -e "DESCRIBE KEYSPACES;"; do echo "Waiting for Cassandra for schema init..."; sleep 5; done; echo "Cassandra is up. Initializing schema..."; cqlsh cassandra 9042 -u cassandra -p cassandra -f /cql_scripts/init.cql'
-    restart: on-failure
+  # Cassandra Initializer: Runs CQL scripts to set up keyspaces/tables. (COMMENTED OUT)
+  # cassandra-initializer:
+  #   build:
+  #     context: ./cassandra_initializer
+  #     dockerfile: Dockerfile
+  #   container_name: cassandra-initializer
+  #   depends_on:
+  #     cassandra:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./cassandra_initializer/cql_scripts:/cql_scripts
+  #   command: bash -c 'until cqlsh cassandra 9042 -u cassandra -p cassandra -e "DESCRIBE KEYSPACES;"; do echo "Waiting for Cassandra for schema init..."; sleep 5; done; echo "Cassandra is up. Initializing schema..."; cqlsh cassandra 9042 -u cassandra -p cassandra -f /cql_scripts/init.cql'
+  #   restart: on-failure
 
   # Spark Master: The coordinator for the Spark cluster.
   spark-master:
@@ -194,42 +192,42 @@ services:
     command: ["/opt/bitnami/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
     mem_limit: 8g
 
-  # Spark Application: Runs your PySpark streaming job.
-  spark-app:
-    build:
-      context: ./spark_app
-      dockerfile: Dockerfile
-    container_name: spark-app
-    depends_on:
-      kafka-topic-initializer:
-        condition: service_completed_successfully
-      spark-master:
-        condition: service_healthy
-      cassandra-initializer: # Depend on the initializer completing its job
-        condition: service_completed_successfully
-      neo4j-initializer: # Depend on the initializer completing its job
-        condition: service_completed_successfully
-    environment:
-      SPARK_MASTER_URL: spark://spark-master:7077
-      KAFKA_BROKER: kafka:29092
-      KAFKA_TOPIC: transactions
-      CASSANDRA_HOST: cassandra
-      CASSANDRA_KEYSPACE: synapse_lite_ks
-      CASSANDRA_TABLE: alerts
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: password
-    volumes:
-      - ./spark_app:/app
-    command: ["/opt/bitnami/spark/bin/spark-submit",
-              "--master", "spark://spark-master:7077",
-              "--deploy-mode", "client",
-              "--conf", "spark.driver.memory=4g",
-              "--conf", "spark.executor.memory=4g",
-              "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,com.datastax.spark:spark-cassandra-connector_2.12:3.5.0",
-              "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
-              "/usr/bin/python3", "/app/streaming_app.py"]
-    mem_limit: 8g
+  # Spark Application: Runs your PySpark streaming job. (COMMENTED OUT)
+  # spark-app:
+  #   build:
+  #     context: ./spark_app
+  #     dockerfile: Dockerfile
+  #   container_name: spark-app
+  #   depends_on:
+  #     kafka-topic-initializer:
+  #       condition: service_completed_successfully
+  #     spark-master:
+  #       condition: service_healthy
+  #     cassandra-initializer: # Depend on the initializer completing its job
+  #       condition: service_completed_successfully
+  #     neo4j-initializer: # Depend on the initializer completing its job
+  #       condition: service_completed_successfully
+  #   environment:
+  #     SPARK_MASTER_URL: spark://spark-master:7077
+  #     KAFKA_BROKER: kafka:29092
+  #     KAFKA_TOPIC: transactions
+  #     CASSANDRA_HOST: cassandra
+  #     CASSANDRA_KEYSPACE: synapse_lite_ks
+  #     CASSANDRA_TABLE: alerts
+  #     NEO4J_URI: bolt://neo4j:7687
+  #     NEO4J_USERNAME: neo4j
+  #     NEO4J_PASSWORD: password
+  #   volumes:
+  #     - ./spark_app:/app
+  #   command: ["/opt/bitnami/spark/bin/spark-submit",
+  #             "--master", "spark://spark-master:7077",
+  #             "--deploy-mode", "client",
+  #             "--conf", "spark.driver.memory=4g",
+  #             "--conf", "spark.executor.memory=4g",
+  #             "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,com.datastax.spark:spark-cassandra-connector_2.12:3.5.0",
+  #             "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
+  #             "/usr/bin/python3", "/app/streaming_app.py"]
+  #   mem_limit: 8g
 
   # Data Generator: Python service to generate synthetic transactions and push to Kafka.
   data-generator:
@@ -246,49 +244,49 @@ services:
     command: bash -c "python3 bitcoin_mempool_consumer.py | kafka-console-producer --broker-list kafka:29092 --topic transactions"
     mem_limit: 1.5g
 
-  # Flask LLM Service: Microservice for AI-generated SAR drafts.
-  flask-llm-service:
-    build:
-      context: ./ai_service
-      dockerfile: Dockerfile
-    container_name: flask-llm-service
-    ports:
-      - "8000:5000"
-    depends_on:
-      neo4j:
-        condition: service_healthy
-      cassandra-initializer:
-        condition: service_completed_successfully
-    environment:
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: password
-      CASSANDRA_CONTACT_POINTS: cassandra
-      GEMINI_API_KEY: "" # This will be set via your host environment variable on the VM
-    mem_limit: 2g
+  # Flask LLM Service: Microservice for AI-generated SAR drafts. (COMMENTED OUT)
+  # flask-llm-service:
+  #   build:
+  #     context: ./ai_service
+  #     dockerfile: Dockerfile
+  #   container_name: flask-llm-service
+  #   ports:
+  #     - "8000:5000"
+  #   depends_on:
+  #     neo4j:
+  #       condition: service_healthy
+  #     cassandra-initializer:
+  #       condition: service_completed_successfully
+  #   environment:
+  #     NEO4J_URI: bolt://neo4j:7687
+  #     NEO4J_USERNAME: neo4j
+  #     NEO4J_PASSWORD: password
+  #     CASSANDRA_CONTACT_POINTS: cassandra
+  #     GEMINI_API_KEY: ""
+  #   mem_limit: 2g
 
-  # Streamlit Dashboard: Frontend UI for displaying alerts and interacting with services.
-  streamlit-dashboard:
-    build:
-      context: ./streamlit_app
-      dockerfile: Dockerfile
-    container_name: streamlit-dashboard
-    ports:
-      - "8501:8501"
-    depends_on:
-      cassandra-initializer:
-        condition: service_completed_successfully
-      neo4j:
-        condition: service_healthy
-      flask-llm-service:
-        condition: service_started
-    environment:
-      CASSANDRA_CONTACT_POINTS: cassandra
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: password
-      LLM_SERVICE_URL: http://flask-llm-service:5000
-    mem_limit: 2.5g
+  # Streamlit Dashboard: Frontend UI for displaying alerts and interacting with services. (COMMENTED OUT)
+  # streamlit-dashboard:
+  #   build:
+  #     context: ./streamlit_app
+  #     dockerfile: Dockerfile
+  #   container_name: streamlit-dashboard
+  #   ports:
+  #     - "8501:8501"
+  #   depends_on:
+  #     cassandra-initializer:
+  #       condition: service_completed_successfully
+  #     neo4j:
+  #       condition: service_healthy
+  #     flask-llm-service:
+  #       condition: service_started
+  #   environment:
+  #     CASSANDRA_CONTACT_POINTS: cassandra
+  #     NEO4J_URI: bolt://neo4j:7687
+  #     NEO4J_USERNAME: neo4j
+  #     NEO4J_PASSWORD: password
+  #     LLM_SERVICE_URL: http://flask-llm-service:5000
+  #   mem_limit: 2.5g
 
 # Define named volumes for persistent data storage across container restarts
 volumes:
@@ -296,5 +294,5 @@ volumes:
   zookeeper_log:
   kafka_data:
   neo4j_data:
-  cassandra_data:
+  # cassandra_data: # Comment out Cassandra data volume as well
   spark_master_data:
