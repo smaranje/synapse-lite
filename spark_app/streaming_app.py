@@ -1,4 +1,3 @@
-```python
 # spark_app/streaming_app.py
 #
 # End-to-end Spark Structured-Streaming job for Synapse-Lite:
