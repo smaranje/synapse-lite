@@ -333,6 +333,7 @@ def fetch_recent_transactions_from_neo4j(limit=10):
                 df['TotalOutputValueBTC'] = df['TotalOutputValue'].apply(lambda x: float(x) / 1e8)
 
                 # Add risk level based on ML_Score or Smurfing_Rule
+                # This is where 'Risk_Level' is created
                 df['Risk_Level'] = df.apply(lambda row: get_risk_level(row['ML_Score'], row['Smurfing_Rule']), axis=1)
                 
                 # Format for display
@@ -375,6 +376,7 @@ def fetch_alerts_from_neo4j(limit=100):
             df = pd.DataFrame([r.data() for r in result])
             if not df.empty:
                 df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='ms')
+                # This is where 'Risk_Level' is created
                 df['Risk_Level'] = df.apply(lambda row: get_risk_level(row['ML_Score'], row['Smurfing_Rule']), axis=1)
             return df
     except Exception as e:
@@ -628,8 +630,24 @@ if page_selection == "Dashboard":
     # Fetch alerts for display
     active_alerts_display_df = fetch_alerts_from_neo4j(limit=5) # Limit to top 5 for dashboard
     
-    critical_alerts_count_display = len(active_alerts_display_df[active_alerts_display_df['Risk_Level'] == 'Critical'])
-    high_alerts_count_display = len(active_alerts_display_df[active_alerts_display_df['Risk_Level'] == 'High'])
+    # --- Safety net for Risk_Level column (from Option A) ---
+    if "ML_Score" in active_alerts_display_df.columns:
+        def tag_risk_level_for_display(score, is_smurfing):
+            if is_smurfing: return "Critical"
+            if score >= 0.9: return "Critical"
+            elif score >= 0.7: return "High"
+            elif score >= 0.4: return "Medium"
+            else: return "Low"
+        active_alerts_display_df["Risk_Level"] = active_alerts_display_df.apply(
+            lambda row: tag_risk_level_for_display(row["ML_Score"], row["Smurfing_Rule"]), axis=1
+        )
+    else:
+        active_alerts_display_df["Risk_Level"] = "Unknown" # Fallback if ML_Score is missing entirely
+
+    # Avoid KeyError using .shape[0] and explicit filtering
+    critical_alerts_count_display = active_alerts_display_df.query("Risk_Level == 'Critical'").shape[0]
+    high_alerts_count_display = active_alerts_display_df.query("Risk_Level == 'High'").shape[0]
+
 
     with active_alerts_col1:
         st.markdown(f"<p class='alert-category critical'>{critical_alerts_count_display} Critical</p>", unsafe_allow_html=True)
@@ -637,15 +655,26 @@ if page_selection == "Dashboard":
         st.markdown(f"<p class='alert-category high'>{high_alerts_count_display} Open</p>", unsafe_allow_html=True)
     
     if not active_alerts_display_df.empty:
-        for index, alert in active_alerts_display_df.iterrows():
+        # Sort by criticality and then timestamp
+        alerts_data_df_sorted = active_alerts_display_df.sort_values(
+            by=['Risk_Level', 'Timestamp'],
+            key=lambda x: x.map({"Critical": 0, "High": 1, "Medium": 2, "Low": 3, "Unknown": 4}),
+            ascending=[True, False]
+        )
+
+        for index, alert in alerts_data_df_sorted.iterrows():
             alert_category = alert['Risk_Level'].lower()
             
             # Example descriptions - these would ideally come from Spark/ML logic
             description = "Unusual transaction pattern detected."
             if alert.get("Smurfing_Rule"):
                 description = "Smurfing rule triggered: multiple small outputs."
-            elif alert.get("ML_Score", 0) > 0.9:
-                description = "High-value transaction with suspicious ML score."
+            elif alert.get("ML_Score", 0) >= 0.9:
+                description = "High-value transaction with suspicious ML score (Critical)."
+            elif alert.get("ML_Score", 0) >= 0.7:
+                description = "High-value transaction with suspicious ML score (High)."
+            elif alert.get("ML_Score", 0) >= 0.4:
+                description = "Transaction with medium ML score."
             
             st.markdown(f"""
             <div class="active-alert-card">
