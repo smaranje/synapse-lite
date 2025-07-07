@@ -1195,18 +1195,18 @@ elif page_selection == "Analytics":
     trends_analytics_col1, trends_analytics_col2 = st.columns(2)
 
     with trends_analytics_col1:
-        st.markdown("#### Average Risk Score by Hour (Last 24h)")
+        st.markdown("#### Average Risk Score by Hour")
         if not avg_risk_trends_df.empty:
             st.line_chart(avg_risk_trends_df, use_container_width=True)
         else:
-            st.info("No average risk score trend data available for the last 24 hours.")
+            st.info("No average risk score trend data available.")
 
-    with trends_analytics_col2:
-        st.markdown("#### High Risk Transactions (Last 24h)")
+    with trends_col2:
+        st.markdown("#### High Risk Transactions")
         if not high_risk_tx_trends_df.empty:
             st.line_chart(high_risk_tx_trends_df, use_container_width=True)
         else:
-            st.info("No high risk transaction trend data available for the last 24 hours.")
+            st.info("No high risk transaction trend data available.")
     
     st.markdown("---")
 

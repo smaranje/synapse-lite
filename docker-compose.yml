@@ -167,28 +167,33 @@ services:
 
   # Spark Application: Runs your PySpark streaming job.
   spark-app:
-    build:
-      context: ./spark_app
-      dockerfile: Dockerfile
+    build: ./spark_app
     container_name: spark-app
     depends_on:
-      kafka-topic-initializer:
-        condition: service_completed_successfully
-      spark-master:
-        condition: service_healthy
-      neo4j-initializer:
-        condition: service_completed_successfully
+      - kafka
+      - neo4j
+      - spark-master
+      - flask-llm-service
     environment:
-      SPARK_MASTER_URL: spark://spark-master:7077
-      KAFKA_BROKER: kafka:29092
-      KAFKA_TOPIC: transactions
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: password
-      HOME: /opt/bitnami # CRITICAL FIX: Set HOME for Ivy cache
-      USER: spark # CRITICAL FIX: Set USER for Hadoop login
+      - KAFKA_BROKER=kafka:29092
+      - KAFKA_TOPIC=transactions
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - LLM_SERVICE_URL=http://flask-llm-service:5000/generate-sar
+      - HADOOP_USER_NAME=spark  # <--- ADD THIS LINE
+      - USER=spark              # <--- ADD THIS LINE
+      # - SPARK_USER=spark      # Optional, for logs
+      # - SPARK_SUBMIT_ARGS=--driver-java-options="-Duser.name=spark" # Alternative, but env vars are simpler here
+    command: /opt/bitnami/spark/bin/spark-submit \
+             --master spark://spark-master:7077 \
+             --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 \
+             --jars /opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar \
+             /app/streaming_app.py
     volumes:
       - ./spark_app:/app
+    networks:
+      - synapse-net
     entrypoint: [""] # CRITICAL: Wipe Bitnami entrypoint
     command: ["/opt/bitnami/spark/bin/spark-submit",
               "--master", "spark://spark-master:7077",
