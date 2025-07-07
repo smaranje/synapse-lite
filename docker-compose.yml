@@ -60,14 +60,16 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-    command: >
-      bash -c "echo 'Waiting for Kafka…' && \
-               kafka-topics --bootstrap-server kafka:29092 --list >/dev/null 2>&1 && \
-               kafka-topics --bootstrap-server kafka:29092 \
-                 --create --if-not-exists \
-                 --topic transactions --partitions 1 --replication-factor 1 && \
-               echo '✔️  topic ready'"
-    restart: on-failure
+    command:
+      - bash
+      - -c
+      - |
+        echo 'Waiting for Kafka…' && 
+        kafka-topics --bootstrap-server kafka:29092 --list >/dev/null 2>&1 && 
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists \
+          --topic transactions --partitions 1 --replication-factor 1 && 
+        echo '✔️  topic ready'
+    restart: "no"
 
   # ----------------- NEO4J -----------------
   neo4j:
