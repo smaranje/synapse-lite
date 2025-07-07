@@ -9,12 +9,13 @@ import html # Import the html module
 from datetime import datetime, timedelta
 
 # Configuration for Flask LLM service
-LLM_SERVICE_URL = os.environ.get('LLM_SERVICE_URL', 'http://flask-llm-service:5000')
+LLM_SERVICE_URL = os.environ.get('LLM_SERVICE_URL', 'http://flask-llm-service:5000/generate-sar') # Corrected to full endpoint
 
 # Neo4j Configuration
 NEO4J_URI = os.environ.get('NEO4J_URI', 'bolt://neo4j:7687')
 NEO4J_USERNAME = os.environ.get('NEO4J_USERNAME', 'neo4j')
 NEO4J_PASSWORD = os.environ.get('NEO4J_PASSWORD', 'password')
+
 
 st.set_page_config(layout="wide", page_title="Synapse-Lite Fraud Detector")
 
@@ -302,13 +303,20 @@ def fetch_recent_transactions_from_neo4j(limit=10):
     if not neo4j_driver:
         return pd.DataFrame() # Return empty DataFrame if no connection
     
+    # Using coalesce to handle potentially missing properties and provide default values
     query = f"""
     MATCH (tx:Transaction)
-    RETURN tx.hash AS Hash, tx.timestamp AS Timestamp, tx.fee AS Fee, tx.size AS Size,
-           tx.vin_sz AS NumInputs, tx.vout_sz AS NumOutputs,
-           tx.totalInputValue AS TotalInputValue, tx.totalOutputValue AS TotalOutputValue,
-           tx.mlFraudScore AS ML_Score, tx.isSmurfingRule AS Smurfing_Rule
-    ORDER BY tx.timestamp DESC
+    RETURN tx.hash AS Hash,
+           coalesce(tx.timestamp, 0) AS Timestamp,
+           coalesce(tx.fee, 0) AS Fee,
+           coalesce(tx.size, 0) AS Size,
+           coalesce(tx.vin_sz, 0) AS NumInputs,
+           coalesce(tx.vout_sz, 0) AS NumOutputs,
+           coalesce(tx.totalInputValue, 0.0) AS TotalInputValue,
+           coalesce(tx.totalOutputValue, 0.0) AS TotalOutputValue,
+           coalesce(tx.mlFraudScore, 0.0) AS ML_Score,
+           coalesce(tx.isSmurfingRule, false) AS Smurfing_Rule
+    ORDER BY Timestamp DESC
     LIMIT {limit}
     """
     try:
@@ -321,9 +329,8 @@ def fetch_recent_transactions_from_neo4j(limit=10):
                 df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='ms')
                 
                 # Calculate BTC values (assuming 1 BTC = 10^8 Satoshis)
-                # Need to ensure 'TotalInputValue' and 'TotalOutputValue' are numeric
-                df['TotalInputValueBTC'] = df['TotalInputValue'].apply(lambda x: float(x) / 1e8 if x is not None else 0.0)
-                df['TotalOutputValueBTC'] = df['TotalOutputValue'].apply(lambda x: float(x) / 1e8 if x is not None else 0.0)
+                df['TotalInputValueBTC'] = df['TotalInputValue'].apply(lambda x: float(x) / 1e8)
+                df['TotalOutputValueBTC'] = df['TotalOutputValue'].apply(lambda x: float(x) / 1e8)
 
                 # Add risk level based on ML_Score or Smurfing_Rule
                 df['Risk_Level'] = df.apply(lambda row: get_risk_level(row['ML_Score'], row['Smurfing_Rule']), axis=1)
@@ -345,14 +352,21 @@ def fetch_alerts_from_neo4j(limit=100):
     if not neo4j_driver:
         return pd.DataFrame()
 
+    # Using coalesce to handle potentially missing properties and provide default values
     query = f"""
     MATCH (tx:Transaction)
-    WHERE tx.mlFraudScore > 0.5 OR tx.isSmurfingRule = true
-    RETURN tx.hash AS Hash, tx.timestamp AS Timestamp, tx.mlFraudScore AS ML_Score,
-           tx.isSmurfingRule AS Smurfing_Rule, tx.fee AS Fee, tx.size AS Size,
-           tx.feePerByte AS FeePerByte, tx.totalInputValue AS TotalInputValue,
-           tx.totalOutputValue AS TotalOutputValue, tx.shapFeaturesJson AS SHAP_Features
-    ORDER BY tx.timestamp DESC
+    WHERE coalesce(tx.mlFraudScore, 0.0) > 0.5 OR coalesce(tx.isSmurfingRule, false) = true
+    RETURN tx.hash AS Hash,
+           coalesce(tx.timestamp, 0) AS Timestamp,
+           coalesce(tx.mlFraudScore, 0.0) AS ML_Score,
+           coalesce(tx.isSmurfingRule, false) AS Smurfing_Rule,
+           coalesce(tx.fee, 0) AS Fee,
+           coalesce(tx.size, 0) AS Size,
+           coalesce(tx.feePerByte, 0.0) AS FeePerByte,
+           coalesce(tx.totalInputValue, 0.0) AS TotalInputValue,
+           coalesce(tx.totalOutputValue, 0.0) AS TotalOutputValue,
+           coalesce(tx.shapFeaturesJson, '{{}}') AS SHAP_Features
+    ORDER BY Timestamp DESC
     LIMIT {limit}
     """
     try:
@@ -371,7 +385,7 @@ def fetch_alerts_from_neo4j(limit=100):
 def fetch_analytics_data_from_neo4j():
     """Fetches aggregated data for analytics from Neo4j."""
     if not neo4j_driver:
-        return {}, pd.DataFrame(), pd.DataFrame(), [], []
+        return {}, pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), [], []
 
     metrics = {
         "total_transactions": 0,
@@ -397,8 +411,10 @@ def fetch_analytics_data_from_neo4j():
             # Total Alerts, Critical Alerts, Active Alerts, Avg Risk Score
             alerts_query = """
             MATCH (tx:Transaction)
-            WHERE tx.mlFraudScore IS NOT NULL OR tx.isSmurfingRule = true
-            RETURN tx.mlFraudScore AS mlScore, tx.isSmurfingRule AS smurfingRule, tx.timestamp AS timestamp
+            WHERE coalesce(tx.mlFraudScore, 0.0) IS NOT NULL OR coalesce(tx.isSmurfingRule, false) = true
+            RETURN coalesce(tx.mlFraudScore, 0.0) AS mlScore,
+                   coalesce(tx.isSmurfingRule, false) AS smurfingRule,
+                   coalesce(tx.timestamp, 0) AS timestamp
             """
             alerts_records = session.run(alerts_query).data()
             
@@ -406,23 +422,28 @@ def fetch_analytics_data_from_neo4j():
             alerts_ml_scores = []
             for record in alerts_records:
                 metrics["total_alerts"] += 1
-                if record["mlScore"] is not None and record["mlScore"] > 0.9 or record["smurfingRule"]:
+                
+                # Use the get_risk_level function for consistent classification
+                risk_level = get_risk_level(record["mlScore"], record["smurfingRule"])
+
+                if risk_level == "Critical":
                     metrics["critical_alerts"] += 1
+                
                 if record["timestamp"] is not None and record["timestamp"] > (now_ms - 24 * 3600 * 1000):
                     metrics["active_alerts"] += 1
+                
                 if record["mlScore"] is not None:
                     alerts_ml_scores.append(record["mlScore"])
             
             metrics["avg_risk_score"] = round(sum(alerts_ml_scores) / len(alerts_ml_scores) * 100, 1) if alerts_ml_scores else 0.0
 
             # Risk Analysis Trends (last 24 hours)
-            # Group by hour and calculate average ML score and high-risk count
             trends_query = """
             MATCH (tx:Transaction)
-            WHERE tx.timestamp IS NOT NULL AND tx.timestamp > (datetime().epochMillis - 24 * 3600 * 1000)
-            RETURN toInteger(tx.timestamp / 3600000) AS hour_bucket,
-                   AVG(tx.mlFraudScore) AS avg_ml_score,
-                   COUNT(CASE WHEN tx.mlFraudScore > 0.7 OR tx.isSmurfingRule = true THEN tx END) AS high_risk_count
+            WHERE coalesce(tx.timestamp, 0) IS NOT NULL AND coalesce(tx.timestamp, 0) > (datetime().epochMillis - 24 * 3600 * 1000)
+            RETURN toInteger(coalesce(tx.timestamp, 0) / 3600000) AS hour_bucket,
+                   AVG(coalesce(tx.mlFraudScore, 0.0)) AS avg_ml_score,
+                   COUNT(CASE WHEN coalesce(tx.mlFraudScore, 0.0) > 0.7 OR coalesce(tx.isSmurfingRule, false) = true THEN tx END) AS high_risk_count
             ORDER BY hour_bucket
             """
             trends_records = session.run(trends_query).data()
@@ -430,10 +451,12 @@ def fetch_analytics_data_from_neo4j():
             avg_risk_data = []
             high_risk_tx_data = []
             for record in trends_records:
-                hour_ago = datetime.fromtimestamp(record["hour_bucket"] * 3600)
-                hour_label = hour_ago.strftime("%H:00")
-                avg_risk_data.append({"Hour": hour_label, "Average Risk Score": record["avg_ml_score"] * 100 if record["avg_ml_score"] is not None else 0.0})
-                high_risk_tx_data.append({"Hour": hour_label, "High Risk Transactions": record["high_risk_count"]})
+                # Ensure timestamp is not 0 before conversion
+                if record["hour_bucket"] is not None:
+                    hour_ago = datetime.fromtimestamp(record["hour_bucket"] * 3600)
+                    hour_label = hour_ago.strftime("%H:00")
+                    avg_risk_data.append({"Hour": hour_label, "Average Risk Score": record["avg_ml_score"] * 100 if record["avg_ml_score"] is not None else 0.0})
+                    high_risk_tx_data.append({"Hour": hour_label, "High Risk Transactions": record["high_risk_count"]})
             
             avg_risk_trends_df = pd.DataFrame(avg_risk_data).set_index("Hour").sort_index()
             high_risk_tx_trends_df = pd.DataFrame(high_risk_tx_data).set_index("Hour").sort_index()
@@ -441,12 +464,12 @@ def fetch_analytics_data_from_neo4j():
             # Risk Score Distribution
             risk_dist_query = """
             MATCH (tx:Transaction)
-            WHERE tx.mlFraudScore IS NOT NULL
+            WHERE coalesce(tx.mlFraudScore, 0.0) IS NOT NULL
             RETURN
-                SUM(CASE WHEN tx.mlFraudScore < 0.4 THEN 1 ELSE 0 END) AS low,
-                SUM(CASE WHEN tx.mlFraudScore >= 0.4 AND tx.mlFraudScore < 0.7 THEN 1 ELSE 0 END) AS medium,
-                SUM(CASE WHEN tx.mlFraudScore >= 0.7 AND tx.mlFraudScore < 0.9 THEN 1 ELSE 0 END) AS high,
-                SUM(CASE WHEN tx.mlFraudScore >= 0.9 THEN 1 ELSE 0 END) AS critical
+                SUM(CASE WHEN coalesce(tx.mlFraudScore, 0.0) < 0.4 THEN 1 ELSE 0 END) AS Low,
+                SUM(CASE WHEN coalesce(tx.mlFraudScore, 0.0) >= 0.4 AND coalesce(tx.mlFraudScore, 0.0) < 0.7 THEN 1 ELSE 0 END) AS Medium,
+                SUM(CASE WHEN coalesce(tx.mlFraudScore, 0.0) >= 0.7 AND coalesce(tx.mlFraudScore, 0.0) < 0.9 THEN 1 ELSE 0 END) AS High,
+                SUM(CASE WHEN coalesce(tx.mlFraudScore, 0.0) >= 0.9 THEN 1 ELSE 0 END) AS Critical
             """
             risk_dist_result = session.run(risk_dist_query).single()
             if risk_dist_result:
@@ -460,35 +483,30 @@ def fetch_analytics_data_from_neo4j():
             # Top Risk Addresses
             top_addresses_query = """
             MATCH (addr:Address)-[:SENT|SENT_TO]-(tx:Transaction)
-            WHERE tx.mlFraudScore > 0.7 OR tx.isSmurfingRule = true
+            WHERE coalesce(tx.mlFraudScore, 0.0) > 0.7 OR coalesce(tx.isSmurfingRule, false) = true
             RETURN addr.id AS address, COUNT(DISTINCT tx) AS high_risk_tx_count
             ORDER BY high_risk_tx_count DESC
             LIMIT 5
             """
             top_addresses_records = session.run(top_addresses_query).data()
             top_risk_addresses_list = [
-                {"rank": i+1, "address": r["address"], "transactions": r["high_risk_tx_count"], "risk_level": "high"}
+                {"rank": i+1, "address": r["address"], "transactions": r["high_risk_tx_count"], "risk_level": get_risk_level(0.8, True)} # Assign high risk level for display
                 for i, r in enumerate(top_addresses_records)
             ]
             metrics["high_risk_addresses"] = len(top_risk_addresses_list)
 
-            # Top Alert Types (derived from data, not directly stored as types)
-            # This is more complex to derive purely from Neo4j without explicit labels/properties for alert types.
-            # For now, we can infer from mlFraudScore and isSmurfingRule.
-            # If you want more specific types, Spark needs to store them explicitly.
-            smurfing_count_query = "MATCH (tx:Transaction) WHERE tx.isSmurfingRule = true RETURN count(tx) AS count"
-            high_ml_count_query = "MATCH (tx:Transaction) WHERE tx.mlFraudScore > 0.9 RETURN count(tx) AS count"
+            # Top Alert Types (derived from data)
+            smurfing_count_query = "MATCH (tx:Transaction) WHERE coalesce(tx.isSmurfingRule, false) = true RETURN count(tx) AS count"
+            high_ml_count_query = "MATCH (tx:Transaction) WHERE coalesce(tx.mlFraudScore, 0.0) >= 0.9 RETURN count(tx) AS count" # Critical threshold
             
             smurfing_count = session.run(smurfing_count_query).single()["count"]
             high_ml_count = session.run(high_ml_count_query).single()["count"]
 
-            # Simple placeholder for alert types based on available data
             if smurfing_count > 0:
                 top_alert_types_list.append({"type": "Smurfing Rule", "count": smurfing_count, "percentage": f"{(smurfing_count / metrics['total_alerts'])*100:.1f}%" if metrics['total_alerts'] > 0 else "0.0%"})
             if high_ml_count > 0:
                 top_alert_types_list.append({"type": "High ML Score", "count": high_ml_count, "percentage": f"{(high_ml_count / metrics['total_alerts'])*100:.1f}%" if metrics['total_alerts'] > 0 else "0.0%"})
             
-            # Sort by count descending
             top_alert_types_list.sort(key=lambda x: x['count'], reverse=True)
 
 
@@ -501,15 +519,17 @@ def fetch_analytics_data_from_neo4j():
 
 def get_risk_level(ml_score, is_smurfing_rule):
     """Determines risk level based on ML score and smurfing rule."""
+    # Ensure inputs are not None, though coalesce in Cypher should handle this.
+    ml_score = ml_score if ml_score is not None else 0.0
+    is_smurfing_rule = is_smurfing_rule if is_smurfing_rule is not None else False
+
     if is_smurfing_rule:
         return "Critical"
-    if ml_score is None:
-        return "Low" # Default if no ML score
-    if ml_score > 0.9:
+    if ml_score >= 0.9:
         return "Critical"
-    elif ml_score > 0.7:
+    elif ml_score >= 0.7:
         return "High"
-    elif ml_score > 0.5:
+    elif ml_score >= 0.4: # Changed from 0.5 to 0.4 as per user's suggested snippet
         return "Medium"
     else:
         return "Low"
@@ -518,7 +538,7 @@ def get_risk_level(ml_score, is_smurfing_rule):
 def generate_sar_with_llm(alert_data):
     """Calls the Flask LLM service to generate a SAR draft."""
     try:
-        response = requests.post(f"{LLM_SERVICE_URL}/generate-sar", json=alert_data, timeout=60) # Increased timeout
+        response = requests.post(LLM_SERVICE_URL, json=alert_data, timeout=60) # LLM_SERVICE_URL now includes /generate-sar
         response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
         return response.json().get("sar_draft", "No SAR draft generated.")
     except requests.exceptions.ConnectionError:
@@ -700,7 +720,7 @@ elif page_selection == "Transactions":
         # Sum of output values for all transactions (can be very large)
         # Querying total output value from Neo4j for all transactions might be slow.
         # For simplicity, let's sum recent ones or keep it as a placeholder.
-        total_value_query = "MATCH (tx:Transaction) RETURN SUM(tx.totalOutputValue) AS total_value"
+        total_value_query = "MATCH (tx:Transaction) RETURN SUM(coalesce(tx.totalOutputValue, 0.0)) AS total_value"
         total_value_result = 0
         if neo4j_driver:
             try:
@@ -871,7 +891,9 @@ elif page_selection == "Transactions":
                             st.markdown("##### SHAP Feature Contributions:")
                             try:
                                 shap_features = json.loads(tx_node["shapFeaturesJson"])
-                                for feature, value in shap_features.items():
+                                # Sort SHAP features by absolute value for better readability
+                                sorted_shap = sorted(shap_features.items(), key=lambda item: abs(item[1]), reverse=True)
+                                for feature, value in sorted_shap:
                                     st.write(f"- **{feature}:** {value:.4f}")
                             except json.JSONDecodeError:
                                 st.write("Invalid SHAP features JSON.")
@@ -953,7 +975,7 @@ elif page_selection == "Alerts":
                 if alert_type_filter == "Smurfing Rule":
                     alerts_data_df = alerts_data_df[alerts_data_df['Smurfing_Rule'] == True]
                 elif alert_type_filter == "High ML Score":
-                    alerts_data_df = alerts_data_df[alerts_data_df['ML_Score'] > 0.9] # Define "High ML Score" threshold
+                    alerts_data_df = alerts_data_df[alerts_data_df['ML_Score'] >= 0.9] # Use Critical threshold for "High ML Score" type
 
             if not alerts_data_df.empty:
                 # Sort by criticality and then timestamp
@@ -966,8 +988,12 @@ elif page_selection == "Alerts":
                     description = "Unusual transaction pattern detected."
                     if alert.get("Smurfing_Rule"):
                         description = "Smurfing rule triggered: multiple small outputs."
-                    elif alert.get("ML_Score", 0) > 0.9:
-                        description = "High-value transaction with suspicious ML score."
+                    elif alert.get("ML_Score", 0) >= 0.9:
+                        description = "High-value transaction with suspicious ML score (Critical)."
+                    elif alert.get("ML_Score", 0) >= 0.7:
+                        description = "High-value transaction with suspicious ML score (High)."
+                    elif alert.get("ML_Score", 0) >= 0.4:
+                        description = "Transaction with medium ML score."
                     
                     st.markdown(f"""
                     <div class="alert-list-card">
@@ -1039,6 +1065,7 @@ elif page_selection == "Alerts":
                         outputs = result["outputs"]
 
                         st.subheader(f"Alert: {tx_node['hash'][:12]}...")
+                        # Use .get() with default values for robustness
                         st.markdown(f"**ML Fraud Score:** {tx_node.get('mlFraudScore', 'N/A'):.2f}")
                         st.markdown(f"**Smurfing Rule Triggered:** {tx_node.get('isSmurfingRule', 'N/A')}")
                         st.markdown(f"**Transaction Timestamp:** {pd.to_datetime(tx_node.get('timestamp', 0), unit='ms').strftime('%Y-%m-%d %H:%M:%S')}")
@@ -1219,4 +1246,3 @@ elif page_selection == "Settings":
 
     st.markdown("---")
     st.write("For advanced configurations, please refer to the project's documentation.")
-
