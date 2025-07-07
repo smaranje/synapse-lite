@@ -5,18 +5,16 @@ import json
 import time
 from neo4j import GraphDatabase, basic_auth
 import os
-import random # For mock data generation
-from datetime import datetime, timedelta
 import html # Import the html module
+from datetime import datetime, timedelta
 
 # Configuration for Flask LLM service
-LLM_SERVICE_URL = os.environ.get('LLM_SERVICE_URL', 'http://flask-llm-service:5000/generate-sar')
+LLM_SERVICE_URL = os.environ.get('LLM_SERVICE_URL', 'http://flask-llm-service:5000')
 
 # Neo4j Configuration
 NEO4J_URI = os.environ.get('NEO4J_URI', 'bolt://neo4j:7687')
 NEO4J_USERNAME = os.environ.get('NEO4J_USERNAME', 'neo4j')
 NEO4J_PASSWORD = os.environ.get('NEO4J_PASSWORD', 'password')
-
 
 st.set_page_config(layout="wide", page_title="Synapse-Lite Fraud Detector")
 
@@ -273,160 +271,271 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Function to generate mock data for Live Bitcoin Mempool
-def generate_mock_mempool_data(num_transactions=5):
-    data = []
-    for _ in range(num_transactions):
-        tx_hash = "0x" + ''.join(random.choices('0123456789abcdef', k=random.randint(30, 40)))
-        amount_btc = round(random.uniform(0.0001, 10.0), 4)
-        amount_usd = round(amount_btc * 65000, 2) # Assuming 1 BTC = $65000
-        risk_score = random.randint(1, 100)
-        status = random.choice(["confirmed", "pending"])
-        time_str = (pd.to_datetime(time.time(), unit='s') - pd.Timedelta(seconds=random.randint(10, 600))).strftime("%H:%M:%S")
-        
-        risk_level = ""
-        if risk_score > 80: risk_level = "High"
-        elif risk_score > 50: risk_level = "Medium"
-        else: risk_level = "Low"
-
-        data.append({
-            "Transaction Hash": tx_hash,
-            "Amount": f"{amount_btc:.4f} BTC\n${amount_usd:,.2f}",
-            "Risk Score": f"{risk_level} ({risk_score})",
-            "Status": status,
-            "Time": time_str,
-            "Actions": "🔗" # Placeholder for a link/action button
-        })
-    return pd.DataFrame(data)
-
-# Function to generate mock data for Risk Analysis Trends
-def generate_mock_risk_trends_data():
-    # Average Risk Score by Hour (last 24 hours)
-    avg_risk_data = []
-    high_risk_tx_data = []
-    now = datetime.now()
-    for i in range(24):
-        hour_ago = now - timedelta(hours=i)
-        hour_label = hour_ago.strftime("%H:00")
-        
-        # Mock average risk score (e.g., 5-15)
-        avg_score = random.uniform(5, 15)
-        avg_risk_data.append({"Hour": hour_label, "Average Risk Score": avg_score})
-
-        # Mock high risk transactions count (e.g., 0-5)
-        high_risk_count = random.randint(0, 5)
-        high_risk_tx_data.append({"Hour": hour_label, "High Risk Transactions": high_risk_count})
-
-    avg_risk_df = pd.DataFrame(avg_risk_data).set_index("Hour").sort_index()
-    high_risk_tx_df = pd.DataFrame(high_risk_tx_data).set_index("Hour").sort_index()
-
-    return avg_risk_df, high_risk_tx_df
-
-# Function to generate mock data for Transaction Monitor
-def generate_mock_transaction_data(num_transactions=10):
-    transactions = []
-    for _ in range(num_transactions):
-        tx_hash = ''.join(random.choices('0123456789abcdef', k=random.randint(20, 30)))
-        from_address = ''.join(random.choices('0123456789abcdef', k=random.randint(30, 40)))
-        amount_btc = round(random.uniform(0.0001, 50.0), 4)
-        amount_usd = round(amount_btc * 65000, 2)
-        risk_score_val = random.randint(1, 100)
-        risk_level = ""
-        if risk_score_val > 80: risk_level = "critical"
-        elif risk_score_val > 50: risk_level = "high"
-        elif risk_score_val > 20: risk_level = "medium"
-        else: risk_level = "low"
-        
-        status = random.choice(["confirmed", "pending"])
-        tx_time = (datetime.now() - timedelta(minutes=random.randint(1, 60))).strftime("%b %d, %H:%M")
-
-        transactions.append({
-            "Transaction": f"{tx_hash[:8]}...\nFrom: {from_address[:8]}...",
-            "Amount": f"{amount_btc:.4f} BTC\n${amount_usd:,.2f}",
-            "Risk": f"{risk_score_val}", # Just the score for the table
-            "Risk_Level": risk_level, # For styling
-            "Status": status,
-            "Time": tx_time,
-            "Actions": "🔗" # Placeholder for link/details
-        })
-    return pd.DataFrame(transactions)
-
-# Function to generate mock data for Fraud Analytics
-def generate_mock_analytics_data():
-    # Fraud Detection Trends
-    trend_data = []
-    for i in range(7): # Last 7 days
-        day = (datetime.now() - timedelta(days=i)).strftime("%a")
-        total_tx = random.randint(100, 600)
-        total_alerts = random.randint(0, 10)
-        avg_fraud_rate = random.uniform(0.0, 0.5) # Percentage
-        trend_data.append({
-            "Day": day,
-            "Total Transactions": total_tx,
-            "Total Alerts": total_alerts,
-            "Avg Fraud Rate": avg_fraud_rate
-        })
-    fraud_trends_df = pd.DataFrame(trend_data).set_index("Day").sort_index()
-
-    # Risk Score Distribution
-    risk_dist_data = {
-        "Low (0-39)": random.randint(400, 500),
-        "Medium (40-69)": random.randint(0, 50),
-        "High (70-89)": random.randint(0, 20),
-        "Critical (90-100)": random.randint(0, 5)
-    }
-    total_risk_dist_tx = sum(risk_dist_data.values())
-    risk_dist_df = pd.DataFrame([
-        {"Category": k, "Transactions": v, "Percentage": f"{(v/total_risk_dist_tx)*100:.1f}%"}
-        for k, v in risk_dist_data.items()
-    ])
-
-    # Alert Types (for bar chart)
-    alert_types_data = {
-        "High Value": random.uniform(0.5, 1.0),
-        "Blacklisted Address": random.uniform(0.5, 1.0),
-        "Rapid Transactions": random.uniform(0.5, 1.0),
-        "Suspicious Pattern": random.uniform(0.5, 1.0)
-    }
-    alert_types_df = pd.DataFrame([
-        {"Type": k, "Value": v} for k, v in alert_types_data.items()
-    ])
-
-    # Top Alert Types (for list)
-    top_alert_types = [
-        {"type": "High Value", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
-        {"type": "Blacklisted Address", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
-        {"type": "Rapid Transactions", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
-        {"type": "Suspicious Pattern", "count": random.randint(1, 5), "percentage": f"{random.uniform(10, 30):.1f}%"},
-    ]
-    random.shuffle(top_alert_types) # Shuffle for variety
-
-    # Top Risk Addresses
-    top_risk_addresses = [
-        {"rank": 1, "address": "1A1zP1eP5QG...", "transactions": random.randint(100, 300), "risk_level": "high"},
-        {"rank": 2, "address": "3FUgJcM4uJG...", "transactions": random.randint(50, 200), "risk_level": "critical"},
-        {"rank": 3, "address": "bc1qxwz7y8...", "transactions": random.randint(20, 100), "risk_level": "high"},
-    ]
-
-    return fraud_trends_df, risk_dist_df, alert_types_df, top_alert_types, top_risk_addresses
-
-
-@st.cache_resource
+# --- Neo4j Connection ---
+@st.cache_resource(ttl=300) # Cache the driver for 5 minutes
 def get_neo4j_driver():
-    try:
-        driver = GraphDatabase.driver(NEO4J_URI, auth=basic_auth(NEO4J_USERNAME, NEO4J_PASSWORD))
-        driver.verify_connectivity()
-        st.sidebar.success("Connected to Neo4j successfully!")
-        return driver
-    except Exception as e:
-        st.sidebar.error(f"Failed to connect to Neo4j: {e}. Please ensure Neo4j is running and accessible.")
-        return None
+    """Initializes and returns a Neo4j driver with retry logic."""
+    driver = None
+    print(f"Attempting to connect to Neo4j for Streamlit at {NEO4J_URI}...")
+    for i in range(10): # Retry 10 times
+        try:
+            driver = GraphDatabase.driver(NEO4J_URI, auth=basic_auth(NEO4J_USERNAME, NEO4J_PASSWORD))
+            driver.verify_connectivity()
+            st.sidebar.success("Connected to Neo4j successfully!")
+            print("Neo4j driver connected for Streamlit.")
+            return driver
+        except Exception as e:
+            st.sidebar.warning(f"Neo4j connection attempt {i+1}/10 failed: {e}. Retrying in 5 seconds...")
+            print(f"Streamlit Neo4j connection attempt {i+1}/10 failed: {e}. Retrying in 5 seconds...")
+            time.sleep(5)
+    st.sidebar.error("Failed to connect to Neo4j after multiple retries. Graph data will not be available.")
+    print("Failed to connect to Neo4j after multiple retries. Graph data will not be available.")
+    return None
 
 neo4j_driver = get_neo4j_driver()
 
+# --- Data Fetching Functions from Neo4j ---
+
+@st.cache_data(ttl=5) # Cache for 5 seconds to provide near real-time updates
+def fetch_recent_transactions_from_neo4j(limit=10):
+    """Fetches recent transactions from Neo4j, regardless of fraud score."""
+    if not neo4j_driver:
+        return pd.DataFrame() # Return empty DataFrame if no connection
+    
+    query = f"""
+    MATCH (tx:Transaction)
+    RETURN tx.hash AS Hash, tx.timestamp AS Timestamp, tx.fee AS Fee, tx.size AS Size,
+           tx.vin_sz AS NumInputs, tx.vout_sz AS NumOutputs,
+           tx.totalInputValue AS TotalInputValue, tx.totalOutputValue AS TotalOutputValue,
+           tx.mlFraudScore AS ML_Score, tx.isSmurfingRule AS Smurfing_Rule
+    ORDER BY tx.timestamp DESC
+    LIMIT {limit}
+    """
+    try:
+        with neo4j_driver.session() as session:
+            result = session.run(query)
+            df = pd.DataFrame([r.data() for r in result])
+            
+            if not df.empty:
+                # Convert timestamp to readable format
+                df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='ms')
+                
+                # Calculate BTC values (assuming 1 BTC = 10^8 Satoshis)
+                # Need to ensure 'TotalInputValue' and 'TotalOutputValue' are numeric
+                df['TotalInputValueBTC'] = df['TotalInputValue'].apply(lambda x: float(x) / 1e8 if x is not None else 0.0)
+                df['TotalOutputValueBTC'] = df['TotalOutputValue'].apply(lambda x: float(x) / 1e8 if x is not None else 0.0)
+
+                # Add risk level based on ML_Score or Smurfing_Rule
+                df['Risk_Level'] = df.apply(lambda row: get_risk_level(row['ML_Score'], row['Smurfing_Rule']), axis=1)
+                
+                # Format for display
+                df['Amount'] = df.apply(lambda row: f"{row['TotalOutputValueBTC']:.4f} BTC\n${row['TotalOutputValueBTC'] * 65000:,.2f}", axis=1) # Assuming 1 BTC = $65000
+                df['Risk'] = df.apply(lambda row: f"{row['Risk_Level']} ({int(row['ML_Score']*100)})" if row['ML_Score'] is not None else row['Risk_Level'], axis=1)
+                df['Status'] = 'confirmed' # All transactions in Neo4j are "processed/confirmed" by Spark
+                df['Time'] = df['Timestamp'].dt.strftime("%H:%M:%S")
+                df['Actions'] = '🔗'
+            return df
+    except Exception as e:
+        st.error(f"Error fetching recent transactions from Neo4j: {e}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=10) # Cache for 10 seconds
+def fetch_alerts_from_neo4j(limit=100):
+    """Fetches suspicious transactions (alerts) from Neo4j."""
+    if not neo4j_driver:
+        return pd.DataFrame()
+
+    query = f"""
+    MATCH (tx:Transaction)
+    WHERE tx.mlFraudScore > 0.5 OR tx.isSmurfingRule = true
+    RETURN tx.hash AS Hash, tx.timestamp AS Timestamp, tx.mlFraudScore AS ML_Score,
+           tx.isSmurfingRule AS Smurfing_Rule, tx.fee AS Fee, tx.size AS Size,
+           tx.feePerByte AS FeePerByte, tx.totalInputValue AS TotalInputValue,
+           tx.totalOutputValue AS TotalOutputValue, tx.shapFeaturesJson AS SHAP_Features
+    ORDER BY tx.timestamp DESC
+    LIMIT {limit}
+    """
+    try:
+        with neo4j_driver.session() as session:
+            result = session.run(query)
+            df = pd.DataFrame([r.data() for r in result])
+            if not df.empty:
+                df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='ms')
+                df['Risk_Level'] = df.apply(lambda row: get_risk_level(row['ML_Score'], row['Smurfing_Rule']), axis=1)
+            return df
+    except Exception as e:
+        st.error(f"Error fetching alerts from Neo4j: {e}")
+        return pd.DataFrame()
+
+@st.cache_data(ttl=60) # Cache for 1 minute
+def fetch_analytics_data_from_neo4j():
+    """Fetches aggregated data for analytics from Neo4j."""
+    if not neo4j_driver:
+        return {}, pd.DataFrame(), pd.DataFrame(), [], []
+
+    metrics = {
+        "total_transactions": 0,
+        "active_alerts": 0,
+        "critical_alerts": 0,
+        "avg_risk_score": 0.0,
+        "high_risk_addresses": 0,
+        "total_alerts": 0
+    }
+    
+    avg_risk_trends_df = pd.DataFrame()
+    high_risk_tx_trends_df = pd.DataFrame()
+    risk_distribution_df = pd.DataFrame()
+    top_alert_types_list = []
+    top_risk_addresses_list = []
+
+    try:
+        with neo4j_driver.session() as session:
+            # Total Transactions
+            total_tx_result = session.run("MATCH (tx:Transaction) RETURN count(tx) AS total_count").single()
+            metrics["total_transactions"] = total_tx_result["total_count"] if total_tx_result else 0
+
+            # Total Alerts, Critical Alerts, Active Alerts, Avg Risk Score
+            alerts_query = """
+            MATCH (tx:Transaction)
+            WHERE tx.mlFraudScore IS NOT NULL OR tx.isSmurfingRule = true
+            RETURN tx.mlFraudScore AS mlScore, tx.isSmurfingRule AS smurfingRule, tx.timestamp AS timestamp
+            """
+            alerts_records = session.run(alerts_query).data()
+            
+            now_ms = time.time() * 1000
+            alerts_ml_scores = []
+            for record in alerts_records:
+                metrics["total_alerts"] += 1
+                if record["mlScore"] is not None and record["mlScore"] > 0.9 or record["smurfingRule"]:
+                    metrics["critical_alerts"] += 1
+                if record["timestamp"] is not None and record["timestamp"] > (now_ms - 24 * 3600 * 1000):
+                    metrics["active_alerts"] += 1
+                if record["mlScore"] is not None:
+                    alerts_ml_scores.append(record["mlScore"])
+            
+            metrics["avg_risk_score"] = round(sum(alerts_ml_scores) / len(alerts_ml_scores) * 100, 1) if alerts_ml_scores else 0.0
+
+            # Risk Analysis Trends (last 24 hours)
+            # Group by hour and calculate average ML score and high-risk count
+            trends_query = """
+            MATCH (tx:Transaction)
+            WHERE tx.timestamp IS NOT NULL AND tx.timestamp > (datetime().epochMillis - 24 * 3600 * 1000)
+            RETURN toInteger(tx.timestamp / 3600000) AS hour_bucket,
+                   AVG(tx.mlFraudScore) AS avg_ml_score,
+                   COUNT(CASE WHEN tx.mlFraudScore > 0.7 OR tx.isSmurfingRule = true THEN tx END) AS high_risk_count
+            ORDER BY hour_bucket
+            """
+            trends_records = session.run(trends_query).data()
+            
+            avg_risk_data = []
+            high_risk_tx_data = []
+            for record in trends_records:
+                hour_ago = datetime.fromtimestamp(record["hour_bucket"] * 3600)
+                hour_label = hour_ago.strftime("%H:00")
+                avg_risk_data.append({"Hour": hour_label, "Average Risk Score": record["avg_ml_score"] * 100 if record["avg_ml_score"] is not None else 0.0})
+                high_risk_tx_data.append({"Hour": hour_label, "High Risk Transactions": record["high_risk_count"]})
+            
+            avg_risk_trends_df = pd.DataFrame(avg_risk_data).set_index("Hour").sort_index()
+            high_risk_tx_trends_df = pd.DataFrame(high_risk_tx_data).set_index("Hour").sort_index()
+
+            # Risk Score Distribution
+            risk_dist_query = """
+            MATCH (tx:Transaction)
+            WHERE tx.mlFraudScore IS NOT NULL
+            RETURN
+                SUM(CASE WHEN tx.mlFraudScore < 0.4 THEN 1 ELSE 0 END) AS low,
+                SUM(CASE WHEN tx.mlFraudScore >= 0.4 AND tx.mlFraudScore < 0.7 THEN 1 ELSE 0 END) AS medium,
+                SUM(CASE WHEN tx.mlFraudScore >= 0.7 AND tx.mlFraudScore < 0.9 THEN 1 ELSE 0 END) AS high,
+                SUM(CASE WHEN tx.mlFraudScore >= 0.9 THEN 1 ELSE 0 END) AS critical
+            """
+            risk_dist_result = session.run(risk_dist_query).single()
+            if risk_dist_result:
+                total_dist_tx = sum(risk_dist_result.values())
+                risk_distribution_data = []
+                for category, count in risk_dist_result.items():
+                    percentage = (count / total_dist_tx) * 100 if total_dist_tx > 0 else 0.0
+                    risk_distribution_data.append({"Category": category.capitalize(), "Transactions": count, "Percentage": f"{percentage:.1f}%"})
+                risk_distribution_df = pd.DataFrame(risk_distribution_data)
+
+            # Top Risk Addresses
+            top_addresses_query = """
+            MATCH (addr:Address)-[:SENT|SENT_TO]-(tx:Transaction)
+            WHERE tx.mlFraudScore > 0.7 OR tx.isSmurfingRule = true
+            RETURN addr.id AS address, COUNT(DISTINCT tx) AS high_risk_tx_count
+            ORDER BY high_risk_tx_count DESC
+            LIMIT 5
+            """
+            top_addresses_records = session.run(top_addresses_query).data()
+            top_risk_addresses_list = [
+                {"rank": i+1, "address": r["address"], "transactions": r["high_risk_tx_count"], "risk_level": "high"}
+                for i, r in enumerate(top_addresses_records)
+            ]
+            metrics["high_risk_addresses"] = len(top_risk_addresses_list)
+
+            # Top Alert Types (derived from data, not directly stored as types)
+            # This is more complex to derive purely from Neo4j without explicit labels/properties for alert types.
+            # For now, we can infer from mlFraudScore and isSmurfingRule.
+            # If you want more specific types, Spark needs to store them explicitly.
+            smurfing_count_query = "MATCH (tx:Transaction) WHERE tx.isSmurfingRule = true RETURN count(tx) AS count"
+            high_ml_count_query = "MATCH (tx:Transaction) WHERE tx.mlFraudScore > 0.9 RETURN count(tx) AS count"
+            
+            smurfing_count = session.run(smurfing_count_query).single()["count"]
+            high_ml_count = session.run(high_ml_count_query).single()["count"]
+
+            # Simple placeholder for alert types based on available data
+            if smurfing_count > 0:
+                top_alert_types_list.append({"type": "Smurfing Rule", "count": smurfing_count, "percentage": f"{(smurfing_count / metrics['total_alerts'])*100:.1f}%" if metrics['total_alerts'] > 0 else "0.0%"})
+            if high_ml_count > 0:
+                top_alert_types_list.append({"type": "High ML Score", "count": high_ml_count, "percentage": f"{(high_ml_count / metrics['total_alerts'])*100:.1f}%" if metrics['total_alerts'] > 0 else "0.0%"})
+            
+            # Sort by count descending
+            top_alert_types_list.sort(key=lambda x: x['count'], reverse=True)
+
+
+    except Exception as e:
+        st.error(f"Error fetching analytics data from Neo4j: {e}")
+        print(f"Error fetching analytics data from Neo4j: {e}")
+
+    return metrics, avg_risk_trends_df, high_risk_tx_trends_df, risk_distribution_df, top_alert_types_list, top_risk_addresses_list
+
+
+def get_risk_level(ml_score, is_smurfing_rule):
+    """Determines risk level based on ML score and smurfing rule."""
+    if is_smurfing_rule:
+        return "Critical"
+    if ml_score is None:
+        return "Low" # Default if no ML score
+    if ml_score > 0.9:
+        return "Critical"
+    elif ml_score > 0.7:
+        return "High"
+    elif ml_score > 0.5:
+        return "Medium"
+    else:
+        return "Low"
+
+# --- LLM Service Interaction ---
+def generate_sar_with_llm(alert_data):
+    """Calls the Flask LLM service to generate a SAR draft."""
+    try:
+        response = requests.post(f"{LLM_SERVICE_URL}/generate-sar", json=alert_data, timeout=60) # Increased timeout
+        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+        return response.json().get("sar_draft", "No SAR draft generated.")
+    except requests.exceptions.ConnectionError:
+        st.error(f"LLM Service not reachable at {LLM_SERVICE_URL}. Is the Flask service running?")
+        return "LLM Service connection error."
+    except requests.exceptions.Timeout:
+        st.error("LLM Service timed out. It might be too slow or busy.")
+        return "LLM Service timeout."
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error calling LLM service: {e}")
+        return f"LLM Service error: {e}"
+    except json.JSONDecodeError:
+        st.error(f"Failed to decode JSON from LLM service. Response: {response.text}")
+        return "LLM Service response error."
+
 # Sidebar Navigation
 with st.sidebar:
-    # Changed use_column_width to use_container_width
     st.image("https://placehold.co/150x50/000/FFF?text=Synapse-Lite", use_container_width=True) # Placeholder for logo
     st.markdown("## Navigation")
     page_selection = st.radio(
@@ -449,53 +558,28 @@ if page_selection == "Dashboard":
     st.markdown("---")
     col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-    # Fetch alerts for metrics calculation
-    alerts_data_for_metrics = []
-    if neo4j_driver:
-        try:
-            with neo4j_driver.session() as session:
-                query_all_alerts = """
-                MATCH (tx:Transaction)
-                WHERE tx.ml_fraud_score IS NOT NULL AND tx.ml_fraud_score > 0.0
-                   OR tx.is_smurfing_rule = true
-                RETURN tx
-                """
-                result_all_alerts = session.run(query_all_alerts)
-                for record in result_all_alerts:
-                    alerts_data_for_metrics.append(record["tx"])
-        except Exception as e:
-            st.error(f"Error fetching all alerts for metrics: {e}")
-
-    # Mock/Derived Metrics
-    total_transactions = 100 # This would ideally come from a separate transaction count
-    active_alerts = len([a for a in alerts_data_for_metrics if a.get("alert_timestamp_ms", 0) > (time.time() * 1000 - 24 * 3600 * 1000)]) # Alerts in last 24h
-    critical_alerts = len([a for a in alerts_data_for_metrics if a.get("ml_fraud_score", 0) > 0.9 or a.get("is_smurfing_rule", False)])
-    
-    avg_risk_scores = [a.get("ml_fraud_score", 0) for a in alerts_data_for_metrics if a.get("ml_fraud_score") is not None]
-    avg_risk_score = round(sum(avg_risk_scores) / len(avg_risk_scores) * 100, 1) if avg_risk_scores else 0.0 # Scale to 100
-    
-    high_risk_addresses = 2 # This would require more complex Neo4j queries for addresses related to critical alerts
-    total_alerts = len(alerts_data_for_metrics)
+    # Fetch live analytics metrics
+    metrics, _, _, _, _, _ = fetch_analytics_data_from_neo4j()
 
     with col1:
-        st.metric(label="Total Transactions", value=total_transactions, delta="24h active")
+        st.metric(label="Total Transactions", value=metrics["total_transactions"], delta="All time")
     with col2:
-        st.metric(label="Active Alerts", value=active_alerts, delta="Needs attention", delta_color="off")
+        st.metric(label="Active Alerts (24h)", value=metrics["active_alerts"], delta="Needs attention", delta_color="off")
         st.markdown("<p class='metric-status-orange'>Needs attention</p>", unsafe_allow_html=True)
     with col3:
-        st.metric(label="Critical Alerts", value=critical_alerts, delta="High priority", delta_color="off")
+        st.metric(label="Critical Alerts", value=metrics["critical_alerts"], delta="High priority", delta_color="off")
         st.markdown("<p class='metric-status-red'>High priority</p>", unsafe_allow_html=True)
     with col4:
-        st.metric(label="Avg Risk Score", value=f"{avg_risk_score:.1f}", delta="0-100 scale")
+        st.metric(label="Avg Risk Score", value=f"{metrics['avg_risk_score']:.1f}", delta="0-100 scale")
     with col5:
-        st.metric(label="High Risk Addresses", value=high_risk_addresses, delta="Under watch", delta_color="off")
+        st.metric(label="High Risk Addresses", value=metrics["high_risk_addresses"], delta="Under watch", delta_color="off")
         st.markdown("<p class='metric-status-red'>Under watch</p>", unsafe_allow_html=True)
     with col6:
-        st.metric(label="Total Alerts", value=total_alerts, delta="All time")
+        st.metric(label="Total Alerts (All Time)", value=metrics["total_alerts"], delta="All time")
 
     st.markdown("---")
 
-    # Live Bitcoin Mempool (Mock Data for now)
+    # Live Bitcoin Mempool
     st.subheader("⚡ Live Bitcoin Mempool")
     st.markdown("<p style='color:#28a745; font-weight:bold;'>● Live</p>", unsafe_allow_html=True)
     
@@ -506,57 +590,55 @@ if page_selection == "Dashboard":
             st.rerun()
     
     with mempool_col1:
-        st.dataframe(generate_mock_mempool_data(), hide_index=True, use_container_width=True)
+        with st.spinner("Fetching live mempool data..."):
+            live_mempool_df = fetch_recent_transactions_from_neo4j(limit=10)
+            if not live_mempool_df.empty:
+                # Select and reorder columns for display
+                display_cols = ['Hash', 'Amount', 'Risk', 'Status', 'Time', 'Actions']
+                st.dataframe(live_mempool_df[display_cols], hide_index=True, use_container_width=True)
+            else:
+                st.info("No recent transactions available in Neo4j. Waiting for data...")
 
     st.markdown("---")
 
-    # Active Alerts Section (Enhanced Display)
+    # Active Alerts Section
     st.subheader("🚨 Active Alerts")
     active_alerts_col1, active_alerts_col2, active_alerts_col3 = st.columns([0.1, 0.1, 0.8])
+    
+    # Fetch alerts for display
+    active_alerts_display_df = fetch_alerts_from_neo4j(limit=5) # Limit to top 5 for dashboard
+    
+    critical_alerts_count_display = len(active_alerts_display_df[active_alerts_display_df['Risk_Level'] == 'Critical'])
+    high_alerts_count_display = len(active_alerts_display_df[active_alerts_display_df['Risk_Level'] == 'High'])
+
     with active_alerts_col1:
-        st.markdown("<p class='alert-category critical'>2 Critical</p>", unsafe_allow_html=True)
+        st.markdown(f"<p class='alert-category critical'>{critical_alerts_count_display} Critical</p>", unsafe_allow_html=True)
     with active_alerts_col2:
-        st.markdown("<p class='alert-category high'>2 Open</p>", unsafe_allow_html=True)
+        st.markdown(f"<p class='alert-category high'>{high_alerts_count_display} Open</p>", unsafe_allow_html=True)
     
-    # Filter alerts for display in this section
-    active_alerts_display = []
-    for alert in alerts_data_for_metrics: # Using the alerts fetched for metrics
-        alert_category = "low"
-        if alert.get("ml_fraud_score", 0) > 0.9 or alert.get("is_smurfing_rule", False):
-            alert_category = "critical"
-        elif alert.get("ml_fraud_score", 0) > 0.7:
-            alert_category = "high"
-        elif alert.get("ml_fraud_score", 0) > 0.5:
-            alert_category = "medium"
-
-        # Example descriptions - these would ideally come from Spark/ML logic
-        description = "Unusual transaction pattern detected."
-        if alert.get("is_smurfing_rule"):
-            description = "Smurfing rule triggered: multiple small outputs."
-        elif alert.get("ml_fraud_score", 0) > 0.9:
-            description = "High-value transaction with suspicious ML score."
-        
-        active_alerts_display.append({
-            "category": alert_category,
-            "title": f"Alert: {alert.get('hash', '')[:8]}...", # Changed from transaction_hash to hash
-            "description": description,
-            "timestamp": pd.to_datetime(alert.get("alert_timestamp_ms", time.time()*1000), unit='ms').strftime("%b %d, %H:%M")
-        })
-    
-    # Sort by criticality and then timestamp
-    active_alerts_display.sort(key=lambda x: ({"critical": 0, "high": 1, "medium": 2, "low": 3}.get(x["category"], 4), x["timestamp"]), reverse=False)
-
-    for alert in active_alerts_display[:5]: # Display top 5 active alerts
-        st.markdown(f"""
-        <div class="active-alert-card">
-            <h5>
-                <span class="alert-category {alert['category']}">{alert['category'].capitalize()}</span>
-                {alert['title']}
-            </h5>
-            <p>{alert['description']}</p>
-            <p class="timestamp">{alert['timestamp']}</p>
-        </div>
-        """, unsafe_allow_html=True)
+    if not active_alerts_display_df.empty:
+        for index, alert in active_alerts_display_df.iterrows():
+            alert_category = alert['Risk_Level'].lower()
+            
+            # Example descriptions - these would ideally come from Spark/ML logic
+            description = "Unusual transaction pattern detected."
+            if alert.get("Smurfing_Rule"):
+                description = "Smurfing rule triggered: multiple small outputs."
+            elif alert.get("ML_Score", 0) > 0.9:
+                description = "High-value transaction with suspicious ML score."
+            
+            st.markdown(f"""
+            <div class="active-alert-card">
+                <h5>
+                    <span class="alert-category {alert_category}">{alert_category.capitalize()}</span>
+                    Alert: {alert['Hash'][:8]}...
+                </h5>
+                <p>{description}</p>
+                <p class="timestamp">{alert['Timestamp'].strftime("%b %d, %H:%M")}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("No active alerts found in Neo4j.")
     
     st.button("View All Alerts", key="view_all_alerts_btn") # Button to navigate to full alerts page
 
@@ -566,17 +648,23 @@ if page_selection == "Dashboard":
     st.subheader("📈 Risk Analysis Trends")
     st.markdown("---")
     
-    avg_risk_df, high_risk_tx_df = generate_mock_risk_trends_data()
+    _, avg_risk_trends_df, high_risk_tx_trends_df, _, _, _ = fetch_analytics_data_from_neo4j()
 
     trends_col1, trends_col2 = st.columns(2)
 
     with trends_col1:
         st.markdown("#### Average Risk Score by Hour")
-        st.line_chart(avg_risk_df, use_container_width=True)
+        if not avg_risk_trends_df.empty:
+            st.line_chart(avg_risk_trends_df, use_container_width=True)
+        else:
+            st.info("No average risk score trend data available.")
 
     with trends_col2:
         st.markdown("#### High Risk Transactions")
-        st.line_chart(high_risk_tx_df, use_container_width=True)
+        if not high_risk_tx_trends_df.empty:
+            st.line_chart(high_risk_tx_trends_df, use_container_width=True)
+        else:
+            st.info("No high risk transaction trend data available.")
 
 
 elif page_selection == "Transactions":
@@ -586,122 +674,223 @@ elif page_selection == "Transactions":
     # Top row with refresh/export buttons
     top_row_cols = st.columns([0.7, 0.1, 0.1, 0.1])
     with top_row_cols[1]:
-        st.button("Refresh", key="tx_monitor_refresh_btn")
+        if st.button("Refresh", key="tx_monitor_refresh_btn"):
+            st.cache_data.clear() # Clear cache for transaction data
+            st.rerun()
     with top_row_cols[2]:
-        st.button("Export", key="tx_monitor_export_btn")
-    
+        st.button("Export", key="tx_monitor_export_btn") # Export functionality not implemented
+
     st.markdown("---")
 
-    # Metrics for Transaction Monitor
+    # Metrics for Transaction Monitor (using live data)
     tx_metric_cols = st.columns(5)
-    total_tx_count = 220 # Mock value
-    live_tx_count = 20 # Mock value
-    flagged_tx_count = 0 # Mock value
-    high_risk_tx_count = 0 # Mock value
-    total_tx_value = 182.64 # Mock value
+    
+    metrics_tx, _, _, _, _, _ = fetch_analytics_data_from_neo4j() # Re-use analytics metrics
 
     with tx_metric_cols[0]:
-        st.metric(label="Total Transactions", value=total_tx_count, delta="20 Live")
+        st.metric(label="Total Transactions", value=metrics_tx["total_transactions"])
     with tx_metric_cols[1]:
-        st.metric(label="Live", value=live_tx_count)
+        # Live transactions count would be from Kafka consumer, not directly from Neo4j historical data
+        st.metric(label="Live (Approx)", value=len(fetch_recent_transactions_from_neo4j(limit=50))) # Count recent ones
     with tx_metric_cols[2]:
-        st.metric(label="Flagged", value=flagged_tx_count)
+        st.metric(label="Flagged (Alerts)", value=metrics_tx["total_alerts"])
     with tx_metric_cols[3]:
-        st.metric(label="High Risk", value=high_risk_tx_count)
+        st.metric(label="High Risk (ML/Rule)", value=metrics_tx["critical_alerts"])
     with tx_metric_cols[4]:
-        st.metric(label="Total Value", value=f"{total_tx_value:.2f} BTC")
+        # Sum of output values for all transactions (can be very large)
+        # Querying total output value from Neo4j for all transactions might be slow.
+        # For simplicity, let's sum recent ones or keep it as a placeholder.
+        total_value_query = "MATCH (tx:Transaction) RETURN SUM(tx.totalOutputValue) AS total_value"
+        total_value_result = 0
+        if neo4j_driver:
+            try:
+                with neo4j_driver.session() as session:
+                    result = session.run(total_value_query).single()
+                    total_value_result = result["total_value"] if result and result["total_value"] is not None else 0
+            except Exception as e:
+                print(f"Error fetching total value: {e}")
+        
+        st.metric(label="Total Value (BTC)", value=f"{float(total_value_result) / 1e8:.2f}" if total_value_result else "0.00")
 
     st.markdown("---")
 
     # Search and Filter Row
     search_filter_cols = st.columns([0.5, 0.15, 0.15, 0.15, 0.05])
     with search_filter_cols[0]:
-        st.text_input("Search by hash, address...", key="tx_search_input", label_visibility="collapsed")
+        transaction_hash_search = st.text_input("Search by hash, address...", key="tx_search_input", label_visibility="collapsed")
     with search_filter_cols[1]:
-        st.selectbox("All Status", ["All Status", "Confirmed", "Pending"], key="tx_status_filter")
+        tx_status_filter = st.selectbox("All Status", ["All Status", "Confirmed", "Pending"], key="tx_status_filter")
     with search_filter_cols[2]:
-        st.selectbox("All Risk", ["All Risk", "Low", "Medium", "High", "Critical"], key="tx_risk_filter")
+        tx_risk_filter = st.selectbox("All Risk", ["All Risk", "Low", "Medium", "High", "Critical"], key="tx_risk_filter")
     with search_filter_cols[3]:
-        st.selectbox("All Time", ["All Time", "Last Hour", "Last 24h", "Last Week"], key="tx_time_filter")
+        tx_time_filter = st.selectbox("All Time", ["All Time", "Last Hour", "Last 24h", "Last Week"], key="tx_time_filter")
 
     st.markdown("---")
 
     # Transaction Table and Details
     tx_table_col, tx_details_col = st.columns([0.7, 0.3])
 
-# ... (inside the Transactions section) ...
-
     with tx_table_col:
         st.markdown("### Transactions")
-        transactions_df = generate_mock_transaction_data()
-        
-        # Manually render DataFrame to apply custom styling per row/cell
-        st.markdown("""
-        <div class="stDataFrame">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Transaction</th>
-                        <th>Amount</th>
-                        <th>Risk</th>
-                        <th>Status</th>
-                        <th>Time</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-        """, unsafe_allow_html=True)
-        
-        for index, row in transactions_df.iterrows():
-            risk_class = row["Risk_Level"] # Use the Risk_Level for CSS class
-            status_class = row["Status"]
-            
-            # --- FIX STARTS HERE ---
-            # Pre-split the transaction and amount strings
-            tx_parts = row["Transaction"].split('\n')
-            tx_hash_display = tx_parts[0] if len(tx_parts) > 0 else ""
-            tx_from_display = tx_parts[1] if len(tx_parts) > 1 else ""
+        with st.spinner("Fetching transactions..."):
+            transactions_df = fetch_recent_transactions_from_neo4j(limit=50) # Fetch more for this view
 
-            amount_parts = row["Amount"].split('\n')
-            amount_btc_display = amount_parts[0] if len(amount_parts) > 0 else ""
-            amount_usd_display = amount_parts[1] if len(amount_parts) > 1 else ""
-            # --- FIX ENDS HERE ---
-            
-            st.markdown(f"""
-                <tr>
-                    <td>
-                        <div class="tx-hash">{html.escape(tx_hash_display)}</div>
-                        <div class="tx-from">{html.escape(tx_from_display)}</div>
-                    </td>
-                    <td>
-                        <div class="tx-amount">{html.escape(amount_btc_display)}</div>
-                        <div class="tx-usd">{html.escape(amount_usd_display)}</div>
-                    </td>
-                    <td><span class="risk-score {risk_class}">{html.escape(row["Risk"])}</span></td>
-                    <td><span class="tx-status {status_class}">{html.escape(row["Status"])}</span></td>
-                    <td><div class="tx-time">{html.escape(row["Time"])}</div></td>
-                    <td>{html.escape(row["Actions"])}</td>
-                </tr>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("""
-                </tbody>
-            </table>
-        </div>
-        """, unsafe_allow_html=True)
+            # Apply filters if selected
+            if transaction_hash_search:
+                transactions_df = transactions_df[transactions_df['Hash'].str.contains(transaction_hash_search, case=False, na=False)]
+            if tx_status_filter != "All Status":
+                # In this demo, all transactions from Neo4j are "confirmed" by Spark processing
+                # If you had a 'status' property in Neo4j, you would filter on that.
+                pass 
+            if tx_risk_filter != "All Risk":
+                transactions_df = transactions_df[transactions_df['Risk_Level'] == tx_risk_filter]
+            if tx_time_filter != "All Time":
+                now = datetime.now()
+                if tx_time_filter == "Last Hour":
+                    transactions_df = transactions_df[transactions_df['Timestamp'] > (now - timedelta(hours=1))]
+                elif tx_time_filter == "Last 24h":
+                    transactions_df = transactions_df[transactions_df['Timestamp'] > (now - timedelta(hours=24))]
+                elif tx_time_filter == "Last Week":
+                    transactions_df = transactions_df[transactions_df['Timestamp'] > (now - timedelta(weeks=1))]
 
-# ... (rest of the code) ...
+            if not transactions_df.empty:
+                # Manually render DataFrame to apply custom styling per row/cell
+                st.markdown("""
+                <div class="stDataFrame">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Transaction Hash</th>
+                                <th>Amount (BTC)</th>
+                                <th>Risk Score</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                """, unsafe_allow_html=True)
+                
+                for index, row in transactions_df.iterrows():
+                    risk_class = row["Risk_Level"].lower() # Use the Risk_Level for CSS class
+                    status_class = row["Status"].lower()
+                    
+                    st.markdown(f"""
+                        <tr>
+                            <td>
+                                <div class="tx-hash">{html.escape(row["Hash"][:12])}...</div>
+                                <div class="tx-from">Inputs: {row['NumInputs']} | Outputs: {row['NumOutputs']}</div>
+                            </td>
+                            <td>
+                                <div class="tx-amount">{html.escape(f"{row['TotalOutputValueBTC']:.4f} BTC")}</div>
+                                <div class="tx-usd">{html.escape(f"${row['TotalOutputValueBTC'] * 65000:,.2f}")}</div>
+                            </td>
+                            <td><span class="risk-score {risk_class}">{html.escape(row["Risk"])}</span></td>
+                            <td><span class="tx-status {status_class}">{html.escape(row["Status"])}</span></td>
+                            <td><div class="tx-time">{html.escape(row["Timestamp"].strftime("%b %d, %H:%M"))}</div></td>
+                            <td><button onclick="window.parent.postMessage({{type: 'streamlit:setComponentValue', key: 'selected_tx_hash', value: '{row['Hash']}'}}, '*')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🔗</button></td>
+                        </tr>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("""
+                        </tbody>
+                    </table>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.info("No transactions found matching your criteria.")
 
     with tx_details_col:
-        st.markdown("### ") # Empty header for alignment
-        st.markdown("""
-        <div style="background-color: #2a2a2a; padding: 20px; border-radius: 10px; border: 1px solid #444; height: 100%;">
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+        st.markdown("### Transaction Details")
+        # Use a session state variable to store the selected hash for details
+        if 'selected_tx_hash' not in st.session_state:
+            st.session_state['selected_tx_hash'] = None
+
+        # This JavaScript snippet captures clicks on the "🔗" button and updates session state
+        st.components.v1.html(
+            """
+            <script>
+            window.addEventListener('message', event => {
+                if (event.data.type === 'streamlit:setComponentValue' && event.data.key === 'selected_tx_hash') {
+                    const hash = event.data.value;
+                    window.parent.postMessage(
+                        {
+                            type: 'streamlit:setComponentValue',
+                            args: {
+                                key: 'selected_tx_hash',
+                                value: hash,
+                            },
+                        },
+                        '*'
+                    );
+                }
+            });
+            </script>
+            """,
+            height=0, width=0
+        )
+
+        selected_tx_hash_for_details = st.session_state.selected_tx_hash
+
+        if selected_tx_hash_for_details:
+            with st.spinner(f"Fetching details for {selected_tx_hash_for_details[:8]}..."):
+                query_tx_details = f"""
+                MATCH (tx:Transaction {{hash: '{selected_tx_hash_for_details}'}})
+                OPTIONAL MATCH (addr_in:Address)-[s_in:SENT]->(tx)
+                OPTIONAL MATCH (tx)-[s_out:SENT_TO]->(addr_out:Address)
+                RETURN tx, COLLECT(DISTINCT addr_in.id) AS inputs, COLLECT(DISTINCT addr_out.id) AS outputs
+                """
+                try:
+                    with neo4j_driver.session() as session:
+                        result = session.run(query_tx_details).single()
+
+                    if result:
+                        tx_node = result["tx"]
+                        inputs = result["inputs"]
+                        outputs = result["outputs"]
+
+                        st.subheader(f"Transaction: {tx_node['hash'][:12]}...")
+                        st.json(tx_node.properties)
+
+                        st.markdown("##### Involved Addresses:")
+                        if inputs:
+                            st.write(f"**Input Addresses:**")
+                            for addr in inputs:
+                                st.code(addr)
+                        else:
+                            st.write("**No Input Addresses found in graph.**")
+
+                        if outputs:
+                            st.write(f"**Output Addresses:**")
+                            for addr in outputs:
+                                st.code(addr)
+                        else:
+                            st.write("**No Output Addresses found in graph.**")
+
+                        if tx_node.get("shapFeaturesJson"):
+                            st.markdown("##### SHAP Feature Contributions:")
+                            try:
+                                shap_features = json.loads(tx_node["shapFeaturesJson"])
+                                for feature, value in shap_features.items():
+                                    st.write(f"- **{feature}:** {value:.4f}")
+                            except json.JSONDecodeError:
+                                st.write("Invalid SHAP features JSON.")
+                        else:
+                            st.write("No SHAP features available for this transaction.")
+
+                        st.info("For more detailed graph visualization, use the Neo4j Browser at http://<VM_EXTERNAL_IP>:7474")
+
+                    else:
+                        st.warning(f"Transaction '{selected_tx_hash_for_details}' not found in the graph database.")
+                except Exception as e:
+                    st.error(f"Error querying Neo4j for transaction details: {e}")
+        else:
+            st.markdown("""
+            <div style="background-color: #2a2a2a; padding: 20px; border-radius: 10px; border: 1px solid #444; height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                 <img src="https://placehold.co/80x80/000/FFF?text=₿" style="border-radius: 50%; margin-bottom: 15px;">
-                <p style="text-align: center; color: #bbb;">Select a transaction to view details</p>
+                <p style="text-align: center; color: #bbb;">Select a transaction from the table to view details</p>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
 
 elif page_selection == "Alerts":
@@ -717,34 +906,33 @@ elif page_selection == "Alerts":
     
     st.markdown("---")
 
-    # Metrics for Security Alerts
+    # Metrics for Security Alerts (using live data)
     alert_metric_cols = st.columns(4)
-    total_alerts_count = 4 # Mock value
-    open_alerts_count = 2 # Mock value
-    critical_alerts_count = 2 # Mock value
-    investigating_alerts_count = 1 # Mock value
+    
+    metrics_alerts, _, _, _, _, _ = fetch_analytics_data_from_neo4j() # Re-use analytics metrics
 
     with alert_metric_cols[0]:
-        st.metric(label="Total Alerts", value=total_alerts_count)
+        st.metric(label="Total Alerts", value=metrics_alerts["total_alerts"])
     with alert_metric_cols[1]:
-        st.metric(label="Open", value=open_alerts_count)
+        st.metric(label="Open (24h)", value=metrics_alerts["active_alerts"])
     with alert_metric_cols[2]:
-        st.metric(label="Critical", value=critical_alerts_count)
+        st.metric(label="Critical", value=metrics_alerts["critical_alerts"])
     with alert_metric_cols[3]:
-        st.metric(label="Investigating", value=investigating_alerts_count)
+        # This metric would need specific tracking of alert statuses (e.g., 'investigating' property in Neo4j)
+        st.metric(label="Investigating", value="N/A") # Placeholder for now
 
     st.markdown("---")
 
     # Search and Filter Row for Alerts
     alert_search_filter_cols = st.columns([0.4, 0.2, 0.2, 0.2])
     with alert_search_filter_cols[0]:
-        st.text_input("Search alerts...", key="alert_search_input", label_visibility="collapsed")
+        alert_hash_search = st.text_input("Search alerts...", key="alert_search_input", label_visibility="collapsed")
     with alert_search_filter_cols[1]:
-        st.selectbox("All Status", ["All Status", "Open", "Closed", "Investigating"], key="alert_status_filter")
+        alert_status_filter = st.selectbox("All Status", ["All Status", "Open", "Closed", "Investigating"], key="alert_status_filter")
     with alert_search_filter_cols[2]:
-        st.selectbox("All Severity", ["All Severity", "Low", "Medium", "High", "Critical"], key="alert_severity_filter")
+        alert_severity_filter = st.selectbox("All Severity", ["All Severity", "Low", "Medium", "High", "Critical"], key="alert_severity_filter")
     with alert_search_filter_cols[3]:
-        st.selectbox("All Types", ["All Types", "Smurfing", "High Value", "Blacklisted Address", "Rapid Transactions", "Suspicious Pattern"], key="alert_type_filter")
+        alert_type_filter = st.selectbox("All Types", ["All Types", "Smurfing Rule", "High ML Score"], key="alert_type_filter")
 
     st.markdown("---")
 
@@ -753,372 +941,282 @@ elif page_selection == "Alerts":
 
     with alert_list_col:
         st.markdown("### ") # Empty header for alignment
-        # Fetch alerts from Neo4j for the list
-        alerts_data = []
-        if neo4j_driver:
-            try:
-                with neo4j_driver.session() as session:
-                    query = """
-                    MATCH (tx:Transaction)
-                    WHERE tx.ml_fraud_score IS NOT NULL AND tx.ml_fraud_score > 0.0
-                       OR tx.is_smurfing_rule = true
-                    RETURN tx
-                    ORDER BY tx.alert_timestamp_ms DESC
-                    LIMIT 100
-                    """
-                    result = session.run(query)
-                    for record in result:
-                        tx_node = record["tx"]
-                        # Map Neo4j node properties to the expected alert dictionary format
-                        alert_dict = {
-                            "transaction_hash": tx_node.get("hash"),
-                            "size": tx_node.get("size"),
-                            "num_inputs": tx_node.get("num_inputs"),
-                            "num_outputs": tx_node.get("num_outputs"),
-                            "total_input_value": tx_node.get("total_input_value"),
-                            "total_output_value": tx_node.get("total_output_value"),
-                            "transaction_fee": tx_node.get("transaction_fee"),
-                            "fee_per_byte": tx_node.get("fee_per_byte"),
-                            "ml_fraud_score": tx_node.get("ml_fraud_score"),
-                            "is_smurfing_rule": tx_node.get("is_smurfing_rule"),
-                            "transaction_timestamp": tx_node.get("transaction_timestamp"),
-                            "alert_timestamp_ms": tx_node.get("alert_timestamp_ms"),
-                            "shap_features_json": tx_node.get("shap_features_json", "[]"), # Ensure it's a string JSON
-                            "inputAddresses": [], # Placeholder, fetched in detail view
-                            "outputAddresses": [] # Placeholder, fetched in detail view
-                        }
-                        alerts_data.append(alert_dict)
-            except Exception as e:
-                st.error(f"Error fetching alerts from Neo4j: {e}. Please ensure Spark is writing alert data to Neo4j Transaction nodes with relevant properties.")
-                alerts_data = [] # Ensure alerts_data is empty on error
-        else:
-            st.warning("Neo4j driver not connected. Cannot fetch live alerts.")
-            alerts_data = [] # Ensure alerts_data is empty if no driver
+        with st.spinner("Fetching alerts..."):
+            alerts_data_df = fetch_alerts_from_neo4j(limit=50) # Fetch more for this view
 
-        # Generate mock alerts if no live data or for demonstration
-        if not alerts_data:
-            st.info("No live alerts from Neo4j. Displaying mock alerts for demonstration.")
-            alerts_data = [
-                {
-                    "transaction_hash": "0xabc123def4567890abc123def4567890abc123def4567890",
-                    "ml_fraud_score": 0.95, "is_smurfing_rule": True,
-                    "alert_timestamp_ms": int(time.time() * 1000) - random.randint(10000, 3600000),
-                    "type": "High Value",
-                    "description": "High-value transaction with suspicious pattern indicators",
-                    "risk_score_display": "95"
-                },
-                {
-                    "transaction_hash": "0xdef456ghi7890123def456ghi7890123def456ghi7890123",
-                    "ml_fraud_score": 0.90, "is_smurfing_rule": False,
-                    "alert_timestamp_ms": int(time.time() * 1000) - random.randint(10000, 3600000),
-                    "type": "Blacklisted Address",
-                    "description": "Transaction involving known blacklisted address with mixing service connection",
-                    "risk_score_display": "90"
-                },
-                {
-                    "transaction_hash": "0x1234567890abcdef1234567890abcdef1234567890abcd",
-                    "ml_fraud_score": 0.75, "is_smurfing_rule": False,
-                    "alert_timestamp_ms": int(time.time() * 1000) - random.randint(10000, 3600000),
-                    "type": "Rapid Transactions",
-                    "description": "Rapid transaction pattern detected from source address",
-                    "risk_score_display": "75"
-                },
-                {
-                    "transaction_hash": "0x567890abcdef1234567890abcdef1234567890abcdef",
-                    "ml_fraud_score": 0.60, "is_smurfing_rule": False,
-                    "alert_timestamp_ms": int(time.time() * 1000) - random.randint(10000, 3600000),
-                    "type": "Suspicious Pattern",
-                    "description": "Transaction exhibiting an unusual spending pattern.",
-                    "risk_score_display": "60"
-                }
-            ]
+            # Apply filters
+            if alert_hash_search:
+                alerts_data_df = alerts_data_df[alerts_data_df['Hash'].str.contains(alert_hash_search, case=False, na=False)]
+            if alert_severity_filter != "All Severity":
+                alerts_data_df = alerts_data_df[alerts_data_df['Risk_Level'] == alert_severity_filter]
+            if alert_type_filter != "All Types":
+                if alert_type_filter == "Smurfing Rule":
+                    alerts_data_df = alerts_data_df[alerts_data_df['Smurfing_Rule'] == True]
+                elif alert_type_filter == "High ML Score":
+                    alerts_data_df = alerts_data_df[alerts_data_df['ML_Score'] > 0.9] # Define "High ML Score" threshold
 
-        selected_alert_hash = None
-        for i, alert in enumerate(alerts_data):
-            # Determine alert severity for styling
-            alert_severity_class = "low"
-            if alert.get("ml_fraud_score", 0) > 0.9 or alert.get("is_smurfing_rule", False):
-                alert_severity_class = "critical"
-            elif alert.get("ml_fraud_score", 0) > 0.7:
-                alert_severity_class = "high"
-            elif alert.get("ml_fraud_score", 0) > 0.5:
-                alert_severity_class = "medium"
-            
-            # Use 'type' from mock data, or default if not present (for Neo4j data)
-            alert_type = alert.get("type", "Detected Fraud") 
-            # Use 'description' from mock data, or generate a generic one for Neo4j data
-            alert_description = alert.get("description", "Fraud alert based on ML model.")
-            if alert.get("is_smurfing_rule"):
-                alert_description = "Smurfing rule triggered: multiple small outputs."
-            elif alert.get("ml_fraud_score", 0) > 0.9:
-                alert_description = "High-value transaction with suspicious ML score."
+            if not alerts_data_df.empty:
+                # Sort by criticality and then timestamp
+                alerts_data_df['Sort_Order'] = alerts_data_df['Risk_Level'].map({"Critical": 0, "High": 1, "Medium": 2, "Low": 3})
+                alerts_data_df = alerts_data_df.sort_values(by=['Sort_Order', 'Timestamp'], ascending=[True, False])
 
-            alert_timestamp = pd.to_datetime(alert.get("alert_timestamp_ms", time.time()*1000), unit='ms').strftime("%b %d, %H:%M")
-            tx_hash_display = alert.get("transaction_hash", "N/A")[:10] + "..."
-
-            col_action_key = f"view_details_btn_{i}"
-            
-            with st.container():
-                st.markdown(f"""
-                <div class="alert-list-card">
-                    <div class="alert-content">
-                        <h5>
-                            <span class="alert-category {alert_severity_class}">{alert_severity_class.capitalize()}</span>
-                            Alert: {html.escape(tx_hash_display)}
-                        </h5>
-                        <p>{html.escape(alert_description)}</p>
-                        <div class="alert-meta">
-                            <span>Type: {html.escape(alert_type)}</span> | 
-                            <span>Time: {html.escape(alert_timestamp)}</span>
+                for index, alert in alerts_data_df.iterrows():
+                    alert_category = alert['Risk_Level'].lower()
+                    
+                    description = "Unusual transaction pattern detected."
+                    if alert.get("Smurfing_Rule"):
+                        description = "Smurfing rule triggered: multiple small outputs."
+                    elif alert.get("ML_Score", 0) > 0.9:
+                        description = "High-value transaction with suspicious ML score."
+                    
+                    st.markdown(f"""
+                    <div class="alert-list-card">
+                        <div class="alert-content">
+                            <h5>
+                                <span class="alert-category {alert_category}">{alert_category.capitalize()}</span>
+                                Alert: {html.escape(alert['Hash'][:12])}...
+                            </h5>
+                            <p>{html.escape(description)}</p>
+                            <p class="alert-meta">
+                                ML Score: {alert['ML_Score']:.2f} | Smurfing Rule: {alert['Smurfing_Rule']} |
+                                Time: {alert['Timestamp'].strftime("%b %d, %H:%M")}
+                            </p>
+                        </div>
+                        <div class="alert-actions">
+                            <button onclick="window.parent.postMessage({{type: 'streamlit:setComponentValue', key: 'selected_alert_hash', value: '{alert['Hash']}'}}, '*')" style="background-color:#17a2b8; color:white; border-radius:5px; padding:8px 12px; border:none; cursor:pointer;">View Details</button>
                         </div>
                     </div>
-                    <div class="alert-actions">
-                        <button class="stButton" key="{col_action_key}">View Details</button>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Capture button click to display details
-                if st.session_state.get(col_action_key):
-                    selected_alert_hash = alert.get("transaction_hash")
-                    # Store the selected alert in session state for details display
-                    st.session_state["selected_alert_for_details"] = alert
-                    st.session_state[col_action_key] = False # Reset button state
-                    st.rerun() # Rerun to update the details column
-
-        if selected_alert_hash is None and "selected_alert_for_details" in st.session_state:
-            # If nothing new clicked, but something was previously selected, show that
-            selected_alert = st.session_state["selected_alert_for_details"]
-            selected_alert_hash = selected_alert["transaction_hash"]
-        
-        st.markdown("---")
-        st.button("Load More Alerts", key="load_more_alerts_btn")
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("No alerts found matching your criteria.")
 
     with alert_details_col:
         st.markdown("### Alert Details")
-        if selected_alert_hash:
-            st.write(f"Displaying details for: **{html.escape(selected_alert_hash[:12])}...**")
-            
-            selected_alert = st.session_state.get("selected_alert_for_details")
-            if selected_alert:
-                st.markdown(f"**Transaction Hash:** `{html.escape(selected_alert.get('transaction_hash', 'N/A'))}`")
-                
-                severity = "Low"
-                if selected_alert.get("ml_fraud_score", 0) > 0.9 or selected_alert.get("is_smurfing_rule", False):
-                    severity = "Critical"
-                elif selected_alert.get("ml_fraud_score", 0) > 0.7:
-                    severity = "High"
-                elif selected_alert.get("ml_fraud_score", 0) > 0.5:
-                    severity = "Medium"
-                
-                st.markdown(f"**Severity:** <span class='risk-score {severity.lower()}'>{severity}</span>", unsafe_allow_html=True)
-                
-                st.markdown(f"**ML Fraud Score:** {selected_alert.get('ml_fraud_score', 'N/A'):.4f}")
-                st.markdown(f"**Smurfing Rule Triggered:** {'Yes' if selected_alert.get('is_smurfing_rule') else 'No'}")
-                st.markdown(f"**Alert Time:** {html.escape(pd.to_datetime(selected_alert.get('alert_timestamp_ms', 0), unit='ms').strftime('%Y-%m-%d %H:%M:%S'))}")
-                st.markdown(f"**Transaction Time:** {html.escape(pd.to_datetime(selected_alert.get('transaction_timestamp', 0), unit='ms').strftime('%Y-%m-%d %H:%M:%S'))}")
-                
-                st.markdown("---")
-                st.markdown("#### Transaction Details:")
-                st.markdown(f"**Size:** {selected_alert.get('size', 'N/A')} bytes")
-                st.markdown(f"**Number of Inputs:** {selected_alert.get('num_inputs', 'N/A')}")
-                st.markdown(f"**Number of Outputs:** {selected_alert.get('num_outputs', 'N/A')}")
-                st.markdown(f"**Total Input Value:** {selected_alert.get('total_input_value', 'N/A'):.8f} BTC")
-                st.markdown(f"**Total Output Value:** {selected_alert.get('total_output_value', 'N/A'):.8f} BTC")
-                st.markdown(f"**Transaction Fee:** {selected_alert.get('transaction_fee', 'N/A'):.8f} BTC")
-                st.markdown(f"**Fee per Byte:** {selected_alert.get('fee_per_byte', 'N/A'):.4f} sat/byte")
+        if 'selected_alert_hash' not in st.session_state:
+            st.session_state['selected_alert_hash'] = None
 
-                st.markdown("---")
-                st.markdown("#### SHAP Feature Contributions:")
+        # This JavaScript snippet captures clicks on the "View Details" button and updates session state
+        st.components.v1.html(
+            """
+            <script>
+            window.addEventListener('message', event => {
+                if (event.data.type === 'streamlit:setComponentValue' && event.data.key === 'selected_alert_hash') {
+                    const hash = event.data.value;
+                    window.parent.postMessage(
+                        {
+                            type: 'streamlit:setComponentValue',
+                            args: {
+                                key: 'selected_alert_hash',
+                                value: hash,
+                            },
+                        },
+                        '*'
+                    );
+                }
+            });
+            </script>
+            """,
+            height=0, width=0
+        )
+
+        selected_alert_hash_for_details = st.session_state.selected_alert_hash
+
+        if selected_alert_hash_for_details:
+            with st.spinner(f"Fetching alert details for {selected_alert_hash_for_details[:8]}..."):
+                query_alert_details = f"""
+                MATCH (tx:Transaction {{hash: '{selected_alert_hash_for_details}'}})
+                OPTIONAL MATCH (addr_in:Address)-[s_in:SENT]->(tx)
+                OPTIONAL MATCH (tx)-[s_out:SENT_TO]->(addr_out:Address)
+                RETURN tx, COLLECT(DISTINCT addr_in.id) AS inputs, COLLECT(DISTINCT addr_out.id) AS outputs
+                """
                 try:
-                    shap_features = json.loads(selected_alert.get("shap_features_json", "{}"))
-                    if shap_features:
-                        for feature, value in shap_features.items():
-                            st.write(f"- **{html.escape(feature)}:** {value:.4f}")
-                    else:
-                        st.info("No SHAP feature data available for this alert.")
-                except json.JSONDecodeError:
-                    st.error("Error decoding SHAP features JSON.")
-                    st.write(html.escape(selected_alert.get("shap_features_json", "Invalid JSON")))
+                    with neo4j_driver.session() as session:
+                        result = session.run(query_alert_details).single()
 
-                st.markdown("---")
-                st.markdown("#### Actions:")
+                    if result:
+                        tx_node = result["tx"]
+                        inputs = result["inputs"]
+                        outputs = result["outputs"]
 
-                # Generate SAR button
-                if st.button("Generate SAR (Suspicious Activity Report)"):
-                    with st.spinner("Generating SAR..."):
-                        sar_payload = {
-                            "transaction_hash": selected_alert.get("transaction_hash", "N/A"),
-                            "ml_fraud_score": selected_alert.get("ml_fraud_score", 0.0),
-                            "is_smurfing_rule": selected_alert.get("is_smurfing_rule", False),
-                            "description": selected_alert.get("description", "Generated from suspicious activity alert."),
-                            "shap_features": selected_alert.get("shap_features_json", "{}")
+                        st.subheader(f"Alert: {tx_node['hash'][:12]}...")
+                        st.markdown(f"**ML Fraud Score:** {tx_node.get('mlFraudScore', 'N/A'):.2f}")
+                        st.markdown(f"**Smurfing Rule Triggered:** {tx_node.get('isSmurfingRule', 'N/A')}")
+                        st.markdown(f"**Transaction Timestamp:** {pd.to_datetime(tx_node.get('timestamp', 0), unit='ms').strftime('%Y-%m-%d %H:%M:%S')}")
+                        st.markdown(f"**Total Input Value (BTC):** {float(tx_node.get('totalInputValue', 0)) / 1e8:.4f}")
+                        st.markdown(f"**Total Output Value (BTC):** {float(tx_node.get('totalOutputValue', 0)) / 1e8:.4f}")
+                        st.markdown(f"**Transaction Fee (BTC):** {float(tx_node.get('fee', 0)) / 1e8:.8f}")
+                        st.markdown(f"**Fee Per Byte:** {tx_node.get('feePerByte', 'N/A'):.4f}")
+
+                        st.markdown("##### Involved Addresses:")
+                        if inputs:
+                            st.write(f"**Input Addresses:**")
+                            for addr in inputs:
+                                st.code(addr)
+                        else:
+                            st.write("**No Input Addresses found in graph.**")
+
+                        if outputs:
+                            st.write(f"**Output Addresses:**")
+                            for addr in outputs:
+                                st.code(addr)
+                        else:
+                            st.write("**No Output Addresses found in graph.**")
+
+                        if tx_node.get("shapFeaturesJson"):
+                            st.markdown("##### SHAP Feature Contributions:")
+                            try:
+                                shap_features = json.loads(tx_node["shapFeaturesJson"])
+                                # Sort SHAP features by absolute value for better readability
+                                sorted_shap = sorted(shap_features.items(), key=lambda item: abs(item[1]), reverse=True)
+                                for feature, value in sorted_shap:
+                                    st.write(f"- **{feature}:** {value:.4f}")
+                            except json.JSONDecodeError:
+                                st.write("Invalid SHAP features JSON.")
+                        else:
+                            st.write("No SHAP features available for this transaction.")
+
+                        st.markdown("---")
+                        st.markdown("##### Generate SAR Draft with LLM:")
+                        sar_alert_data = {
+                            "transaction_hash": tx_node.get('hash'),
+                            "ml_fraud_score": tx_node.get('mlFraudScore'),
+                            "is_smurfing_rule": tx_node.get('isSmurfingRule'),
+                            "num_inputs": tx_node.get('vin_sz'),
+                            "num_outputs": tx_node.get('vout_sz'),
+                            "total_input_value": tx_node.get('totalInputValue'),
+                            "total_output_value": tx_node.get('totalOutputValue'),
+                            "transaction_fee": tx_node.get('fee'),
+                            "fee_per_byte": tx_node.get('feePerByte'),
+                            "shap_features_json": tx_node.get('shapFeaturesJson', '[]')
                         }
-                        try:
-                            response = requests.post(LLM_SERVICE_URL, json=sar_payload)
-                            if response.status_code == 200:
-                                sar_data = response.json()
-                                st.success("SAR Generated Successfully!")
-                                st.json(sar_data) # Display the generated SAR
-                            else:
-                                st.error(f"Failed to generate SAR: {response.status_code} - {response.text}")
-                        except requests.exceptions.ConnectionError as ce:
-                            st.error(f"Could not connect to LLM service: {ce}. Please ensure the Flask LLM service is running and accessible at {LLM_SERVICE_URL}.")
-                        except Exception as e:
-                            st.error(f"An unexpected error occurred while generating SAR: {e}")
-
-                st.button("Mark as False Positive")
-                st.button("Escalate to Manual Review")
-            else:
-                st.info("Select an alert from the list to view its details.")
+                        if st.button("Generate SAR Draft"):
+                            with st.spinner("Generating SAR..."):
+                                sar_draft = generate_sar_with_llm(sar_alert_data)
+                                st.text_area("SAR Draft", sar_draft, height=300)
+                    else:
+                        st.warning(f"Alert transaction '{selected_alert_hash_for_details}' not found in the graph database.")
+                except Exception as e:
+                    st.error(f"Error querying Neo4j for alert details: {e}")
         else:
-            st.info("Select an alert from the list to view its details.")
+            st.markdown("""
+            <div style="background-color: #2a2a2a; padding: 20px; border-radius: 10px; border: 1px solid #444; height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <img src="https://placehold.co/80x80/000/FFF?text=🚨" style="border-radius: 50%; margin-bottom: 15px;">
+                <p style="text-align: center; color: #bbb;">Select an alert from the list to view details and generate SAR</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 
 elif page_selection == "Analytics":
     st.header("Fraud Analytics")
-    st.markdown("Deep dive into fraud detection trends and patterns")
-    st.markdown("---")
+    st.markdown("Deep dive into fraud trends and risk distribution")
 
-    fraud_trends_df, risk_dist_df, alert_types_df, top_alert_types, top_risk_addresses = generate_mock_analytics_data()
-
-    # Key Analytics Metrics
-    st.subheader("Key Metrics Overview")
-    metrics_cols = st.columns(4)
-    with metrics_cols[0]:
-        st.markdown(f"""
-        <div class="analytics-card">
-            <p class="analytics-metric-label">Total Frauds Detected</p>
-            <p class="analytics-metric-value">{random.randint(10, 50)}</p>
-            <p class="analytics-metric-delta">+{random.randint(1, 5)} last 7 days</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with metrics_cols[1]:
-        st.markdown(f"""
-        <div class="analytics-card">
-            <p class="analytics-metric-label">Avg. Fraud Score</p>
-            <p class="analytics-metric-value">{random.uniform(0.7, 0.9):.2f}</p>
-            <p class="analytics-metric-delta">Target: 0.85</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with metrics_cols[2]:
-        st.markdown(f"""
-        <div class="analytics-card">
-            <p class="analytics-metric-label">False Positive Rate</p>
-            <p class="analytics-metric-value">{random.uniform(0.01, 0.05):.2%}</p>
-            <p class="analytics-metric-delta">Improved by 0.5%</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with metrics_cols[3]:
-        st.markdown(f"""
-        <div class="analytics-card">
-            <p class="analytics-metric-label">Time to Detect (Avg)</p>
-            <p class="analytics-metric-value">{random.randint(5, 60)}s</p>
-            <p class="analytics-metric-delta">Faster by 10s</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # Top row with refresh button
+    analytics_top_row_cols = st.columns([0.8, 0.2])
+    with analytics_top_row_cols[1]:
+        if st.button("Refresh", key="analytics_refresh_btn_top"):
+            st.cache_data.clear() # Clear cache to refetch data
+            st.rerun()
     
     st.markdown("---")
 
-    # Fraud Detection Trends
-    st.subheader("Fraud Detection Trends (Last 7 Days)")
-    st.line_chart(fraud_trends_df[["Total Alerts", "Total Transactions"]], use_container_width=True)
-    st.bar_chart(fraud_trends_df["Avg Fraud Rate"], use_container_width=True)
+    # Fetch analytics data
+    metrics_analytics, avg_risk_trends_df, high_risk_tx_trends_df, risk_distribution_df, top_alert_types_list, top_risk_addresses_list = fetch_analytics_data_from_neo4j()
+
+    # Metrics for Analytics
+    analytics_metric_cols = st.columns(4)
+    with analytics_metric_cols[0]:
+        st.metric(label="Total Alerts", value=metrics_analytics["total_alerts"])
+    with analytics_metric_cols[1]:
+        st.metric(label="Avg Risk Score (All Time)", value=f"{metrics_analytics['avg_risk_score']:.1f}")
+    with analytics_metric_cols[2]:
+        st.metric(label="Critical Alerts", value=metrics_analytics["critical_alerts"])
+    with analytics_metric_cols[3]:
+        st.metric(label="High Risk Addresses", value=metrics_analytics["high_risk_addresses"])
 
     st.markdown("---")
 
-    # Risk Score Distribution & Top Alert Types
-    risk_alert_cols = st.columns(2)
-    with risk_alert_cols[0]:
-        st.subheader("Risk Score Distribution")
-        st.markdown(f"""
-        <div class="analytics-card">
-            <h4>Risk Score Distribution</h4>
-            {risk_dist_df.to_html(index=False, classes='st-table', escape=False)}
-        </div>
-        """, unsafe_allow_html=True)
-        # Re-using CSS for tables
-        st.markdown("""
-        <style>
-        .st-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .st-table th, .st-table td {
-            border: 1px solid #3a3a3a;
-            padding: 8px;
-            text-align: left;
-            color: #e0e0e0;
-        }
-        .st-table th {
-            background-color: #3a3a3a;
-            font-weight: bold;
-        }
-        .st-table tr:nth-child(even) {
-            background-color: #2e2e2e;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+    # Fraud Detection Trends
+    st.subheader("Fraud Detection Trends")
+    trends_analytics_col1, trends_analytics_col2 = st.columns(2)
 
-    with risk_alert_cols[1]:
+    with trends_analytics_col1:
+        st.markdown("#### Average Risk Score by Hour (Last 24h)")
+        if not avg_risk_trends_df.empty:
+            st.line_chart(avg_risk_trends_df, use_container_width=True)
+        else:
+            st.info("No average risk score trend data available for the last 24 hours.")
+
+    with trends_analytics_col2:
+        st.markdown("#### High Risk Transactions (Last 24h)")
+        if not high_risk_tx_trends_df.empty:
+            st.line_chart(high_risk_tx_trends_df, use_container_width=True)
+        else:
+            st.info("No high risk transaction trend data available for the last 24 hours.")
+    
+    st.markdown("---")
+
+    # Risk Score Distribution & Top Alert Types
+    risk_dist_col, top_alerts_col = st.columns(2)
+
+    with risk_dist_col:
+        st.subheader("Risk Score Distribution")
+        if not risk_distribution_df.empty:
+            st.dataframe(risk_distribution_df, hide_index=True, use_container_width=True)
+        else:
+            st.info("No risk distribution data available.")
+
+    with top_alerts_col:
         st.subheader("Top Alert Types")
-        st.bar_chart(alert_types_df.set_index("Type"), use_container_width=True)
-        st.markdown("---")
-        st.markdown("##### Alert Type Breakdown")
-        for alert_type in top_alert_types:
-            st.markdown(f"""
-            <div class="top-risk-address-item">
-                <div class="address-info">
-                    <div class="address-hash">{html.escape(alert_type['type'])}</div>
-                    <div class="tx-count">{html.escape(str(alert_type['count']))} incidents ({html.escape(alert_type['percentage'])})</div>
+        if top_alert_types_list:
+            for alert_type in top_alert_types_list:
+                st.markdown(f"""
+                <div class="top-risk-address-item">
+                    <div class="address-info">
+                        <div class="address-hash">{html.escape(alert_type['type'])}</div>
+                        <div class="tx-count">{alert_type['count']} Alerts ({alert_type['percentage']})</div>
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No top alert types data available.")
 
     st.markdown("---")
 
     # Top Risk Addresses
     st.subheader("Top Risk Addresses")
-    st.markdown("""
-    <div class="analytics-card">
-        <h4>Most Frequent High-Risk Addresses</h4>
-        <div>
-    """, unsafe_allow_html=True)
-    for address_data in top_risk_addresses:
-        st.markdown(f"""
+    if top_risk_addresses_list:
+        for item in top_risk_addresses_list:
+            st.markdown(f"""
             <div class="top-risk-address-item">
-                <span class="rank">#{html.escape(str(address_data['rank']))}</span>
+                <span class="rank">#{item['rank']}</span>
                 <div class="address-info">
-                    <div class="address-hash">{html.escape(address_data['address'])}</div>
-                    <div class="tx-count">{html.escape(str(address_data['transactions']))} transactions</div>
+                    <div class="address-hash">{html.escape(item['address'][:12])}...</div>
+                    <div class="tx-count">{item['transactions']} High-Risk Transactions</div>
                 </div>
-                <span class="risk-score {html.escape(address_data['risk_level'])}">{html.escape(address_data['risk_level'].capitalize())}</span>
+                <span class="risk-score {item['risk_level']}">{item['risk_level'].capitalize()}</span>
             </div>
-        """, unsafe_allow_html=True)
-    st.markdown("</div></div>", unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+    else:
+        st.info("No top risk addresses data available.")
+
 
 elif page_selection == "Settings":
     st.header("Settings")
-    st.markdown("Configure application parameters and integrations.")
+    st.markdown("Configure application parameters")
 
-    st.subheader("Neo4j Connection")
-    st.text_input("Neo4j URI", value=NEO4J_URI, key="setting_neo4j_uri")
-    st.text_input("Neo4j Username", value=NEO4J_USERNAME, key="setting_neo4j_username")
-    st.text_input("Neo4j Password", type="password", value=NEO4J_PASSWORD, key="setting_neo4j_password")
-    if st.button("Save Neo4j Settings"):
-        # In a real app, you'd save these to a config file or environment variables
-        st.success("Neo4j settings saved (requires restart to take effect).")
-        st.warning("For changes to take full effect, you might need to restart the Streamlit application.")
+    st.subheader("Neo4j Connection Settings")
+    st.info(f"Current Neo4j URI: `{NEO4J_URI}`")
+    st.info(f"Current Neo4j Username: `{NEO4J_USERNAME}`")
+    st.warning("To change Neo4j settings, please modify the `docker-compose.yml` file and rebuild the Streamlit container.")
 
-    st.subheader("LLM Service Configuration")
-    st.text_input("LLM Service URL", value=LLM_SERVICE_URL, key="setting_llm_url")
-    if st.button("Save LLM Settings"):
-        st.success("LLM service settings saved (requires restart to take effect).")
-        st.warning("For changes to take full effect, you might need to restart the Streamlit application.")
+    st.subheader("LLM Service Settings")
+    st.info(f"Current LLM Service URL: `{LLM_SERVICE_URL}`")
+    st.warning("To change LLM Service URL, please modify the `docker-compose.yml` file and rebuild the Streamlit container.")
 
-    st.subheader("Mock Data Generation")
-    st.write("Control parameters for mock data generation (if live data is unavailable).")
-    st.slider("Number of mock transactions in Mempool", min_value=1, max_value=20, value=5, key="num_mock_mempool_tx")
-    st.slider("Number of mock transactions in Monitor", min_value=5, max_value=50, value=10, key="num_mock_monitor_tx")
-    st.info("These settings primarily affect the mock data displayed when Neo4j is not providing live data.")
+    st.subheader("Data Retention")
+    st.write("Data retention policies are managed by your Neo4j and Kafka configurations.")
+    st.info("Consider configuring Kafka topic retention and Neo4j database sizing for long-term data storage.")
+
+    st.markdown("---")
+    st.write("For advanced configurations, please refer to the project's documentation.")
+
