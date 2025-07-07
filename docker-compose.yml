@@ -1,3 +1,8 @@
+# docker-compose.yml  — fully rewritten with the last missing fix
+# --------------------------------------------------------------
+# • Adds --py-files so every Spark executor receives model.py & fraud_rules.py
+# • Nothing else changed (your earlier fixes remain intact)
+
 networks:
   synapse-net: {}
 
@@ -9,7 +14,7 @@ volumes:
   spark_master_data:
 
 services:
-  # ----------------- ZOOKEEPER & KAFKA -----------------
+  # -------------- ZOOKEEPER & KAFKA ----------------
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -32,7 +37,7 @@ services:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
     networks: [synapse-net]
-    ports: ["9092:9092","29092:29092"]
+    ports: ["9092:9092", "29092:29092"]
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -47,7 +52,7 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL","kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -64,26 +69,26 @@ services:
       - bash
       - -c
       - |
-        echo 'Waiting for Kafka…' && 
-        kafka-topics --bootstrap-server kafka:29092 --list >/dev/null 2>&1 && 
+        echo 'Waiting for Kafka…' && \
+        kafka-topics --bootstrap-server kafka:29092 --list >/dev/null 2>&1 && \
         kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists \
-          --topic transactions --partitions 1 --replication-factor 1 && 
+          --topic transactions --partitions 1 --replication-factor 1 && \
         echo '✔️  topic ready'
     restart: "no"
 
-  # ----------------- NEO4J -----------------
+  # ------------------ NEO4J ------------------------
   neo4j:
     image: neo4j:5.19.0-community
     container_name: neo4j
     networks: [synapse-net]
-    ports: ["7474:7474","7687:7687"]
+    ports: ["7474:7474", "7687:7687"]
     volumes:
       - neo4j_data:/data
     environment:
       NEO4J_AUTH: neo4j/password
       NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
     healthcheck:
-      test: ["CMD-SHELL","wget --quiet --spider http://localhost:7474 || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:7474 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -105,12 +110,12 @@ services:
     command: /app/init_neo4j.sh
     restart: on-failure
 
-  # ----------------- SPARK CLUSTER -----------------
+  # ------------------ SPARK CLUSTER ---------------
   spark-master:
     build: ./spark_app
     container_name: spark-master
     networks: [synapse-net]
-    ports: ["8080:8080","7077:7077"]
+    ports: ["8080:8080", "7077:7077"]
     entrypoint: [""]
     command:
       - /opt/bitnami/spark/bin/spark-class
@@ -124,7 +129,7 @@ services:
       - spark_master_data:/opt/bitnami/spark/data
       - ./spark_app:/app
     healthcheck:
-      test: ["CMD-SHELL","nc -z localhost 7077"]
+      test: ["CMD-SHELL", "nc -z localhost 7077"]
       interval: 10s
       timeout: 10s
       retries: 20
@@ -170,6 +175,8 @@ services:
       - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0
       - --jars
       - /opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
+      - --py-files
+      - /app/model.py,/app/fraud_rules.py           # ←―― the critical addition
       - /app/streaming_app.py
     environment:
       KAFKA_BROKER: kafka:29092
@@ -181,7 +188,7 @@ services:
       USER: spark
     restart: on-failure
 
-  # ----------------- DATA GENERATOR -----------------
+  # ---------------- DATA GENERATOR ----------------
   data-generator:
     build: ./data
     container_name: data-generator
@@ -196,7 +203,7 @@ services:
       bash -c "python3 bitcoin_mempool_consumer.py | python3 producer_app.py"
     restart: on-failure
 
-  # ----------------- AI SERVICE & DASHBOARD ---------
+  # ---------- AI SERVICE & DASHBOARD --------------
   flask-llm-service:
     build: ./ai_service
     container_name: flask-llm-service
@@ -205,7 +212,7 @@ services:
     depends_on:
       neo4j:
         condition: service_healthy
-    command: ["gunicorn","-b","0.0.0.0:5000","app:app","--workers","2"]
+    command: ["gunicorn", "-b", "0.0.0.0:5000", "app:app", "--workers", "2"]
     environment:
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
