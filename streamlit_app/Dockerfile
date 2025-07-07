@@ -1,34 +1,29 @@
-# -------------------------------------------------
-# Builds the Spark + app image
-# -------------------------------------------------
-    FROM bitnami/spark:3.5.0
+    # streamlit_app/Dockerfile
+    # This Dockerfile builds the image for your Streamlit dashboard.
 
-    USER root
+    # Use a lightweight Python base image
+    FROM python:3.9-slim-buster
+
+    # Set the working directory inside the container
     WORKDIR /app
-    
-    # Utilities (netcat for health-checks)
-    RUN apt-get update && \
-        apt-get install -y netcat-traditional && \
-        rm -rf /var/lib/apt/lists/*
-    
-    # Python deps
+
+    # Install necessary system dependencies for Streamlit/Python packages
+    # For example, if some Python packages have native dependencies
+    # RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+
+    # Copy the requirements file into the container
     COPY requirements.txt .
-    RUN pip install --upgrade pip && \
-        pip install --no-cache-dir -r requirements.txt
+
+    # Install Python dependencies
+    RUN pip install --no-cache-dir -r requirements.txt
+
+    # Copy your Streamlit application code
+    COPY streamlit_app.py .
+
+    # Expose the Streamlit default port
+    EXPOSE 8501
+
+    # Command to run the Streamlit application
+    # Streamlit runs on 0.0.0.0 to be accessible from outside the container
+    CMD ["streamlit", "run", "streamlit_app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
     
-    # Application code
-    COPY streaming_app.py .
-    COPY model.py .
-    COPY fraud_rules.py .
-    
-    # Make the main script executable (helps when you run it directly)
-    RUN chmod +x streaming_app.py
-    
-    # Expose Spark master UI just in case container is used standalone
-    EXPOSE 8080
-    
-    # Drop privileges to the unprivileged spark user bundled by Bitnami
-    USER 1001
-    
-    # Fallback interactive shell (compose overrides this with spark-submit)
-    CMD ["/opt/bitnami/spark/bin/spark-shell"]
