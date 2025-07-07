@@ -1,257 +1,288 @@
+```python
 # spark_app/streaming_app.py
+#
+# End-to-end Spark Structured-Streaming job for Synapse-Lite:
+#   • Consumes Bitcoin-style transactions from Kafka
+#   • Engineers features, scores a Random-Forest model, applies “smurfing” rule
+#   • Writes full Transaction+Address graph to Neo4j with all properties set
+#   • Sends high-risk alerts to the LLM micro-service for SAR drafting
+#
+# ---------------------------------------------------------------------------
+
 import os
 import sys
 import json
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, lit, struct, to_json, udf
-from pyspark.sql.types import StructType, StringType, LongType, DoubleType, BooleanType, ArrayType, MapType
-from pyspark.ml.feature import VectorAssembler
-from pyspark.ml.classification import RandomForestClassificationModel
-from pyspark.ml.linalg import Vectors
+import time
+from typing import Any, Dict, List
+
+import pandas as pd
 from neo4j import GraphDatabase, basic_auth
-import time # For retry logic
-from model import load_model, preprocess_features, explain_prediction # Import from model.py
-from fraud_rules import apply_smurfing_rule # Import from fraud_rules.py
-import pandas as pd # Needed for toPandas and apply
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import from_json, col, udf
+from pyspark.sql.types import (
+    StructType, StringType, LongType, DoubleType, BooleanType,
+    ArrayType, MapType
+)
+from pyspark.ml.linalg import Vectors   # noqa: F401  (imported for model utils)
 
-# --- Environment Variables ---
-KAFKA_BROKER = os.environ.get('KAFKA_BROKER', 'kafka:29092')
-KAFKA_TOPIC = os.environ.get('KAFKA_TOPIC', 'transactions')
-NEO4J_URI = os.environ.get('NEO4J_URI', 'bolt://neo4j:7687')
-NEO4J_USERNAME = os.environ.get('NEO4J_USERNAME', 'neo4j')
-NEO4J_PASSWORD = os.environ.get('NEO4J_PASSWORD', 'password')
-LLM_SERVICE_URL = os.environ.get('LLM_SERVICE_URL', 'http://flask-llm-service:5000/generate-sar')
+# Project-local helpers
+from model import load_model, preprocess_features, explain_prediction
+from fraud_rules import apply_smurfing_rule
 
-# --- Spark Session Initialization ---
-print("Initializing Spark Session...")
-spark = SparkSession.builder \
-    .appName("BitcoinFraudDetection") \
-    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0") \
-    .config("spark.jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar") \
-    .config("spark.driver.extraJavaOptions", "-Dlog4j.configuration=file:/opt/bitnami/spark/conf/log4j2.properties") \
-    .config("spark.executor.extraJavaOptions", "-Dlog4j.configuration=file:/opt/bitnami/spark/conf/log4j2.properties") \
+# ---------------------------------------------------------------------------
+# 1. Environment
+# ---------------------------------------------------------------------------
+
+KAFKA_BROKER     = os.environ.get("KAFKA_BROKER",  "kafka:29092")
+KAFKA_TOPIC      = os.environ.get("KAFKA_TOPIC",   "transactions")
+NEO4J_URI        = os.environ.get("NEO4J_URI",     "bolt://neo4j:7687")
+NEO4J_USERNAME   = os.environ.get("NEO4J_USERNAME", "neo4j")
+NEO4J_PASSWORD   = os.environ.get("NEO4J_PASSWORD", "password")
+LLM_SERVICE_URL  = os.environ.get("LLM_SERVICE_URL",
+                                  "http://flask-llm-service:5000/generate-sar")
+
+# ---------------------------------------------------------------------------
+# 2. Spark session
+# ---------------------------------------------------------------------------
+
+print("⇢ Initialising Spark …")
+spark = (
+    SparkSession.builder
+    .appName("BitcoinFraudDetection")
+    .config("spark.jars.packages",
+            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0")
+    .config("spark.jars",
+            "/opt/bitnami/spark/jars/"
+            "neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar")
+    .config("spark.driver.extraJavaOptions",
+            "-Dlog4j.configuration=file:/opt/bitnami/spark/conf/log4j2.properties")
+    .config("spark.executor.extraJavaOptions",
+            "-Dlog4j.configuration=file:/opt/bitnami/spark/conf/log4j2.properties")
     .getOrCreate()
+)
+spark.sparkContext.setLogLevel("WARN")
+print("✓ Spark session ready.")
 
-spark.sparkContext.setLogLevel("WARN") # Reduce verbosity of Spark logs
-print("Spark Session initialized.")
+# ---------------------------------------------------------------------------
+# 3. Neo4j driver (with retry)
+# ---------------------------------------------------------------------------
 
-# --- Neo4j Driver Initialization with Retry ---
+print(f"⇢ Connecting to Neo4j at {NEO4J_URI} …")
 neo4j_driver = None
-print(f"Attempting to connect to Neo4j at {NEO4J_URI}...")
-for i in range(10): # Retry 10 times
+for attempt in range(1, 11):
     try:
-        neo4j_driver = GraphDatabase.driver(NEO4J_URI, auth=basic_auth(NEO4J_USERNAME, NEO4J_PASSWORD))
-        neo4j_driver.verify_connectivity() # Verify connection immediately
-        print("Neo4j driver initialized and connected successfully.")
+        neo4j_driver = GraphDatabase.driver(
+            NEO4J_URI, auth=basic_auth(NEO4J_USERNAME, NEO4J_PASSWORD)
+        )
+        neo4j_driver.verify_connectivity()
+        print("✓ Neo4j connection established.")
         break
-    except Exception as e:
-        print(f"Neo4j connection attempt {i+1}/10 failed: {e}. Retrying in 10 seconds...", file=sys.stderr)
+    except Exception as exc:
+        print(f"✗ Attempt {attempt}/10 failed: {exc}", file=sys.stderr)
         time.sleep(10)
-if not neo4j_driver:
-    print("Failed to connect to Neo4j after multiple retries. Exiting Spark application.", file=sys.stderr)
+
+if neo4j_driver is None:
+    print("‼ Could not connect to Neo4j – exiting.", file=sys.stderr)
     sys.exit(1)
 
-# --- Load ML Model ---
+# ---------------------------------------------------------------------------
+# 4. Load (dummy) ML model
+# ---------------------------------------------------------------------------
+
 try:
-    ml_model = load_model("/app/bitcoin_fraud_model.pkl") # Path to dummy model
-    print("ML Model loaded successfully.")
-except Exception as e:
-    print(f"Error loading ML model: {e}. ML predictions will be skipped.", file=sys.stderr)
+    ml_model = load_model("/app/bitcoin_fraud_model.pkl")
+    print("✓ ML model loaded.")
+except Exception as exc:
+    print(f"⚠ ML model load failed – scoring disabled: {exc}", file=sys.stderr)
     ml_model = None
 
-# --- Define Kafka Schema for Bitcoin Transaction Data ---
-schema = StructType() \
-    .add("hash", StringType()) \
-    .add("ver", LongType()) \
-    .add("vin_sz", LongType()) \
-    .add("vout_sz", LongType()) \
-    .add("size", LongType()) \
-    .add("weight", LongType()) \
-    .add("fee", LongType()) \
-    .add("relayed_by", StringType()) \
-    .add("lock_time", LongType()) \
-    .add("tx_index", LongType()) \
-    .add("double_spend", BooleanType()) \
-    .add("time", LongType()) \
-    .add("block_height", LongType()) \
-    .add("inputs", ArrayType(MapType(StringType(), StringType()))) \
-    .add("out", ArrayType(MapType(StringType(), StringType())))
+# ---------------------------------------------------------------------------
+# 5. Kafka schema & stream
+# ---------------------------------------------------------------------------
 
-# --- Read Data from Kafka ---
-print(f"Reading from Kafka topic '{KAFKA_TOPIC}' on broker '{KAFKA_BROKER}'...")
-kafka_df = spark \
-    .readStream \
-    .format("kafka") \
-    .option("kafka.bootstrap.servers", KAFKA_BROKER) \
-    .option("subscribe", KAFKA_TOPIC) \
-    .option("startingOffsets", "latest") \
+schema = (
+    StructType()
+    .add("hash",          StringType())
+    .add("ver",           LongType())
+    .add("vin_sz",        LongType())
+    .add("vout_sz",       LongType())
+    .add("size",          LongType())
+    .add("weight",        LongType())
+    .add("fee",           LongType())
+    .add("relayed_by",    StringType())
+    .add("lock_time",     LongType())
+    .add("tx_index",      LongType())
+    .add("double_spend",  BooleanType())
+    .add("time",          LongType())
+    .add("block_height",  LongType())
+    .add("inputs",        ArrayType(MapType(StringType(), StringType())))
+    .add("out",           ArrayType(MapType(StringType(), StringType())))
+)
+
+print(f"⇢ Subscribing to Kafka topic '{KAFKA_TOPIC}' …")
+kafka_df = (
+    spark.readStream.format("kafka")
+    .option("kafka.bootstrap.servers", KAFKA_BROKER)
+    .option("subscribe", KAFKA_TOPIC)
+    .option("startingOffsets", "latest")
     .load()
+)
 
-# Parse the Kafka value (JSON string) into a structured DataFrame
-parsed_df = kafka_df.selectExpr("CAST(value AS STRING) as json_value") \
-    .select(from_json(col("json_value"), schema).alias("data")) \
+parsed_df = (
+    kafka_df.selectExpr("CAST(value AS STRING) AS json_value")
+    .select(from_json(col("json_value"), schema).alias("data"))
     .select("data.*")
+)
 
-# --- Feature Engineering ---
-# Calculate fee_per_byte
+# ---------------------------------------------------------------------------
+# 6. Feature engineering
+# ---------------------------------------------------------------------------
+
 features_df = parsed_df.withColumn("fee_per_byte", col("fee") / col("size"))
 
-# UDF to sum values from nested arrays (inputs/outputs)
-def sum_values_from_array_of_maps(arr):
-    if arr is None:
-        return 0
-    total = 0
+def sum_values(arr: List[Dict[str, Any]]) -> float:
+    if not arr:
+        return 0.0
+    total = 0.0
     for item in arr:
-        if isinstance(item, dict) and 'value' in item:
-            try:
-                total += float(item['value'])
-            except (ValueError, TypeError):
-                pass # Ignore non-numeric values
+        try:
+            total += float(item.get("value", 0))
+        except (ValueError, TypeError):
+            pass
     return total
 
-sum_values_udf = udf(sum_values_from_array_of_maps, DoubleType())
+sum_values_udf = udf(sum_values, DoubleType())
 
-features_df = features_df.withColumn("total_input_value", sum_values_udf(col("inputs"))) \
-                         .withColumn("total_output_value", sum_values_udf(col("out")))
+features_df = (
+    features_df
+    .withColumn("total_input_value",  sum_values_udf(col("inputs")))
+    .withColumn("total_output_value", sum_values_udf(col("out")))
+)
 
+# ---------------------------------------------------------------------------
+# 7. Per-batch processing
+# ---------------------------------------------------------------------------
 
-# --- Apply ML Model and Fraud Rules ---
 def process_batch(df, epoch_id):
     if df.isEmpty():
-        print(f"Batch {epoch_id}: No data received.")
+        print(f"• Batch {epoch_id}: no records.")
         return
 
-    print(f"Processing batch {epoch_id} with {df.count()} records.")
+    print(f"• Batch {epoch_id}: {df.count()} records.")
 
-    # Convert Spark DataFrame to Pandas for ML model (if using scikit-learn)
-    pandas_df = df.toPandas()
+    pdf = df.toPandas()
 
-    if ml_model and not pandas_df.empty:
-        processed_df, feature_names = preprocess_features(pandas_df)
-
-        predictions = ml_model.predict(processed_df)
-        probabilities = ml_model.predict_proba(processed_df) # Get probabilities for SHAP
-
-        # Explain predictions using SHAP
-        shap_values = explain_prediction(ml_model, processed_df, feature_names)
-
-        # Add predictions and SHAP values back to DataFrame
-        pandas_df['mlFraudScore'] = [prob[1] for prob in probabilities] # Probability of fraud class
-        pandas_df['mlPrediction'] = predictions
-        
-        # Ensure shap_features is a JSON string
-        pandas_df['shap_features_json'] = [
-            json.dumps({name: value for name, value in zip(feature_names, shap_val) if abs(value) > 0.01})
-            for shap_val in shap_values
+    # --- ML scoring --------------------------------------------------------
+    if ml_model is not None and not pdf.empty:
+        X, feat_names = preprocess_features(pdf)
+        pdf["mlPrediction"] = ml_model.predict(X)
+        pdf["mlFraudScore"] = [p[1] for p in ml_model.predict_proba(X)]
+        shap_vals = explain_prediction(ml_model, X, feat_names)
+        pdf["shap_features_json"] = [
+            json.dumps({
+                n: v for n, v in zip(feat_names, shap_row) if abs(v) > 0.01
+            })
+            for shap_row in shap_vals
         ]
     else:
-        pandas_df['mlFraudScore'] = 0.0 # Default if no model
-        pandas_df['mlPrediction'] = 0 # Default if no model
-        pandas_df['shap_features_json'] = "{}" # Default to empty JSON object
+        pdf["mlPrediction"]      = 0
+        pdf["mlFraudScore"]      = 0.0
+        pdf["shap_features_json"]= "{}"
 
-    # Apply smurfing rule
-    pandas_df['isSmurfingRule'] = pandas_df.apply(apply_smurfing_rule, axis=1)
+    # --- Rule engine -------------------------------------------------------
+    pdf["isSmurfingRule"] = pdf.apply(apply_smurfing_rule, axis=1)
 
-    # --- Write to Neo4j ---
-    # CRITICAL FIX: Ensure all properties are explicitly set when writing to Neo4j
-    # This addresses the "UnknownPropertyKeyWarning" in Streamlit
-    
-    # Prepare data for Neo4j write in a format that SET t += $props can use
-    records_to_neo4j = []
-    for index, row in pandas_df.iterrows():
-        tx_node_props = {
-            "hash": str(row["hash"]),
-            "mlFraudScore": float(row["mlFraudScore"]),
-            "isSmurfingRule": bool(row["isSmurfingRule"]),
-            "timestamp": int(row["time"]), # Use the original 'time' from Kafka, which is epoch milliseconds
-            "vin_sz": int(row["vin_sz"]),
-            "vout_sz": int(row["vout_sz"]),
-            "size": int(row["size"]),
-            "fee": int(row["fee"]),
-            "feePerByte": float(row["fee_per_byte"]),
-            "totalInputValue": float(row["total_input_value"]),
-            "totalOutputValue": float(row["total_output_value"]),
-            "shapFeaturesJson": str(row["shap_features_json"]) # Ensure it's a string
-        }
-        records_to_neo4j.append(tx_node_props)
-
-    # Use a single write transaction for efficiency
+    # --- Neo4j write -------------------------------------------------------
     try:
         with neo4j_driver.session() as session:
-            for props in records_to_neo4j:
-                session.run("""
-                    MERGE (t:Transaction {hash: $hash})
-                    SET t += $props
-                    """, hash=props["hash"], props=props)
-                
-                # Create/Update Address nodes and relationships
-                # Input Addresses
-                if 'inputs' in row and row['inputs'] is not None:
-                    for input_data in row['inputs']:
-                        if 'prev_out' in input_data and 'addr' in input_data['prev_out']:
-                            addr_id = input_data['prev_out']['addr']
-                            session.run("""
-                                MERGE (a:Address {id: $addr_id})
-                                MERGE (a)-[:SENT]->(t:Transaction {hash: $tx_hash})
-                                """, addr_id=addr_id, tx_hash=props["hash"])
-                
-                # Output Addresses
-                if 'out' in row and row['out'] is not None:
-                    for output_data in row['out']:
-                        if 'addr' in output_data:
-                            addr_id = output_data['addr']
-                            session.run("""
-                                MERGE (a:Address {id: $addr_id})
-                                MERGE (t:Transaction {hash: $tx_hash})-[:SENT_TO]->(a)
-                                """, addr_id=addr_id, tx_hash=props["hash"])
+            for _, row in pdf.iterrows():
+                props = {
+                    "hash":             str(row["hash"]),
+                    "mlFraudScore":     float(row["mlFraudScore"]),
+                    "isSmurfingRule":   bool(row["isSmurfingRule"]),
+                    "timestamp":        int(row["time"]),
+                    "vin_sz":           int(row["vin_sz"]),
+                    "vout_sz":          int(row["vout_sz"]),
+                    "size":             int(row["size"]),
+                    "fee":              int(row["fee"]),
+                    "feePerByte":       float(row["fee_per_byte"]),
+                    "totalInputValue":  float(row["total_input_value"]),
+                    "totalOutputValue": float(row["total_output_value"]),
+                    "shapFeaturesJson": str(row["shap_features_json"]),
+                }
 
-        print(f"Batch {epoch_id}: Wrote {len(records_to_neo4j)} Transaction nodes and relationships to Neo4j.")
-    except Exception as e:
-        print(f"Batch {epoch_id}: Error writing Transaction nodes/relationships to Neo4j: {e}", file=sys.stderr)
+                # Transaction node
+                session.run(
+                    """
+                    MERGE (t:Transaction {hash:$hash})
+                    SET   t += $props
+                    """,
+                    **props
+                )
 
+                # Input addresses
+                for inp in (row.get("inputs") or []):
+                    addr = inp.get("prev_out", {}).get("addr")
+                    if addr:
+                        session.run(
+                            """
+                            MERGE (a:Address {id:$addr})
+                            MERGE (a)-[:SENT]->(t:Transaction {hash:$tx})
+                            """,
+                            addr=addr, tx=props["hash"]
+                        )
 
-    # --- Call LLM Service for Alerts ---
-    for index, row in pandas_df.iterrows():
-        # Only call LLM if fraud detected or rule triggered
+                # Output addresses
+                for outp in (row.get("out") or []):
+                    addr = outp.get("addr")
+                    if addr:
+                        session.run(
+                            """
+                            MERGE (a:Address {id:$addr})
+                            MERGE (t:Transaction {hash:$tx})-[:SENT_TO]->(a)
+                            """,
+                            addr=addr, tx=props["hash"]
+                        )
+        print(f"  ↳ Neo4j: wrote {len(pdf)} transactions.")
+    except Exception as exc:
+        print(f"‼ Neo4j write failed: {exc}", file=sys.stderr)
+
+    # --- LLM alerts --------------------------------------------------------
+    import requests  # local import to avoid module-only containers
+    for _, row in pdf.iterrows():
         if row["mlPrediction"] == 1 or row["isSmurfingRule"]:
-            print(f"Fraud alert detected for transaction {row['hash']}! Calling LLM service...", file=sys.stderr)
-            alert_data = {
-                "transaction_hash": str(row["hash"]),
-                "ml_fraud_score": float(row["mlFraudScore"]),
-                "is_smurfing_rule": bool(row["isSmurfingRule"]),
-                "num_inputs": int(row["vin_sz"]),
-                "num_outputs": int(row["vout_sz"]),
+            payload = {
+                "transaction_hash":  row["hash"],
+                "ml_fraud_score":    row["mlFraudScore"],
+                "is_smurfing_rule":  row["isSmurfingRule"],
+                "num_inputs":        int(row["vin_sz"]),
+                "num_outputs":       int(row["vout_sz"]),
                 "total_input_value": float(row["total_input_value"]),
-                "total_output_value": float(row["total_output_value"]),
-                "transaction_fee": int(row["fee"]),
-                "fee_per_byte": float(row["fee_per_byte"]),
-                "shap_features_json": str(row["shap_features_json"])
+                "total_output_value":float(row["total_output_value"]),
+                "transaction_fee":   int(row["fee"]),
+                "fee_per_byte":      float(row["fee_per_byte"]),
+                "shap_features_json":row["shap_features_json"],
             }
             try:
-                import requests # Import requests here to avoid issues if not installed globally
-                response = requests.post(LLM_SERVICE_URL, json=alert_data, timeout=30)
-                response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-                sar_response = response.json()
-                print(f"LLM SAR Draft for {row['hash']}:\n{sar_response.get('sar_draft', 'No SAR generated.')}\n", file=sys.stderr)
-            except requests.exceptions.RequestException as req_err:
-                print(f"Error calling LLM service for {row['hash']}: {req_err}", file=sys.stderr)
-            except json.JSONDecodeError as json_err:
-                print(f"Error decoding JSON response from LLM service for {row['hash']}: {json_err}. Response: {response.text}", file=sys.stderr)
-            except Exception as e:
-                print(f"An unexpected error occurred when calling LLM service for {row['hash']}: {e}", file=sys.stderr)
-        # else:
-            # print(f"Transaction {row['hash']} processed. No fraud alert.", file=sys.stderr) # Too verbose
+                r = requests.post(LLM_SERVICE_URL, json=payload, timeout=30)
+                r.raise_for_status()
+                print(f"  ↳ LLM SAR draft generated for {row['hash']}")
+            except Exception as exc:
+                print(f"⚠ LLM call failed for {row['hash']}: {exc}",
+                      file=sys.stderr)
 
+# ---------------------------------------------------------------------------
+# 8. Start streaming query
+# ---------------------------------------------------------------------------
 
-# Start the streaming query
-print("Starting Spark streaming query...")
-query = features_df \
-    .writeStream \
-    .outputMode("append") \
-    .foreachBatch(process_batch) \
-    .trigger(processingTime="10 seconds") \
+print("⇢ Starting Structured-Streaming query …")
+query = (
+    features_df.writeStream
+    .outputMode("append")
+    .foreachBatch(process_batch)
+    .trigger(processingTime="10 seconds")
     .start()
+)
 
-print("Spark streaming query started. Waiting for termination...")
+print("✓ Streaming started. Awaiting termination …")
 query.awaitTermination()
-print("Spark streaming query terminated.")

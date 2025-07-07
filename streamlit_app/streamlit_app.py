@@ -631,7 +631,7 @@ if page_selection == "Dashboard":
     active_alerts_display_df = fetch_alerts_from_neo4j(limit=5) # Limit to top 5 for dashboard
     
     # --- Safety net for Risk_Level column (from Option A) ---
-    if "ML_Score" in active_alerts_display_df.columns:
+    if "ML_Score" in active_alerts_display_df.columns and "Smurfing_Rule" in active_alerts_display_df.columns:
         def tag_risk_level_for_display(score, is_smurfing):
             if is_smurfing: return "Critical"
             if score >= 0.9: return "Critical"
@@ -642,7 +642,7 @@ if page_selection == "Dashboard":
             lambda row: tag_risk_level_for_display(row["ML_Score"], row["Smurfing_Rule"]), axis=1
         )
     else:
-        active_alerts_display_df["Risk_Level"] = "Unknown" # Fallback if ML_Score is missing entirely
+        active_alerts_display_df["Risk_Level"] = "Unknown" # Fallback if ML_Score or Smurfing_Rule is missing entirely
 
     # Avoid KeyError using .shape[0] and explicit filtering
     critical_alerts_count_display = active_alerts_display_df.query("Risk_Level == 'Critical'").shape[0]
@@ -665,7 +665,6 @@ if page_selection == "Dashboard":
         for index, alert in alerts_data_df_sorted.iterrows():
             alert_category = alert['Risk_Level'].lower()
             
-            # Example descriptions - these would ideally come from Spark/ML logic
             description = "Unusual transaction pattern detected."
             if alert.get("Smurfing_Rule"):
                 description = "Smurfing rule triggered: multiple small outputs."
