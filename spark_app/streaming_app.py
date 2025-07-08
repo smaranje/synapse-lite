@@ -45,12 +45,10 @@ LLM_SERVICE_URL = os.environ.get(
 spark = (
     SparkSession.builder
     .appName("BitcoinFraudDetection")
-    # FIX: Updated Kafka connector version to 3.5.0 (Scala 2.13)
-    .config("spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.13:3.5.0")
-    .config("spark.jars",
-            "/opt/bitnami/spark/jars/"
-            "neo4j-connector-apache-spark_2.13-5.3.8_for_spark_3.jar") # Neo4j connector also uses _2.13
+    # FIX: Updated Kafka connector version to 3.5.1 (Scala 2.12)
+    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1")
+    # FIX: Updated Neo4j connector to Scala 2.12 version 5.3.6_for_spark_3
+    .config("spark.jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.6_for_spark_3.jar")
     .getOrCreate()
 )
 spark.sparkContext.setLogLevel("WARN")
@@ -120,7 +118,6 @@ kafka_df = (
     .format("kafka")
     .option("kafka.bootstrap.servers", KAFKA_BROKER)
     .option("subscribe", KAFKA_TOPIC)
-    # Reverting to "latest" as the ClassCastException was the primary issue
     .option("startingOffsets", "latest")
     .option("failOnDataLoss", "false")
     .load()
@@ -164,6 +161,10 @@ print("Spark: Feature engineering applied.")
 
 def process_batch(df, epoch_id):
     # Convert Spark DataFrame to Pandas DataFrame for easier Python processing
+    # Note: As you mentioned, df.toPandas() can be inefficient for large streams.
+    # For a production system, consider writing directly to Neo4j using the Spark-Neo4j connector's
+    # write capabilities (e.g., df.write.format("org.neo4j.spark.DataSource").mode("append").save())
+    # or collecting only necessary columns if a small subset is needed on the driver.
     pdf = df.toPandas()
     if pdf.empty:
         print(f"Spark: Batch {epoch_id}: no records to process.")
@@ -244,7 +245,7 @@ def process_batch(df, epoch_id):
                             address_id=receiver_addr,
                             tx_hash=props["hash"]
                         )
-    print(f"Spark: Batch {epoch_id}: {count} records written to Neo4j.")
+        print(f"Spark: Batch {epoch_id}: {count} records written to Neo4j.")
 
 # ----------------------------------------------------------------------------
 # 8. Start streaming query
