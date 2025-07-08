@@ -46,7 +46,7 @@ spark = (
     SparkSession.builder
     .appName("BitcoinFraudDetection")
     .config("spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0")
+            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6") # FIX: Updated Kafka connector version to 3.5.6
     .config("spark.jars",
             "/opt/bitnami/spark/jars/"
             "neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar")
@@ -119,7 +119,9 @@ kafka_df = (
     .format("kafka")
     .option("kafka.bootstrap.servers", KAFKA_BROKER)
     .option("subscribe", KAFKA_TOPIC)
-    .option("startingOffsets", "latest") # Start from latest offset
+    # FIX: Changed startingOffsets to "earliest" and added failOnDataLoss
+    .option("startingOffsets", "earliest") # Start from the beginning of the topic
+    .option("failOnDataLoss", "false") # Do not fail if data is lost (e.g., due to retention)
     .load()
 )
 
