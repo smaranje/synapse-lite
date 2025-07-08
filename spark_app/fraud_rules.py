@@ -1,25 +1,32 @@
-# spark_app/fraud_rules.py
+"""
+Rule-based fraud detectors used by streaming_app.py
+"""
 
-def detect_smurfing_rule(transaction):
+# ------------------------------------------------------------------ #
+# 1. Smurfing (structuring) rule
+# ------------------------------------------------------------------ #
+def apply_smurfing_rule(tx: dict) -> bool:
     """
-    A simple rule-based detector for smurfing patterns.
-    In a real Neo4j integration, this would involve graph traversals.
-    For this demo, we'll just use dummy logic based on amount and account names.
+    Flags transfers < 100 USD where either account
+    contains the string “SMURF”.
     """
-    amount_threshold = 100.0
-    transfer_type = "transfer"
-    smurfing_keyword = "SMURF"
+    if tx.get("transaction_type") != "transfer":
+        return False
 
-    if (transaction.get("transaction_type") == transfer_type and
-        transaction.get("amount") < amount_threshold):
-        sender = transaction.get("sender_account", "")
-        receiver = transaction.get("receiver_account", "")
-        if smurfing_keyword in sender or smurfing_keyword in receiver:
-            return True
-    return False
+    amount   = float(tx.get("amount", 0))
+    if amount >= 100:
+        return False
 
-# You can add more rules here
-def detect_high_value_transfer(transaction):
-    if transaction.get("amount", 0) > 10000:
-        return True
-    return False
+    sender   = str(tx.get("sender_account", "")).upper()
+    receiver = str(tx.get("receiver_account", "")).upper()
+    return "SMURF" in sender or "SMURF" in receiver
+
+
+# ------------------------------------------------------------------ #
+# 2. High-value wire rule (example of a second rule)
+# ------------------------------------------------------------------ #
+def detect_high_value_transfer(tx: dict) -> bool:
+    """
+    Flags any transaction > 10 000 USD.
+    """
+    return float(tx.get("amount", 0)) > 10_000

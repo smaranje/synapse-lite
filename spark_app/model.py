@@ -1,53 +1,74 @@
-# spark_app/model.py
+"""
+Dummy helper functions that imitate a real ML workflow
+so the streaming job can run end-to-end without a
+trained model or SHAP installed.
+"""
+
 import random
-import json
+from typing import List, Tuple
 
-# This file would contain your trained ML model and SHAP explainer
-# For this initial demo, we'll use simple dummy functions.
-
-# --- Dummy ML Model Prediction ---
-def predict_fraud_score(features):
+# ------------------------------------------------------------------ #
+# 1. “Load” a model (stub)
+# ------------------------------------------------------------------ #
+def load_model(path: str | None = None):
     """
-    Simulates an ML model predicting a fraud score.
-    In a real scenario, this would load a trained model (e.g., from scikit-learn, XGBoost)
-    and perform inference based on input features.
+    Pretends to load a trained model from `path`.
+    You can later swap this for joblib / pickle.
     """
-    # Simple rule: if amount is very low and frequency is high, return high score
-    amount = features.get('feature_amount', 0)
-    tx_count_daily = features.get('feature_tx_count_daily', 0)
+    print(f"[model] Dummy model loaded from {path or '<memory>'}")
+    return None                      # placeholder “model” object
 
-    if amount < 50 and tx_count_daily > 50:
-        return random.uniform(0.85, 0.99) # High fraud probability
-    elif amount < 200 and tx_count_daily > 20:
-        return random.uniform(0.6, 0.8) # Medium probability
-    else:
-        return random.uniform(0.01, 0.4) # Low probability for normal transactions
 
-# --- Dummy SHAP Explainer ---
-def get_shap_explanation(features, prediction_score):
+# ------------------------------------------------------------------ #
+# 2. Pre-process a Pandas DataFrame -> (X, feature_names)
+# ------------------------------------------------------------------ #
+def preprocess_features(pdf) -> Tuple[list[list[float]], List[str]]:
     """
-    Simulates SHAP explanation for a prediction.
-    In a real scenario, this would use the SHAP library (e.g., shap.TreeExplainer)
-    to calculate feature contributions for a given prediction.
+    Very small feature set for the demo:
+      • feature_amount
+      • feature_tx_count_daily
+    Converts the DataFrame rows to a plain Python list of lists.
     """
-    explanation = []
-    # Always include transaction amount as a significant feature
-    explanation.append({"feature": "TransactionAmount", "value": features.get('feature_amount', 0), "contribution": random.uniform(0.2, 0.5)})
+    feat_names = ["feature_amount", "feature_tx_count_daily"]
 
-    if prediction_score > 0.8:
-        explanation.append({"feature": "SuspiciousFrequency", "value": features.get('feature_tx_count_daily', 0), "contribution": random.uniform(0.1, 0.3)})
-        explanation.append({"feature": "AccountPairAnomaly", "value": "True", "contribution": random.uniform(0.1, 0.2)})
-    elif prediction_score > 0.5:
-        explanation.append({"feature": "TxnTypeMatch", "value": features.get('transaction_type', 'transfer'), "contribution": random.uniform(0.05, 0.15)})
+    # Guarantee the columns exist; fall back to 0
+    for col in feat_names:
+        if col not in pdf.columns:
+            pdf[col] = 0.0
 
-    # Sort by contribution and return top 3
-    explanation_sorted = sorted(explanation, key=lambda x: x['contribution'], reverse=True)[:3]
-    return explanation_sorted
+    X = pdf[feat_names].values.tolist()
+    return X, feat_names
 
-# Function to load a dummy model (if needed by streaming_app, currently not used directly)
-def load_dummy_model():
+
+# ------------------------------------------------------------------ #
+# 3. Explain a prediction (stub SHAP-style output)
+# ------------------------------------------------------------------ #
+def explain_prediction(
+    model, X: list[list[float]], feature_names: List[str]
+) -> list[list[float]]:
     """
-    Placeholder function to simulate loading a pre-trained model.
+    Returns a list of “SHAP values” (random numbers)
+    matching the shape of X.
     """
-    print("Dummy ML Model loaded successfully.")
-    return "DummyModelObject" # Return a placeholder
+    shap_vals: list[list[float]] = []
+    for _ in X:
+        shap_vals.append([random.uniform(-0.2, 0.2) for _ in feature_names])
+    return shap_vals
+
+
+# ------------------------------------------------------------------ #
+# 4. Convenience single-row scoring helpers (optional)
+# ------------------------------------------------------------------ #
+def predict_fraud_score(features: dict) -> float:
+    """
+    Simple heuristic:
+      – low amount + many daily tx → high score
+    """
+    amt   = float(features.get("feature_amount", 0))
+    freq  = int(features.get("feature_tx_count_daily", 0))
+
+    if amt < 50 and freq > 50:
+        return random.uniform(0.85, 0.99)
+    if amt < 200 and freq > 20:
+        return random.uniform(0.60, 0.80)
+    return random.uniform(0.01, 0.40)
