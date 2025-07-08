@@ -45,11 +45,12 @@ LLM_SERVICE_URL = os.environ.get(
 spark = (
     SparkSession.builder
     .appName("BitcoinFraudDetection")
+    # FIX: Updated Kafka connector version to 3.5.0 (Scala 2.13)
     .config("spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6") # FIX: Updated Kafka connector version to 3.5.6
+            "org.apache.spark:spark-sql-kafka-0-10_2.13:3.5.0")
     .config("spark.jars",
             "/opt/bitnami/spark/jars/"
-            "neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar")
+            "neo4j-connector-apache-spark_2.13-5.3.8_for_spark_3.jar") # Neo4j connector also uses _2.13
     .getOrCreate()
 )
 spark.sparkContext.setLogLevel("WARN")
@@ -98,12 +99,12 @@ schema = (
     .add("size", LongType()) # Transaction size in bytes
     .add("fee", LongType()) # Transaction fee in satoshis
     # Inputs and outputs are complex structures, define them as Array of Maps
-    .add("vin", ArrayType(MapType(StringType(), StringType()))) # Changed from 'inputs' to 'vin' to match consumer
-    .add("vout", ArrayType(MapType(StringType(), StringType()))) # Changed from 'out' to 'vout' to match consumer
-    .add("total_input_value", DoubleType()) # Added to schema as it's in consumer
-    .add("total_output_value", DoubleType()) # Added to schema as it's in consumer
-    .add("transaction_fee", DoubleType()) # Added to schema as it's in consumer
-    .add("fee_per_byte", DoubleType()) # Added to schema as it's in consumer
+    .add("vin", ArrayType(MapType(StringType(), StringType())))
+    .add("vout", ArrayType(MapType(StringType(), StringType())))
+    .add("total_input_value", DoubleType())
+    .add("total_output_value", DoubleType())
+    .add("transaction_fee", DoubleType())
+    .add("fee_per_byte", DoubleType())
     # Add optional fields that might be present in the raw data but not strictly used
     .add("locktime", LongType(), True)
     .add("ver", LongType(), True)
@@ -119,9 +120,9 @@ kafka_df = (
     .format("kafka")
     .option("kafka.bootstrap.servers", KAFKA_BROKER)
     .option("subscribe", KAFKA_TOPIC)
-    # FIX: Changed startingOffsets to "earliest" and added failOnDataLoss
-    .option("startingOffsets", "earliest") # Start from the beginning of the topic
-    .option("failOnDataLoss", "false") # Do not fail if data is lost (e.g., due to retention)
+    # Reverting to "latest" as the ClassCastException was the primary issue
+    .option("startingOffsets", "latest")
+    .option("failOnDataLoss", "false")
     .load()
 )
 
@@ -130,7 +131,7 @@ parsed_df = (
     kafka_df
     .selectExpr("CAST(value AS STRING) AS json_value")
     .select(from_json(col("json_value"), schema).alias("data"))
-    .select("data.*") # Select all fields from the parsed JSON
+    .select("data.*")
 )
 print("Spark: Kafka stream initialized and schema defined.")
 
@@ -142,8 +143,6 @@ def sum_values(arr: List[Dict[str, Any]]) -> float:
     total = 0.0
     for item in arr or []:
         try:
-            # Bitcoin values are in satoshis, convert to float for calculations
-            # The synthetic data already provides 'value' as float, so no division by 1e8 here
             total += float(item.get("value", 0))
         except Exception:
             pass
@@ -155,13 +154,6 @@ sum_values_udf = udf(sum_values, DoubleType())
 # Feature engineering on the parsed DataFrame
 features_df = (
     parsed_df
-    # The synthetic data already provides 'total_input_value' and 'total_output_value'
-    # and 'fee_per_byte'. We can use them directly or re-calculate for consistency.
-    # For now, let's assume the incoming data is reliable for these.
-    # If the incoming data doesn't have these, you'd uncomment the lines below:
-    # .withColumn("total_input_value", sum_values_udf(col("vin"))) # Use 'vin'
-    # .withColumn("total_output_value", sum_values_udf(col("vout"))) # Use 'vout'
-    # .withColumn("fee_per_byte", col("fee") / col("size")) # Re-calculate
     .withColumnRenamed("time", "timestamp") # Rename 'time' to 'timestamp' for consistency with Neo4j
 )
 print("Spark: Feature engineering applied.")
@@ -181,13 +173,11 @@ def process_batch(df, epoch_id):
     print(f"Spark: Batch {epoch_id}: processing {count} records.")
 
     # ML scoring
-    # Ensure all necessary columns for predict_fraud_score are present in pdf
-    # The dummy model just needs a dict, but a real model would need specific features
     pdf["mlFraudScore"] = pdf.apply(
         lambda row: predict_fraud_score(row.to_dict()), axis=1
     )
     pdf["shap_features_json"] = pdf["mlFraudScore"].apply(
-        lambda score: json.dumps(get_shap_explanation({}, score)) # Placeholder for SHAP
+        lambda score: json.dumps(get_shap_explanation({}, score))
     )
 
     # Rule engine
@@ -195,17 +185,14 @@ def process_batch(df, epoch_id):
     pdf["isHighValue"]    = pdf.apply(detect_high_value_transfer, axis=1)
 
     # Write to Neo4j
-    # Use a single session for the batch for efficiency
     with neo4j_driver.session() as session:
         for _, row in pdf.iterrows():
-            # Prepare properties for the Transaction node
-            # Ensure all values are correctly cast to their expected types
             props = {
                 "hash":            str(row["hash"]),
                 "mlFraudScore":    float(row["mlFraudScore"]),
                 "isSmurfingRule":  bool(row["isSmurfingRule"]),
                 "isHighValue":     bool(row["isHighValue"]),
-                "timestamp":       int(row["timestamp"]), # Use 'timestamp' column
+                "timestamp":       int(row["timestamp"]),
                 "vin_sz":          int(row["vin_sz"]),
                 "vout_sz":         int(row["vout_sz"]),
                 "size":            int(row["size"]),
@@ -216,19 +203,13 @@ def process_batch(df, epoch_id):
                 "shapFeaturesJson":str(row["shap_features_json"]),
             }
 
-            # FIX: Corrected parameter passing to session.run
-            # The Cypher query expects named parameters $hash and $props
             session.run(
                 "MERGE (t:Transaction {hash: $hash}) SET t += $props",
-                hash=props["hash"], # Pass hash explicitly
-                props=props         # Pass the entire dictionary as 'props'
+                hash=props["hash"],
+                props=props
             )
 
             # Extract addresses and create relationships
-            # Assuming 'vin' and 'vout' contain 'prev_out' and 'scriptPubKey' respectively
-            # and that 'addr' and 'addresses' hold the actual Bitcoin addresses.
-
-            # Process inputs (senders)
             for input_obj in row["vin"]:
                 sender_addr = input_obj.get("prev_out", {}).get("addr")
                 if sender_addr:
@@ -246,7 +227,6 @@ def process_batch(df, epoch_id):
                         tx_hash=props["hash"]
                     )
 
-            # Process outputs (receivers)
             for output_obj in row["vout"]:
                 receiver_addrs = output_obj.get("scriptPubKey", {}).get("addresses")
                 if receiver_addrs:
@@ -274,8 +254,8 @@ query = (
     features_df.writeStream
     .outputMode("append")
     .foreachBatch(process_batch)
-    .trigger(processingTime="10 seconds") # Process data every 10 seconds
-    .option("checkpointLocation", "/tmp/spark-checkpoint") # Required for stateful operations
+    .trigger(processingTime="10 seconds")
+    .option("checkpointLocation", "/tmp/spark-checkpoint")
     .start()
 )
 print("Spark: Streaming query started.")

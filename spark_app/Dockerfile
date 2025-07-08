@@ -13,11 +13,11 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Neo4j ⇆ Spark connector (exact same version the job expects)
-# FIX: Corrected typo from NEO44J_CONNECTOR_VERSION to NEO4J_CONNECTOR_VERSION
+# FIX: Changed to Scala 2.13 connector version
 ARG NEO4J_CONNECTOR_VERSION=5.3.8_for_spark_3
 RUN curl -fsSL \
-  https://repo1.maven.org/maven2/org/neo4j/neo4j-connector-apache-spark_2.12/${NEO4J_CONNECTOR_VERSION}/neo4j-connector-apache-spark_2.12-${NEO4J_CONNECTOR_VERSION}.jar \
-  -o /opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-${NEO4J_CONNECTOR_VERSION}.jar
+  https://repo1.maven.org/maven2/org/neo4j/neo4j-connector-apache-spark_2.13/${NEO4J_CONNECTOR_VERSION}/neo4j-connector-apache-spark_2.13-${NEO4J_CONNECTOR_VERSION}.jar \
+  -o /opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.13-${NEO4J_CONNECTOR_VERSION}.jar
 
 # Python layer
 COPY requirements.txt .
@@ -45,4 +45,5 @@ ENV HOME=/home/spark
 EXPOSE 8080 4040 7077
 
 # CMD instruction formatted on a single line to prevent parsing errors
-CMD ["/opt/bitnami/spark/bin/spark-submit", "--master", "spark://spark-master:7077", "--deploy-mode", "client", "--name", "BitcoinFraudDetection", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0", "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar", "--py-files", "/app/model.py,/app/fraud_rules.py", "/app/streaming_app.py"]
+# FIX: Updated Kafka connector version in --packages to 3.5.0 (Scala 2.13)
+CMD ["/opt/bitnami/spark/bin/spark-submit", "--master", "spark://spark-master:7077", "--deploy-mode", "client", "--name", "BitcoinFraudDetection", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.13:3.5.0", "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.13-5.3.8_for_spark_3.jar", "--py-files", "/app/model.py,/app/fraud_rules.py", "/app/streaming_app.py"]
