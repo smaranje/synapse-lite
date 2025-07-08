@@ -42,11 +42,5 @@ ENV HOME=/home/spark
 
 EXPOSE 8080 4040 7077
 
-CMD ["/opt/bitnami/spark/bin/spark-submit",
-      "--master", "spark://spark-master:7077",
-      "--deploy-mode", "client",
-      "--name", "BitcoinFraudDetection",
-      "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0",
-      "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
-      "--py-files", "/app/model.py,/app/fraud_rules.py",
-      "/app/streaming_app.py"]
+# CMD instruction formatted on a single line to prevent parsing errors
+CMD ["/opt/bitnami/spark/bin/spark-submit", "--master", "spark://spark-master:7077", "--deploy-mode", "client", "--name", "BitcoinFraudDetection", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0", "--jars", "/opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar", "--py-files", "/app/model.py,/app/fraud_rules.py", "/app/streaming_app.py"]
