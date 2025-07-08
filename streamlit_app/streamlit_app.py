@@ -460,8 +460,11 @@ def fetch_analytics_data_from_neo4j():
                     avg_risk_data.append({"Hour": hour_label, "Average Risk Score": record["avg_ml_score"] * 100 if record["avg_ml_score"] is not None else 0.0})
                     high_risk_tx_data.append({"Hour": hour_label, "High Risk Transactions": record["high_risk_count"]})
             
-            avg_risk_trends_df = pd.DataFrame(avg_risk_data).set_index("Hour").sort_index()
-            high_risk_tx_trends_df = pd.DataFrame(high_risk_tx_data).set_index("Hour").sort_index()
+            # FIX: Check if data is not empty before creating DataFrame and setting index
+            if avg_risk_data:
+                avg_risk_trends_df = pd.DataFrame(avg_risk_data).set_index("Hour").sort_index()
+            if high_risk_tx_data:
+                high_risk_tx_trends_df = pd.DataFrame(high_risk_tx_data).set_index("Hour").sort_index()
 
             # Risk Score Distribution
             risk_dist_query = """
@@ -562,7 +565,7 @@ with st.sidebar:
     st.markdown("## Navigation")
     page_selection = st.radio(
         "Go to",
-        ["Dashboard", "Transactions", "Alerts", "Analytics", "Settings"],
+        ["Dashboard", "Transactions", "Alerts", "Analytics", "Settings", "Debug Data"], # Added Debug Data
         index=0 # Default to Dashboard
     )
     st.markdown("---")
@@ -1201,7 +1204,7 @@ elif page_selection == "Analytics":
         else:
             st.info("No average risk score trend data available.")
 
-    with trends_col2:
+    with trends_analytics_col2: # Corrected from trends_col2
         st.markdown("#### High Risk Transactions")
         if not high_risk_tx_trends_df.empty:
             st.line_chart(high_risk_tx_trends_df, use_container_width=True)
@@ -1257,7 +1260,7 @@ elif page_selection == "Analytics":
 
 elif page_selection == "Settings":
     st.header("Settings")
-    st.markdown("Configure application parameters")
+    st.markdown("Configure application parameters.")
 
     st.subheader("Neo4j Connection Settings")
     st.info(f"Current Neo4j URI: `{NEO4J_URI}`")
@@ -1274,3 +1277,61 @@ elif page_selection == "Settings":
 
     st.markdown("---")
     st.write("For advanced configurations, please refer to the project's documentation.")
+
+elif page_selection == "Debug Data": # New Debug Data section
+    st.header("Debug Data")
+    st.markdown("Raw transaction data from Neo4j for debugging purposes.")
+
+    debug_col1, debug_col2 = st.columns([0.8, 0.2])
+    with debug_col2:
+        if st.button("Refresh Debug Data", key="debug_refresh_btn"):
+            st.cache_data.clear() # Clear cache for debug data
+            st.rerun()
+
+    st.markdown("---")
+
+    @st.cache_data(ttl=5) # Cache for 5 seconds
+    def fetch_raw_transactions_for_debug(limit=20):
+        """Fetches raw transaction data from Neo4j without any filtering."""
+        if not neo4j_driver:
+            return pd.DataFrame()
+        
+        query = f"""
+        MATCH (tx:Transaction)
+        RETURN tx AS transaction_properties
+        ORDER BY tx.timestamp DESC
+        LIMIT {limit}
+        """
+        try:
+            with neo4j_driver.session() as session:
+                result = session.run(query)
+                # Extract all properties as a dictionary for each transaction
+                data = [r["transaction_properties"] for r in result]
+                return pd.DataFrame(data)
+        except Exception as e:
+            st.error(f"Error fetching raw debug data from Neo4j: {e}")
+            print(f"Error fetching raw debug data from Neo4j: {e}")
+            return pd.DataFrame()
+
+    raw_transactions_df = fetch_raw_transactions_for_debug()
+
+    if not raw_transactions_df.empty:
+        st.write(f"Displaying {len(raw_transactions_df)} raw transactions from Neo4j:")
+        st.dataframe(raw_transactions_df, use_container_width=True)
+
+        st.subheader("Timestamp Analysis (from raw data):")
+        if 'timestamp' in raw_transactions_df.columns:
+            st.write("First 5 timestamps:")
+            for ts in raw_transactions_df['timestamp'].head(5):
+                try:
+                    dt_object = datetime.fromtimestamp(ts / 1000) # Convert ms to seconds
+                    st.write(f"- Raw: `{ts}` (Type: `{type(ts).__name__}`) -> Converted: `{dt_object.strftime('%Y-%m-%d %H:%M:%S')}`")
+                except Exception as e:
+                    st.write(f"- Raw: `{ts}` (Type: `{type(ts).__name__}`) -> Error converting: `{e}`")
+            
+            st.write(f"Min Timestamp: `{raw_transactions_df['timestamp'].min()}`")
+            st.write(f"Max Timestamp: `{raw_transactions_df['timestamp'].max()}`")
+        else:
+            st.warning("No 'timestamp' column found in raw transaction data.")
+    else:
+        st.info("No raw transaction data available in Neo4j. This means Spark might not be writing data to Neo4j yet.")
