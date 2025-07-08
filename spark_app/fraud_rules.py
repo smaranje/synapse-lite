@@ -5,7 +5,7 @@ Rule-based fraud detectors used by streaming_app.py
 # ------------------------------------------------------------------ #
 # 1. Smurfing (structuring) rule
 # ------------------------------------------------------------------ #
-def apply_smurfing_rule(tx: dict) -> bool:
+def detect_smurfing_rule(tx: dict) -> bool:
     """
     Flags transfers < 100 USD where either account
     contains the string “SMURF”.
@@ -20,7 +20,6 @@ def apply_smurfing_rule(tx: dict) -> bool:
     sender   = str(tx.get("sender_account", "")).upper()
     receiver = str(tx.get("receiver_account", "")).upper()
     return "SMURF" in sender or "SMURF" in receiver
-
 
 # ------------------------------------------------------------------ #
 # 2. High-value wire rule (example of a second rule)
