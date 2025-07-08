@@ -32,10 +32,11 @@ RUN chmod +x streaming_app.py
 RUN groupadd -g 1337 spark \
  && useradd  -u 1337 -g spark -m -d /home/spark spark
 
-# ─── fix ownership for /app and /opt/bitnami/spark/jars ─────────
-# Now change ownership of the application directory and the Spark JARs directory
+# ─── fix ownership for /app, /opt/bitnami/spark/jars, and /opt/bitnami/spark/work ─────────
+# Now change ownership of the application directory, Spark JARs directory,
+# and the Spark work directory.
 # This step runs after the 'spark' user and group are guaranteed to exist.
-RUN chown -R spark:spark /app /opt/bitnami/spark/jars
+RUN chown -R spark:spark /app /opt/bitnami/spark/jars /opt/bitnami/spark/work
 
 USER spark
 ENV HOME=/home/spark
