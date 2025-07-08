@@ -13,7 +13,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Neo4j ⇆ Spark connector (exact same version the job expects)
-ARG NEO4J_CONNECTOR_VERSION=5.3.8_for_spark_3
+ARG NEO44J_CONNECTOR_VERSION=5.3.8_for_spark_3
 RUN curl -fsSL \
   https://repo1.maven.org/maven2/org/neo4j/neo4j-connector-apache-spark_2.12/${NEO4J_CONNECTOR_VERSION}/neo4j-connector-apache-spark_2.12-${NEO4J_CONNECTOR_VERSION}.jar \
   -o /opt/bitnami/spark/jars/neo4j-connector-apache-spark_2.12-${NEO4J_CONNECTOR_VERSION}.jar
