@@ -1,10 +1,10 @@
-# spark_app/Dockerfile
 FROM bitnami/spark:3.5.0
 
 WORKDIR /app
 
-# Install netcat-traditional for healthchecks if not already present
-RUN apt-get update && \
+# Fix APT environment by creating necessary directories
+RUN mkdir -p /var/lib/apt/lists/partial && \
+    apt-get update && \
     apt-get install -y --no-install-recommends netcat-traditional && \
     rm -rf /var/lib/apt/lists/*
 
