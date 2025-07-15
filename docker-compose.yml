@@ -1,5 +1,4 @@
 # Removed 'version' as it's obsolete and causes a warning
-# version: "3.9"
 
 #
 # -----------  NETWORK & VOLUMES  --------------------------------------------
@@ -71,13 +70,30 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+    environment:
+      - KAFKA_BROKER=kafka:29092
+      - KAFKA_TOPIC=transactions
     command: >
       bash -c "
-        echo 'Waiting for Kafka…' &&
-        kafka-topics --bootstrap-server kafka:29092 --list >/dev/null 2>&1 &&
-        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists
-          --topic transactions --partitions 1 --replication-factor 1 &&
-        echo '✔️  topic ready'"
+        MAX_RETRIES=10; RETRY=0;
+        echo 'Waiting for Kafka at \$KAFKA_BROKER…';
+        until kafka-topics --bootstrap-server \$KAFKA_BROKER --list >/dev/null 2>&1; do
+          echo 'Kafka not ready, retrying in 5 seconds…';
+          sleep 5;
+          ((RETRY++));
+          if [ \$RETRY -ge \$MAX_RETRIES ]; then
+            echo 'ERROR: Kafka not available after \$MAX_RETRIES attempts';
+            exit 1;
+          fi;
+        done &&
+        echo 'Creating topic \$KAFKA_TOPIC…' &&
+        kafka-topics --bootstrap-server \$KAFKA_BROKER --create --if-not-exists --topic \$KAFKA_TOPIC --partitions 1 --replication-factor 1 &&
+        if kafka-topics --bootstrap-server \$KAFKA_BROKER --list | grep -q \$KAFKA_TOPIC; then
+          echo '✔️  Topic \$KAFKA_TOPIC created successfully';
+        else
+          echo 'ERROR: Topic creation failed';
+          exit 1;
+        fi"
     restart: on-failure
 
   neo4j:
@@ -199,7 +215,7 @@ services:
       - --conf; spark.executor.extraJavaOptions=-Duser.name=spark
       - --conf; spark.jars.ivy=/tmp/.ivy2
       - --packages; org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0
-      - --jars; /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar # UPDATED PATH HERE
+      - --jars; /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
       - /app/streaming_app.py
     restart: on-failure
     mem_limit: 8g
