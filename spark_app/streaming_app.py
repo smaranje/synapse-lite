@@ -10,7 +10,6 @@ from pyspark.ml.classification import RandomForestClassificationModel
 from pyspark.ml.linalg import Vectors
 from neo4j import GraphDatabase, basic_auth
 import time # For retry logic
-# CORRECTED IMPORT: Changed from apply_smurfing_rule to detect_smurfing_rule
 from model import load_model, preprocess_features, explain_prediction
 from fraud_rules import detect_smurfing_rule # Corrected function name
 
@@ -118,19 +117,16 @@ features_df = features_df.withColumn("total_input_value", sum_values_udf(col("in
                          .withColumn("total_output_value", sum_values_udf(col("out")))
 
 # CRITICAL FIX FOR ClassCastException: Convert complex types to JSON strings within Spark
-# This makes them easily serializable for toPandas()
+# AND THEN IMMEDIATELY DROP THE ORIGINAL COMPLEX COLUMNS
 features_df = features_df.withColumn("inputs_json", to_json(col("inputs"))) \
-                         .withColumn("out_json", to_json(col("out")))
-
+                         .withColumn("out_json", to_json(col("out"))) \
+                         .drop("inputs", "out") # <--- ADDED THIS LINE
 
 # --- Apply ML Model and Fraud Rules ---
 def process_batch(df, epoch_id):
-    if df.isEmpty():
-        print(f"Batch {epoch_id}: No data received.")
-        return
-
-    print(f"Processing batch {epoch_id} with {df.count()} records.")
-
+    # Removed df.isEmpty() check as foreachBatch is only called if data exists
+    # Use len(pandas_df) instead of df.count() for batch size
+    
     # CRITICAL FIX FOR ClassCastException:
     # Select only the necessary columns, including the new JSON string representations of inputs/out.
     # This avoids passing the original complex ArrayType(MapType(...)) to toPandas() which causes issues.
@@ -150,6 +146,12 @@ def process_batch(df, epoch_id):
 
     # Convert this simplified Spark DataFrame to Pandas
     pandas_df = simplified_spark_df.toPandas()
+
+    if pandas_df.empty: # Check if pandas_df is empty after conversion
+        print(f"Batch {epoch_id}: No data received or all data filtered out after conversion.")
+        return
+
+    print(f"Processing batch {epoch_id} with {len(pandas_df)} records.") # Use len(pandas_df)
 
     if ml_model and not pandas_df.empty:
         processed_df, feature_names = preprocess_features(pandas_df)
