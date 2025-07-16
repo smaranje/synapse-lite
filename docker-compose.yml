@@ -1,8 +1,3 @@
-# Removed 'version' as it's obsolete and causes a warning
-
-#
-# -----------  NETWORK & VOLUMES  --------------------------------------------
-#
 networks:
   synapse-net: {}
 
@@ -13,11 +8,7 @@ volumes:
   neo4j_data:
   spark_master_data:
 
-#
-# -----------  CORE INFRA  ----------------------------------------------------
-#
 services:
-
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -59,8 +50,8 @@ services:
       test: ["CMD-SHELL","kafka-topics --bootstrap-server kafka:29092 --list || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 60s
+      retries: 12
+      start_period: 90s
     mem_limit: 2g
 
   kafka-topic-initializer:
@@ -71,13 +62,18 @@ services:
       kafka:
         condition: service_healthy
     environment:
-      KAFKA_BROKER: kafka:29092
-      KAFKA_TOPIC: transactions
+      - KAFKA_BROKER=kafka:29092
+      - KAFKA_TOPIC=transactions
     command: >
       bash -c "
-        echo 'Environment variables: KAFKA_BROKER=$KAFKA_BROKER, KAFKA_TOPIC=$KAFKA_TOPIC';
+        env;
+        echo 'Environment variables: KAFKA_BROKER=[$KAFKA_BROKER], KAFKA_TOPIC=[$KAFKA_TOPIC]';
         if [ -z \"$KAFKA_BROKER\" ]; then
           echo 'ERROR: KAFKA_BROKER is not set';
+          exit 1;
+        fi;
+        if [ -z \"$KAFKA_TOPIC\" ]; then
+          echo 'ERROR: KAFKA_TOPIC is not set';
           exit 1;
         fi;
         MAX_RETRIES=15; RETRY=0;
@@ -85,7 +81,7 @@ services:
         echo 'Testing connectivity to $KAFKA_BROKER…';
         nc -zv kafka 29092 && echo 'Port 29092 is open' || { echo 'ERROR: Cannot connect to kafka:29092'; exit 1; };
         until kafka-topics --bootstrap-server $KAFKA_BROKER --list >/dev/null 2>&1; do
-          echo 'Kafka not ready, retrying in 5 seconds (Attempt $((RETRY+1))/$MAX_RETRIES)…';
+          echo 'Kafka not ready, retrying in 5 seconds (Attempt $((RETRY+1)) of $MAX_RETRIES)…';
           sleep 5;
           ((RETRY++));
           if [ $RETRY -ge $MAX_RETRIES ]; then
@@ -136,15 +132,12 @@ services:
     volumes:
       - ./neo4j_scripts/cypher_scripts:/cypher_scripts
     environment:
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: password
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
     command: /app/init_neo4j.sh
     restart: on-failure
 
-#
-# -----------  SPARK CLUSTER  -------------------------------------------------
-#
   spark-master:
     build: ./spark_app
     container_name: spark-master
@@ -186,9 +179,6 @@ services:
       - ./spark_app:/app
     mem_limit: 8g
 
-#
-# -----------  SPARK STREAMING APPLICATION  -----------------------------------
-#
   spark-app:
     build: ./spark_app
     container_name: spark-app
@@ -203,15 +193,15 @@ services:
       flask-llm-service:
         condition: service_started
     environment:
-      KAFKA_BROKER: kafka:29092
-      KAFKA_TOPIC: transactions
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: password
-      LLM_SERVICE_URL: http://flask-llm-service:5000/generate-sar
-      HADOOP_USER_NAME: spark
-      USER: spark
-    entrypoint: [""] # Keep this for spark-submit to take full control
+      - KAFKA_BROKER=kafka:29092
+      - KAFKA_TOPIC=transactions
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - LLM_SERVICE_URL=http://flask-llm-service:5000/generate-sar
+      - HADOOP_USER_NAME=spark
+      - USER=spark
+    entrypoint: [""]
     volumes:
       - ./spark_app:/app
     command:
@@ -229,9 +219,6 @@ services:
     restart: on-failure
     mem_limit: 8g
 
-#
-# -----------  DATA GENERATOR  ------------------------------------------------
-#
   data-generator:
     build: ./data
     container_name: data-generator
@@ -240,16 +227,13 @@ services:
       kafka-topic-initializer:
         condition: service_completed_successfully
     environment:
-      KAFKA_BROKER: kafka:29092
-      KAFKA_TOPIC: transactions
+      - KAFKA_BROKER=kafka:29092
+      - KAFKA_TOPIC=transactions
     command: >
       bash -c "python3 bitcoin_mempool_consumer.py | python3 producer_app.py"
     restart: on-failure
     mem_limit: 1.5g
 
-#
-# -----------  AI MICRO-SERVICE & UI  ----------------------------------------
-#
   flask-llm-service:
     build: ./ai_service
     container_name: flask-llm-service
@@ -259,10 +243,10 @@ services:
       neo4j:
         condition: service_healthy
     environment:
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: password
-      GEMINI_API_KEY: ""
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - GEMINI_API_KEY=
     command: ["gunicorn","-b","0.0.0.0:5000","app:app","--workers","2"]
     healthcheck:
       test: ["CMD","curl","-f","http://localhost:5000/health"]
@@ -281,8 +265,8 @@ services:
       flask-llm-service:
         condition: service_started
     environment:
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
-      NEO4J_PASSWORD: password
-      LLM_SERVICE_URL: http://flask-llm-service:5000/generate-sar
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - LLM_SERVICE_URL=http://flask-llm-service:5000/generate-sar
     mem_limit: 2.5g
