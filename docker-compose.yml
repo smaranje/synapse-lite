@@ -1,3 +1,9 @@
+# Removed 'version' as it's obsolete and causes a warning
+# version: "3.9"
+
+#
+# -----------  NETWORK & VOLUMES  --------------------------------------------
+#
 networks:
   synapse-net: {}
 
@@ -8,7 +14,11 @@ volumes:
   neo4j_data:
   spark_master_data:
 
+#
+# -----------  CORE INFRA  ----------------------------------------------------
+#
 services:
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -106,6 +116,9 @@ services:
     command: /app/init_neo4j.sh
     restart: on-failure
 
+#
+# -----------  SPARK CLUSTER  -------------------------------------------------
+#
   spark-master:
     build: ./spark_app
     container_name: spark-master
@@ -147,6 +160,9 @@ services:
       - ./spark_app:/app
     mem_limit: 8g
 
+#
+# -----------  SPARK STREAMING APPLICATION  -----------------------------------
+#
   spark-app:
     build: ./spark_app
     container_name: spark-app
@@ -169,24 +185,36 @@ services:
       - LLM_SERVICE_URL=http://flask-llm-service:5000/generate-sar
       - HADOOP_USER_NAME=spark
       - USER=spark
-    entrypoint: [""]
+    entrypoint: [""] # Keep this for spark-submit to take full control
     volumes:
       - ./spark_app:/app
     command:
       - /opt/bitnami/spark/bin/spark-submit
-      - --master; spark://spark-master:7077
-      - --deploy-mode; client
-      - --conf; spark.driver.memory=4g
-      - --conf; spark.executor.memory=4g
-      - --conf; spark.driver.extraJavaOptions=-Duser.name=spark
-      - --conf; spark.executor.extraJavaOptions=-Duser.name=spark
-      - --conf; spark.jars.ivy=/tmp/.ivy2
-      - --packages; org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0
-      - --jars; /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
+      - --master
+      - spark://spark-master:7077
+      - --deploy-mode
+      - client
+      - --conf
+      - spark.driver.memory=4g
+      - --conf
+      - spark.executor.memory=4g
+      - --conf
+      - spark.driver.extraJavaOptions=-Duser.name=spark
+      - --conf
+      - spark.executor.extraJavaOptions=-Duser.name=spark
+      - --conf
+      - spark.jars.ivy=/tmp/.ivy2
+      - --packages
+      - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0
+      - --jars
+      - /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
       - /app/streaming_app.py
     restart: on-failure
     mem_limit: 8g
 
+#
+# -----------  DATA GENERATOR  ------------------------------------------------
+#
   data-generator:
     build: ./data
     container_name: data-generator
@@ -202,6 +230,9 @@ services:
     restart: on-failure
     mem_limit: 1.5g
 
+#
+# -----------  AI MICRO-SERVICE & UI  ----------------------------------------
+#
   flask-llm-service:
     build: ./ai_service
     container_name: flask-llm-service
