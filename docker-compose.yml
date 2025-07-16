@@ -205,7 +205,7 @@ services:
       - --conf
       - spark.jars.ivy=/tmp/.ivy2
       - --packages
-      - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0
+      - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6
       - --jars
       - /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
       - /app/streaming_app.py
