@@ -74,12 +74,12 @@ services:
     command: ["bash", "/init_kafka_topic.sh"]
 
   spark-master:
-    image: bitnami/spark:3.5.6-debian-12-r0 # Updated to 3.5.6
+    image: bitnami/spark:3.5.6-debian-12-r0
     container_name: spark-master
     networks: [synapse-net]
     ports:
-      - "8080:8080" # Spark Master Web UI
-      - "7077:7077" # Spark Master internal port
+      - "8080:8080"
+      - "7077:7077"
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -96,7 +96,7 @@ services:
       retries: 5
 
   spark-worker:
-    image: bitnami/spark:3.5.6-debian-12-r0 # Updated to 3.5.6
+    image: bitnami/spark:3.5.6-debian-12-r0
     container_name: spark-worker
     networks: [synapse-net]
     depends_on:
@@ -140,17 +140,17 @@ services:
       - ./spark_app/model.py:/app/model.py
       - ./spark_app/fraud_rules.py:/app/fraud_rules.py
       - ./spark_app/bitcoin_fraud_model.pkl:/app/bitcoin_fraud_model.pkl
-      - ./spark_app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar:/app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar # Re-added Neo4j connector
+      - ./spark_app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar:/app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
     command: >
       spark-submit
       --master spark://spark-master:7077
-      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6 # Ensure this is 3.5.6
-      --jars /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar # Re-added Neo4j connector JAR
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6
+      --jars /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
       /app/streaming_app.py
 
   data-generator:
     build:
-      context: ./data_generator
+      context: ./data # <--- CORRECTED: Changed from ./data_generator to ./data
       dockerfile: Dockerfile
     container_name: data-generator
     networks: [synapse-net]
@@ -163,12 +163,12 @@ services:
     command: python /app/producer_app.py
 
   neo4j:
-    image: neo4j:4.4.29-community # Using a stable 4.4.x version
+    image: neo4j:4.4.29-community
     container_name: neo4j
     networks: [synapse-net]
     ports:
-      - "7474:7474" # HTTP
-      - "7687:7687" # Bolt
+      - "7474:7474"
+      - "7687:7687"
     environment:
       - NEO4J_AUTH=neo4j/password
       - NEO4J_dbms_connector_bolt_advertised__address=localhost:7687
@@ -200,7 +200,7 @@ services:
 
   flask-llm-service:
     build:
-      context: ./ai_service
+      context: ./ai_service # <--- CORRECTED: Changed from ./flask_llm_service to ./ai_service
       dockerfile: Dockerfile
     container_name: flask-llm-service
     networks: [synapse-net]

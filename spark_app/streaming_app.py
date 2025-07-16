@@ -73,6 +73,7 @@ schema = StructType() \
     .add("weight", LongType()) \
     .add("fee", LongType()) \
     .add("relayed_by", StringType()) \
+    .add("relayed_by", StringType()) \
     .add("lock_time", LongType()) \
     .add("tx_index", LongType()) \
     .add("double_spend", BooleanType()) \
