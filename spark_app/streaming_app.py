@@ -62,6 +62,7 @@ except Exception as e:
     ml_model = None
 
 # --- Define Kafka Schema for Bitcoin Transaction Data ---
+# Read 'inputs' and 'out' as StringType to avoid ClassCastException
 schema = StructType() \
     .add("hash", StringType()) \
     .add("ver", LongType()) \
@@ -76,8 +77,8 @@ schema = StructType() \
     .add("double_spend", BooleanType()) \
     .add("time", LongType()) \
     .add("block_height", LongType()) \
-    .add("inputs", ArrayType(MapType(StringType(), StringType()))) \
-    .add("out", ArrayType(MapType(StringType(), StringType())))
+    .add("inputs", StringType()) \
+    .add("out", StringType())
 
 # --- Read Data from Kafka ---
 print(f"Reading from Kafka topic '{KAFKA_TOPIC}' on broker '{KAFKA_BROKER}'...")
@@ -98,60 +99,49 @@ parsed_df = kafka_df.selectExpr("CAST(value AS STRING) as json_value") \
 # Calculate fee_per_byte
 features_df = parsed_df.withColumn("fee_per_byte", col("fee") / col("size"))
 
-# UDF to sum values from nested arrays (inputs/outputs)
-def sum_values_from_array_of_maps(arr):
-    if arr is None:
+# UDF to sum values from nested arrays (inputs/outputs) - now expects JSON string
+def sum_values_from_json_string(json_str):
+    if json_str is None:
         return 0
-    total = 0
-    for item in arr:
-        if isinstance(item, dict) and 'value' in item:
-            try:
-                total += float(item['value'])
-            except (ValueError, TypeError):
-                pass # Ignore non-numeric values
-    return total
+    try:
+        arr = json.loads(json_str)
+        if not isinstance(arr, list): # Ensure it's a list after parsing
+            return 0
+        total = 0
+        for item in arr:
+            if isinstance(item, dict) and 'value' in item:
+                try:
+                    total += float(item['value'])
+                except (ValueError, TypeError):
+                    pass # Ignore non-numeric values
+        return total
+    except json.JSONDecodeError:
+        return 0 # Handle invalid JSON strings
 
-sum_values_udf = udf(sum_values_from_array_of_maps, DoubleType())
+sum_values_udf = udf(sum_values_from_json_string, DoubleType())
 
+# Apply UDF to the 'inputs' and 'out' columns (which are now StringType)
 features_df = features_df.withColumn("total_input_value", sum_values_udf(col("inputs"))) \
                          .withColumn("total_output_value", sum_values_udf(col("out")))
 
-# CRITICAL FIX FOR ClassCastException: Convert complex types to JSON strings within Spark
-# AND THEN IMMEDIATELY DROP THE ORIGINAL COMPLEX COLUMNS
-features_df = features_df.withColumn("inputs_json", to_json(col("inputs"))) \
-                         .withColumn("out_json", to_json(col("out"))) \
-                         .drop("inputs", "out") # <--- ADDED THIS LINE
 
 # --- Apply ML Model and Fraud Rules ---
 def process_batch(df, epoch_id):
-    # Removed df.isEmpty() check as foreachBatch is only called if data exists
-    # Use len(pandas_df) instead of df.count() for batch size
-    
-    # CRITICAL FIX FOR ClassCastException:
-    # Select only the necessary columns, including the new JSON string representations of inputs/out.
-    # This avoids passing the original complex ArrayType(MapType(...)) to toPandas() which causes issues.
-    ml_and_neo4j_cols = [
-        "hash", "ver", "vin_sz", "vout_sz", "size", "weight", "fee",
-        "relayed_by", "lock_time", "tx_index", "double_spend", "time", "block_height",
-        "fee_per_byte", "total_input_value", "total_output_value",
-        "inputs_json", # Include the JSON string for later parsing
-        "out_json"     # Include the JSON string for later parsing
-    ]
-    
-    # Ensure all selected columns actually exist in the DataFrame
-    existing_ml_and_neo4j_cols = [c for c in ml_and_neo4j_cols if c in df.columns]
-    
-    # Create a new Spark DataFrame with only these simpler columns
-    simplified_spark_df = df.select(*existing_ml_and_neo4j_cols)
+    # CRITICAL FIX: Repartition the DataFrame before converting to Pandas
+    # This can help break problematic internal serialization states
+    # Use repartition(1) to collect all data to a single partition for toPandas,
+    # which is generally safer for small to medium batches in streaming.
+    repartitioned_df = df.repartition(1) # <--- ADDED THIS LINE
 
-    # Convert this simplified Spark DataFrame to Pandas
-    pandas_df = simplified_spark_df.toPandas()
+    # Convert Spark DataFrame to Pandas DataFrame
+    # All columns passed to toPandas should now be simple types (string, long, double, boolean)
+    pandas_df = repartitioned_df.toPandas() # <--- CHANGED TO USE repartitioned_df
 
-    if pandas_df.empty: # Check if pandas_df is empty after conversion
+    if pandas_df.empty:
         print(f"Batch {epoch_id}: No data received or all data filtered out after conversion.")
         return
 
-    print(f"Processing batch {epoch_id} with {len(pandas_df)} records.") # Use len(pandas_df)
+    print(f"Processing batch {epoch_id} with {len(pandas_df)} records.")
 
     if ml_model and not pandas_df.empty:
         processed_df, feature_names = preprocess_features(pandas_df)
@@ -176,7 +166,7 @@ def process_batch(df, epoch_id):
         pandas_df['mlPrediction'] = 0 # Default if no model
         pandas_df['shap_features_json'] = "{}" # Default to empty JSON object
 
-    # Apply smurfing rule - NOW CALLING THE CORRECT FUNCTION NAME
+    # Apply smurfing rule
     pandas_df['isSmurfingRule'] = pandas_df.apply(detect_smurfing_rule, axis=1)
 
     # --- Write to Neo4j ---
@@ -200,21 +190,20 @@ def process_batch(df, epoch_id):
         }
         records_to_neo4j.append(tx_node_props)
 
-        # Parse inputs and outputs from JSON strings for creating relationships
-        # Safely handle potential NaN or None values from pandas_df
+        # Parse inputs and outputs from JSON strings (which are now directly from Kafka as StringType)
         input_addresses_data = []
-        if pd.notna(row["inputs_json"]):
+        if pd.notna(row["inputs"]): # 'inputs' column is now a string
             try:
-                input_addresses_data = json.loads(row["inputs_json"])
+                input_addresses_data = json.loads(row["inputs"])
             except json.JSONDecodeError:
-                print(f"Warning: Could not decode inputs_json for hash {row['hash']}", file=sys.stderr)
+                print(f"Warning: Could not decode inputs JSON string for hash {row['hash']}", file=sys.stderr)
 
         output_addresses_data = []
-        if pd.notna(row["out_json"]):
+        if pd.notna(row["out"]): # 'out' column is now a string
             try:
-                output_addresses_data = json.loads(row["out_json"])
+                output_addresses_data = json.loads(row["out"])
             except json.JSONDecodeError:
-                print(f"Warning: Could not decode out_json for hash {row['hash']}", file=sys.stderr)
+                print(f"Warning: Could not decode out JSON string for hash {row['hash']}", file=sys.stderr)
 
 
         # Use a single write transaction for efficiency per batch
@@ -244,10 +233,6 @@ def process_batch(df, epoch_id):
                             MERGE (t:Transaction {hash: $tx_hash})-[:SENT_TO]->(a)
                             """, addr_id=addr_id, tx_hash=tx_node_props["hash"])
 
-            # Moved the print statement outside the loop but inside process_batch
-            # as it now iterates each record within a single session
-            # print(f"Batch {epoch_id}: Processed and sent transaction {row['hash']} to Neo4j.")
-
         except Exception as e:
             print(f"Batch {epoch_id}: Error writing transaction {row['hash']} to Neo4j: {e}", file=sys.stderr)
 
@@ -274,7 +259,6 @@ def process_batch(df, epoch_id):
                 "shap_features_json": str(row["shap_features_json"])
             }
             try:
-                # requests imported at the top of the file now
                 response = requests.post(LLM_SERVICE_URL, json=alert_data, timeout=30)
                 response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
                 sar_response = response.json()
@@ -285,8 +269,6 @@ def process_batch(df, epoch_id):
                 print(f"Error decoding JSON response from LLM service for {row['hash']}: {json_err}. Response: {response.text}", file=sys.stderr)
             except Exception as e:
                 print(f"An unexpected error occurred when calling LLM service for {row['hash']}: {e}", file=sys.stderr)
-        # else:
-            # print(f"Transaction {row['hash']} processed. No fraud alert.", file=sys.stderr) # Too verbose
 
 
 # Start the streaming query
