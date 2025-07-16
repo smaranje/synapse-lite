@@ -1,71 +1,66 @@
-# Removed 'version' as it's obsolete and causes a warning
-# version: "3.9"
+# docker-compose.yml
+version: '3.8'
 
-#
-# -----------  NETWORK & VOLUMES  --------------------------------------------
-#
 networks:
-  synapse-net: {}
+  synapse-net:
+    driver: bridge
 
 volumes:
   zookeeper_data:
+    driver: local
   zookeeper_log:
+    driver: local
   kafka_data:
-  neo4j_data:
+    driver: local
   spark_master_data:
+    driver: local
+  neo4j_data:
+    driver: local
 
-#
-# -----------  CORE INFRA  ----------------------------------------------------
-#
 services:
-
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
+    image: bitnami/zookeeper:3.9.2
     container_name: zookeeper
     networks: [synapse-net]
-    ports: ["2181:2181"]
+    ports:
+      - "2181:2181"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      - ALLOW_ANONYMOUS_LOGIN=yes
     volumes:
-      - zookeeper_data:/var/lib/zookeeper/data
-      - zookeeper_log:/var/lib/zookeeper/log
+      - zookeeper_data:/bitnami/zookeeper
+      - zookeeper_log:/opt/bitnami/zookeeper/logs
     healthcheck:
-      test: ["CMD", "echo", "stat", "|", "nc", "localhost", "2181"]
-      interval: 5s
+      test: ["CMD", "bash", "-c", "echo stat | nc localhost 2181"]
+      interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
-    mem_limit: 1g
+      retries: 5
 
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: bitnami/kafka:3.7.0
     container_name: kafka
     networks: [synapse-net]
-    ports: ["9092:9092","29092:29092"]
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_data:/bitnami/kafka
     depends_on:
       zookeeper:
         condition: service_healthy
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    volumes:
-      - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL","kafka-topics --bootstrap-server kafka:29092 --list || exit 1"]
+      test: ["CMD", "bash", "-c", "kafka-topics --bootstrap-server localhost:9092 --list > /dev/null 2>&1"]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 90s
-    mem_limit: 2g
+      retries: 5
 
   kafka-topic-initializer:
-    image: confluentinc/cp-kafka:7.5.0
+    image: bitnami/kafka:3.7.0
     container_name: kafka-topic-initializer
     networks: [synapse-net]
     depends_on:
@@ -76,196 +71,166 @@ services:
       - KAFKA_TOPIC=transactions
     volumes:
       - ./init_kafka_topic.sh:/init_kafka_topic.sh
-    command: ["/bin/bash", "/init_kafka_topic.sh"]
-    restart: on-failure
+    command: ["bash", "/init_kafka_topic.sh"]
 
-  neo4j:
-    image: neo4j:5.19.0-community
-    container_name: neo4j
-    networks: [synapse-net]
-    ports: ["7474:7474","7687:7687"]
-    volumes:
-      - neo4j_data:/data
-      - ./neo4j_scripts:/scripts
-    environment:
-      NEO4J_AUTH: neo4j/password
-      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
-      NEO4J_server_memory_heap_initial__size: 2G
-      NEO4J_server_memory_heap_max__size: 3G
-    healthcheck:
-      test: ["CMD-SHELL","wget --quiet --spider http://localhost:7474 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 90s
-    mem_limit: 4g
-
-  neo4j-initializer:
-    build: ./neo4j_scripts
-    container_name: neo4j-initializer
-    networks: [synapse-net]
-    depends_on:
-      neo4j:
-        condition: service_healthy
-    volumes:
-      - ./neo4j_scripts/cypher_scripts:/cypher_scripts
-    environment:
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USERNAME=neo4j
-      - NEO4J_PASSWORD=password
-    command: /app/init_neo4j.sh
-    restart: on-failure
-
-#
-# -----------  SPARK CLUSTER  -------------------------------------------------
-#
   spark-master:
-    build: ./spark_app
+    image: bitnami/spark:3.5.6-debian-12-r0 # Updated to 3.5.6
     container_name: spark-master
     networks: [synapse-net]
-    ports: ["8080:8080","7077:7077"]
+    ports:
+      - "8080:8080" # Spark Master Web UI
+      - "7077:7077" # Spark Master internal port
     environment:
-      SPARK_MODE: master
-      SPARK_MASTER_HOST: 0.0.0.0
-      SPARK_DRIVER_MEMORY: 4g
-      SPARK_WORKER_MEMORY: 4g
-      HADOOP_USER_NAME: spark
-      USER: spark
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_AUTH_SECRET=testing
+      - SPARK_LOCAL_STORAGE_DB=false
+      - SPARK_SSL_ENABLED=no
     volumes:
-      - spark_master_data:/opt/bitnami/spark/data
-      - ./spark_app:/app
+      - spark_master_data:/bitnami/spark/data
     healthcheck:
-      test: ["CMD-SHELL","nc -z localhost 7077"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s
-      timeout: 10s
-      retries: 20
-      start_period: 90s
-    mem_limit: 8g
+      timeout: 5s
+      retries: 5
 
   spark-worker:
-    build: ./spark_app
+    image: bitnami/spark:3.5.6-debian-12-r0 # Updated to 3.5.6
     container_name: spark-worker
     networks: [synapse-net]
     depends_on:
       spark-master:
         condition: service_healthy
     environment:
-      SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
-      SPARK_WORKER_MEMORY: 4g
-      SPARK_WORKER_CORES: 4
-      HADOOP_USER_NAME: spark
-      USER: spark
-    volumes:
-      - ./spark_app:/app
-    mem_limit: 8g
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=4
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_AUTH_SECRET=testing
+      - SPARK_LOCAL_STORAGE_DB=false
+      - SPARK_SSL_ENABLED=no
 
-#
-# -----------  SPARK STREAMING APPLICATION  -----------------------------------
-#
   spark-app:
-    build: ./spark_app
+    build:
+      context: ./spark_app
+      dockerfile: Dockerfile
     container_name: spark-app
+    networks: [synapse-net]
+    depends_on:
+      spark-master:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      neo4j:
+        condition: service_started
+    environment:
+      - SPARK_MODE=client
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - KAFKA_BROKER=kafka:29092
+      - KAFKA_TOPIC=transactions
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - LLM_SERVICE_URL=http://flask-llm-service:5000/generate-sar
+    volumes:
+      - ./spark_app/streaming_app.py:/app/streaming_app.py
+      - ./spark_app/model.py:/app/model.py
+      - ./spark_app/fraud_rules.py:/app/fraud_rules.py
+      - ./spark_app/bitcoin_fraud_model.pkl:/app/bitcoin_fraud_model.pkl
+      - ./spark_app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar:/app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar # Re-added Neo4j connector
+    command: >
+      spark-submit
+      --master spark://spark-master:7077
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6 # Ensure this is 3.5.6
+      --jars /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar # Re-added Neo4j connector JAR
+      /app/streaming_app.py
+
+  data-generator:
+    build:
+      context: ./data_generator
+      dockerfile: Dockerfile
+    container_name: data-generator
     networks: [synapse-net]
     depends_on:
       kafka:
         condition: service_healthy
-      spark-master:
-        condition: service_healthy
-      neo4j:
-        condition: service_healthy
-      flask-llm-service:
-        condition: service_started
     environment:
       - KAFKA_BROKER=kafka:29092
       - KAFKA_TOPIC=transactions
+    command: python /app/producer_app.py
+
+  neo4j:
+    image: neo4j:4.4.29-community # Using a stable 4.4.x version
+    container_name: neo4j
+    networks: [synapse-net]
+    ports:
+      - "7474:7474" # HTTP
+      - "7687:7687" # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_dbms_connector_bolt_advertised__address=localhost:7687
+      - NEO4J_dbms_memory_heap_initial__size=512M
+      - NEO4J_dbms_memory_heap_max__size=1G
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  neo4j-initializer:
+    build:
+      context: ./neo4j_initializer
+      dockerfile: Dockerfile
+    container_name: neo4j-initializer
+    networks: [synapse-net]
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    environment:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=password
-      - LLM_SERVICE_URL=http://flask-llm-service:5000/generate-sar
-      - HADOOP_USER_NAME=spark
-      - USER=spark
-    entrypoint: [""] # Keep this for spark-submit to take full control
-    volumes:
-      - ./spark_app:/app
-    command:
-      - /opt/bitnami/spark/bin/spark-submit
-      - --master
-      - spark://spark-master:7077
-      - --deploy-mode
-      - client
-      - --conf
-      - spark.driver.memory=4g
-      - --conf
-      - spark.executor.memory=4g
-      - --conf
-      - spark.driver.extraJavaOptions=-Duser.name=spark
-      - --conf
-      - spark.executor.extraJavaOptions=-Duser.name=spark
-      - --conf
-      - spark.jars.ivy=/tmp/.ivy2
-      - --packages
-      - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6
-      - --jars
-      - /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
-      - /app/streaming_app.py
-    restart: on-failure
-    mem_limit: 8g
+    command: python /app/init_db.py
 
-#
-# -----------  DATA GENERATOR  ------------------------------------------------
-#
-  data-generator:
-    build: ./data
-    container_name: data-generator
-    networks: [synapse-net]
-    depends_on:
-      kafka-topic-initializer:
-        condition: service_completed_successfully
-    environment:
-      - KAFKA_BROKER=kafka:29092
-      - KAFKA_TOPIC=transactions
-    command: >
-      bash -c "python3 bitcoin_mempool_consumer.py | python3 producer_app.py"
-    restart: on-failure
-    mem_limit: 1.5g
-
-#
-# -----------  AI MICRO-SERVICE & UI  ----------------------------------------
-#
   flask-llm-service:
-    build: ./ai_service
+    build:
+      context: ./flask_llm_service
+      dockerfile: Dockerfile
     container_name: flask-llm-service
     networks: [synapse-net]
-    ports: ["8000:5000"]
-    depends_on:
-      neo4j:
-        condition: service_healthy
+    ports:
+      - "5000:5000"
     environment:
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USERNAME=neo4j
-      - NEO4J_PASSWORD=password
-      - GEMINI_API_KEY=
-    command: ["gunicorn","-b","0.0.0.0:5000","app:app","--workers","2"]
+      # No API key needed for local gemini-2.0-flash
+      - FLASK_APP=app.py
+      - FLASK_RUN_HOST=0.0.0.0
     healthcheck:
-      test: ["CMD","curl","-f","http://localhost:5000/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
       interval: 10s
+      timeout: 5s
       retries: 5
-    mem_limit: 2g
 
   streamlit-dashboard:
-    build: ./streamlit_app
+    build:
+      context: ./streamlit_dashboard
+      dockerfile: Dockerfile
     container_name: streamlit-dashboard
     networks: [synapse-net]
-    ports: ["8501:8501"]
+    ports:
+      - "8501:8501"
     depends_on:
       neo4j:
         condition: service_healthy
       flask-llm-service:
-        condition: service_started
+        condition: service_healthy
     environment:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=password
-      - LLM_SERVICE_URL=http://flask-llm-service:5000/generate-sar
-    mem_limit: 2.5g
+    command: streamlit run /app/dashboard.py
