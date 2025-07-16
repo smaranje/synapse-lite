@@ -64,41 +64,9 @@ services:
     environment:
       - KAFKA_BROKER=kafka:29092
       - KAFKA_TOPIC=transactions
-    command: >
-      bash -c "
-        env;
-        echo 'Environment variables: KAFKA_BROKER=[$KAFKA_BROKER], KAFKA_TOPIC=[$KAFKA_TOPIC]';
-        if [ -z \"$KAFKA_BROKER\" ]; then
-          echo 'ERROR: KAFKA_BROKER is not set';
-          exit 1;
-        fi;
-        if [ -z \"$KAFKA_TOPIC\" ]; then
-          echo 'ERROR: KAFKA_TOPIC is not set';
-          exit 1;
-        fi;
-        MAX_RETRIES=15; RETRY=0;
-        echo 'Waiting for Kafka at $KAFKA_BROKER…';
-        echo 'Testing connectivity to $KAFKA_BROKER…';
-        nc -zv kafka 29092 && echo 'Port 29092 is open' || { echo 'ERROR: Cannot connect to kafka:29092'; exit 1; };
-        until kafka-topics --bootstrap-server $KAFKA_BROKER --list >/dev/null 2>&1; do
-          echo 'Kafka not ready, retrying in 5 seconds (Attempt $((RETRY+1)) of $MAX_RETRIES)…';
-          sleep 5;
-          ((RETRY++));
-          if [ $RETRY -ge $MAX_RETRIES ]; then
-            echo 'ERROR: Kafka not available after $MAX_RETRIES attempts';
-            kafka-topics --bootstrap-server $KAFKA_BROKER --list 2>&1;
-            exit 1;
-          fi;
-        done;
-        echo 'Kafka is ready, creating topic $KAFKA_TOPIC…';
-        kafka-topics --bootstrap-server $KAFKA_BROKER --create --if-not-exists --topic $KAFKA_TOPIC --partitions 1 --replication-factor 1 || { echo 'ERROR: Failed to create topic'; exit 1; };
-        if kafka-topics --bootstrap-server $KAFKA_BROKER --list | grep -q $KAFKA_TOPIC; then
-          echo '✔️  Topic $KAFKA_TOPIC created successfully';
-        else
-          echo 'ERROR: Topic creation failed';
-          kafka-topics --bootstrap-server $KAFKA_BROKER --list 2>&1;
-          exit 1;
-        fi"
+    volumes:
+      - ./init_kafka_topic.sh:/init_kafka_topic.sh
+    command: ["/bin/bash", "/init_kafka_topic.sh"]
     restart: on-failure
 
   neo4j:
