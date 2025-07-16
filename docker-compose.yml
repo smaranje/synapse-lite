@@ -150,7 +150,7 @@ services:
 
   data-generator:
     build:
-      context: ./data # <--- CORRECTED: Changed from ./data_generator to ./data
+      context: ./data # Corrected path based on ls -R output
       dockerfile: Dockerfile
     container_name: data-generator
     networks: [synapse-net]
@@ -185,7 +185,7 @@ services:
 
   neo4j-initializer:
     build:
-      context: ./neo4j_initializer
+      context: ./neo4j_scripts # Corrected path based on ls -R output
       dockerfile: Dockerfile
     container_name: neo4j-initializer
     networks: [synapse-net]
@@ -200,7 +200,7 @@ services:
 
   flask-llm-service:
     build:
-      context: ./ai_service # <--- CORRECTED: Changed from ./flask_llm_service to ./ai_service
+      context: ./ai_service # Corrected path based on ls -R output
       dockerfile: Dockerfile
     container_name: flask-llm-service
     networks: [synapse-net]
@@ -218,7 +218,7 @@ services:
 
   streamlit-dashboard:
     build:
-      context: ./streamlit_dashboard
+      context: ./streamlit_app # Corrected path based on ls -R output
       dockerfile: Dockerfile
     container_name: streamlit-dashboard
     networks: [synapse-net]
