@@ -1,5 +1,6 @@
-flask
+Flask
+requests
 google-generativeai
+cassandra-driver
 neo4j
-cassandra-driver # Even if not used, keep for consistency if it was there
-gunicorn # NEW: Added for running the Flask app
+gunicorn

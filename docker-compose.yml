@@ -200,7 +200,7 @@ services:
 
   flask-llm-service:
     build:
-      context: ./flask_llm_service
+      context: ./ai_service
       dockerfile: Dockerfile
     container_name: flask-llm-service
     networks: [synapse-net]
