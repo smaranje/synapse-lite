@@ -10,9 +10,9 @@ from pyspark.ml.classification import RandomForestClassificationModel
 from pyspark.ml.linalg import Vectors
 from neo4j import GraphDatabase, basic_auth
 import time # For retry logic
-# CORRECTED IMPORTS: Ensure these match the functions defined in model.py and fraud_rules.py
+# CORRECTED IMPORT: Changed from apply_smurfing_rule to detect_smurfing_rule
 from model import load_model, preprocess_features, explain_prediction
-from fraud_rules import apply_smurfing_rule # Corrected function name
+from fraud_rules import detect_smurfing_rule # Corrected function name
 
 import pandas as pd # Needed for toPandas and apply
 import requests # Import requests here as it's used in process_batch for LLM call
@@ -174,8 +174,8 @@ def process_batch(df, epoch_id):
         pandas_df['mlPrediction'] = 0 # Default if no model
         pandas_df['shap_features_json'] = "{}" # Default to empty JSON object
 
-    # Apply smurfing rule
-    pandas_df['isSmurfingRule'] = pandas_df.apply(apply_smurfing_rule, axis=1)
+    # Apply smurfing rule - NOW CALLING THE CORRECT FUNCTION NAME
+    pandas_df['isSmurfingRule'] = pandas_df.apply(detect_smurfing_rule, axis=1)
 
     # --- Write to Neo4j ---
     # Prepare data for Neo4j write in a format that SET t += $props can use
