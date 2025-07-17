@@ -1,4 +1,3 @@
-nohup: ignoring input
 
 Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
 
@@ -7,4 +6,3 @@ Collecting usage statistics. To deactivate, set browser.gatherUsageStats to fals
 
   URL: http://0.0.0.0:8501
 
-  Stopping...
