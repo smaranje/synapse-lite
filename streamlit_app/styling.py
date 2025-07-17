@@ -9,6 +9,12 @@ def apply_custom_css():
     """Apply the Coinbase-inspired CSS styling and hide default Streamlit sidebar nav header. Update sidebar and main background colors for Coinbase palette and high contrast. Ensure all text is visible in both light and dark mode."""
     st.markdown("""
         <style>
+        :root {
+            --card-text-color-light: #1a1a1a;
+            --card-text-color-dark: #fff;
+            --card-secondary-text-light: #6b7280;
+            --card-secondary-text-dark: #b0b8c1;
+        }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         /* Hide the default Streamlit sidebar navigation header */
         [data-testid="stSidebarNav"] {
@@ -158,8 +164,39 @@ def apply_custom_css():
             font-family: 'Inter', sans-serif;
             font-size: 0.875rem;
             font-weight: 500;
-            color: #1a1a1a;
+            color: var(--card-text-color-light);
             transition: all 0.2s ease;
+        }
+        .metric-card .metric-title {
+            font-size: 0.875rem;
+            color: var(--card-secondary-text-light);
+            margin-bottom: 0.25rem;
+        }
+        .metric-card .metric-value {
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: var(--card-text-color-light);
+        }
+        .metric-card .metric-delta {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            color: var(--card-secondary-text-light);
+        }
+        @media (prefers-color-scheme: dark) {
+            .metric-card {
+                background: #232b3b !important;
+                color: var(--card-text-color-dark) !important;
+                border-color: #2d3a54 !important;
+            }
+            .metric-card .metric-title {
+                color: var(--card-secondary-text-dark) !important;
+            }
+            .metric-card .metric-value {
+                color: var(--card-text-color-dark) !important;
+            }
+            .metric-card .metric-delta {
+                color: var(--card-secondary-text-dark) !important;
+            }
         }
         
         .metric-card:hover {
@@ -290,16 +327,15 @@ def create_metric_card(title, value, delta=None, delta_color="normal"):
     delta_html = ""
     if delta:
         color_class = {
-            "normal": "#6b7280",
-            "inverse": "#dc2626" if delta.startswith("+") else "#059669",
-            "off": "#6b7280"
+            "normal": "metric-delta",
+            "inverse": "metric-delta metric-delta-inverse",
+            "off": "metric-delta"
         }
-        delta_html = f'<div style="color: {color_class.get(delta_color, "#6b7280")}; font-size: 0.875rem; margin-top: 0.25rem;">{delta}</div>'
-    
+        delta_html = f'<div class="{color_class.get(delta_color, "metric-delta")}">{delta}</div>'
     return f"""
     <div class="metric-card">
-        <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">{title}</div>
-        <div style="font-size: 1.875rem; font-weight: 600; color: #1a1a1a;">{value}</div>
+        <div class="metric-title">{title}</div>
+        <div class="metric-value">{value}</div>
         {delta_html}
     </div>
     """
