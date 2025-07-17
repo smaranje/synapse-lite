@@ -15,20 +15,6 @@
 
 ---
 
-## Architecture Overview
-
-```mermaid
-graph TD
-  A[Kafka] --> B[Spark Streaming App]
-  B --> C[Neo4j]
-  B --> D[AI Service (Gemini LLM)]
-  C --> E[Streamlit Dashboard]
-  D --> E
-  F[Synthetic Data Generator] --> A
-```
-
----
-
 ## Directory Structure
 
 - `ai_service/` – Flask API for Gemini LLM-powered SAR generation and Neo4j integration
