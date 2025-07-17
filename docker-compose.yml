@@ -209,7 +209,7 @@ services:
       - FLASK_RUN_HOST=0.0.0.0
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:5000/health').raise_for_status()"]
       interval: 10s
       timeout: 5s
       retries: 5
