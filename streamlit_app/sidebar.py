@@ -15,8 +15,7 @@ def render_sidebar():
     """Render the enterprise-style sidebar navigation and return selected page"""
     with st.sidebar:
         st.markdown(
-            '''<div style="display:flex;align-items:center;gap:0.5rem;padding:1.5rem 0 1.5rem 0;">
-                <span style="font-size:2rem;line-height:1;">🔷</span>
+            '''<div style="padding:1.5rem 0 1.5rem 0;">
                 <span style="font-weight:700;font-size:1.25rem;color:#222;letter-spacing:-0.01em;">Synapse-Lite</span>
             </div>''',
             unsafe_allow_html=True
@@ -55,16 +54,6 @@ def render_sidebar():
             }
             [data-testid="stSidebar"] .stRadio > div > div { width: 100%; }
             </style>''',
-            unsafe_allow_html=True
-        )
-        # System status as small footer
-        st.markdown('<div style="height:2rem;"></div>', unsafe_allow_html=True)
-        st.markdown(
-            '''<div style="position:absolute;bottom:2rem;left:1.5rem;font-size:0.95rem;color:#888;">
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:6px;"></span> Neo4j
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#0a7cff;margin:0 6px 0 18px;"></span> Kafka
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e42;margin:0 6px 0 18px;"></span> AI
-            </div>''',
             unsafe_allow_html=True
         )
     return selected_page
