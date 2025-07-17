@@ -4,7 +4,7 @@ import streamlit as st
 from config import APP_TITLE, APP_ICON
 
 def apply_custom_css():
-    """Apply Coinbase Business dashboard styling with clean, modern design"""
+    """Apply Coinbase Business dashboard styling with proper theme support"""
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -17,16 +17,6 @@ def apply_custom_css():
             --cb-green: #00d924;
             --cb-red: #f5455c;
             --cb-orange: #ff9500;
-            --cb-gray-50: #fafbfc;
-            --cb-gray-100: #f4f6f8;
-            --cb-gray-200: #e6ebf1;
-            --cb-gray-300: #d4dbe3;
-            --cb-gray-400: #9aa5b1;
-            --cb-gray-500: #708797;
-            --cb-gray-600: #5b6975;
-            --cb-gray-700: #434d5a;
-            --cb-gray-800: #1a1d29;
-            --cb-gray-900: #0f1419;
             
             /* Layout */
             --cb-border-radius: 8px;
@@ -44,35 +34,11 @@ def apply_custom_css():
             --cb-font-size-2xl: 1.5rem;
             --cb-font-size-3xl: 1.875rem;
             --cb-font-size-4xl: 2.25rem;
-
-            /* Adapt grayscale palette to Streamlit theme so it works in both modes */
-            --cb-gray-900: var(--text-color);
-            --cb-gray-800: var(--text-color);
-            --cb-gray-700: var(--text-color);
-            --cb-gray-600: var(--text-color);
-            --cb-gray-500: var(--text-color);
-            --cb-gray-400: var(--text-color);
-            --cb-gray-300: var(--secondary-background-color);
-            --cb-gray-200: var(--secondary-background-color);
-            --cb-gray-100: var(--secondary-background-color);
-            --cb-gray-50: var(--secondary-background-color);
         }
 
-        /* Reset and Base Styles */
-        .main > div {
-            padding-top: 2rem !important;
-        }
-        
-        /* Let Streamlit handle the actual colours so we are compatible with both light and dark themes */
-        .stApp {
-            background-color: var(--background-color) !important;
-        }
-
-        body, .stApp, .main, [data-testid="stAppViewContainer"] {
+        /* Base font application */
+        .main, .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"], body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-            background-color: var(--background-color) !important;
-            color: var(--text-color) !important;
-            line-height: 1.5 !important;
         }
 
         /* Remove Streamlit branding and menu */
@@ -81,342 +47,251 @@ def apply_custom_css():
         header {visibility: hidden;}
         .stDeployButton {display:none;}
 
-        /* Sidebar Styling */
-        .css-1d391kg, [data-testid="stSidebar"] {
-            background-color: white !important;
-            border-right: 1px solid var(--cb-gray-200) !important;
-            box-shadow: var(--cb-shadow-sm) !important;
-        }
-        
-        .css-1d391kg .element-container, [data-testid="stSidebar"] .element-container {
-            padding: 0 !important;
+        /* Sidebar improvements */
+        [data-testid="stSidebar"] {
+            background-color: var(--background-color) !important;
+            border-right: 1px solid var(--secondary-background-color) !important;
         }
 
-        /* Custom Header */
+        /* Dashboard Header */
         .cb-dashboard-header {
-            background: white;
+            background: var(--background-color) !important;
+            color: var(--text-color) !important;
             padding: 1.5rem 2rem;
-            margin: -2rem -2rem 2rem -2rem;
-            border-bottom: 1px solid var(--cb-gray-200);
-            box-shadow: var(--cb-shadow-sm);
+            margin: -1rem -1rem 2rem -1rem;
+            border-bottom: 1px solid var(--secondary-background-color);
+            border-radius: var(--cb-border-radius-lg);
+            box-shadow: var(--cb-shadow);
         }
         
         .cb-balance-display {
-            font-size: var(--cb-font-size-4xl);
-            font-weight: 700;
-            color: var(--cb-gray-900);
-            margin: 0;
-            line-height: 1.1;
+            font-size: var(--cb-font-size-4xl) !important;
+            font-weight: 700 !important;
+            color: var(--text-color) !important;
+            margin: 0 !important;
+            line-height: 1.1 !important;
+            font-family: 'Inter', sans-serif !important;
         }
         
         .cb-balance-change {
-            font-size: var(--cb-font-size-base);
-            color: var(--cb-green);
-            font-weight: 500;
-            margin-top: 0.25rem;
+            font-size: var(--cb-font-size-base) !important;
+            color: var(--cb-green) !important;
+            font-weight: 500 !important;
+            margin-top: 0.25rem !important;
+            font-family: 'Inter', sans-serif !important;
         }
 
-        /* Card Styling */
+        /* Card Styling - Fixed for both themes */
         .cb-card {
-            background: white;
-            border: 1px solid var(--cb-gray-200);
-            border-radius: var(--cb-border-radius-lg);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--cb-shadow-sm);
-            transition: all 0.2s ease;
+            background: var(--secondary-background-color) !important;
+            border: 1px solid var(--secondary-background-color) !important;
+            border-radius: var(--cb-border-radius-lg) !important;
+            padding: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+            box-shadow: var(--cb-shadow) !important;
+            transition: all 0.2s ease !important;
+            color: var(--text-color) !important;
         }
         
         .cb-card:hover {
-            box-shadow: var(--cb-shadow);
-            border-color: var(--cb-gray-300);
+            box-shadow: var(--cb-shadow-lg) !important;
+            transform: translateY(-1px) !important;
         }
 
         .cb-card-title {
-            font-size: var(--cb-font-size-lg);
-            font-weight: 600;
-            color: var(--cb-gray-900);
-            margin: 0 0 1rem 0;
+            font-size: var(--cb-font-size-lg) !important;
+            font-weight: 600 !important;
+            color: var(--text-color) !important;
+            margin: 0 0 1rem 0 !important;
+            font-family: 'Inter', sans-serif !important;
         }
 
-        /* Metric Cards */
+        /* Metric Cards - Enhanced visibility */
         .cb-metric-card {
-            background: white;
-            border: 1px solid var(--cb-gray-200);
-            border-radius: var(--cb-border-radius);
-            padding: 1.25rem;
-            text-align: left;
-            height: 100%;
-            transition: all 0.2s ease;
+            background: var(--secondary-background-color) !important;
+            border: 2px solid var(--secondary-background-color) !important;
+            border-radius: var(--cb-border-radius) !important;
+            padding: 1.25rem !important;
+            text-align: left !important;
+            height: 100% !important;
+            transition: all 0.2s ease !important;
+            color: var(--text-color) !important;
+            box-shadow: var(--cb-shadow) !important;
         }
         
         .cb-metric-card:hover {
-            box-shadow: var(--cb-shadow);
+            box-shadow: var(--cb-shadow-lg) !important;
+            transform: translateY(-2px) !important;
+            border-color: var(--cb-blue) !important;
         }
 
         .cb-metric-label {
-            font-size: var(--cb-font-size-sm);
-            color: var(--cb-gray-600);
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            text-transform: none;
+            font-size: var(--cb-font-size-sm) !important;
+            color: var(--text-color) !important;
+            opacity: 0.8 !important;
+            font-weight: 500 !important;
+            margin-bottom: 0.5rem !important;
+            text-transform: none !important;
+            font-family: 'Inter', sans-serif !important;
         }
 
         .cb-metric-value {
-            font-size: var(--cb-font-size-2xl);
-            font-weight: 700;
-            color: var(--cb-gray-900);
-            margin-bottom: 0.25rem;
+            font-size: var(--cb-font-size-2xl) !important;
+            font-weight: 700 !important;
+            color: var(--text-color) !important;
+            margin-bottom: 0.25rem !important;
+            font-family: 'Inter', sans-serif !important;
         }
 
         .cb-metric-change {
-            font-size: var(--cb-font-size-sm);
-            font-weight: 500;
+            font-size: var(--cb-font-size-sm) !important;
+            font-weight: 500 !important;
+            font-family: 'Inter', sans-serif !important;
         }
 
         .cb-metric-change.positive {
-            color: var(--cb-green);
+            color: var(--cb-green) !important;
         }
 
         .cb-metric-change.negative {
-            color: var(--cb-red);
+            color: var(--cb-red) !important;
         }
 
         /* Buttons */
         .cb-btn {
-            background: var(--cb-blue);
-            color: white;
-            border: none;
-            border-radius: var(--cb-border-radius);
-            padding: 0.75rem 1.5rem;
-            font-size: var(--cb-font-size-sm);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+            background: var(--cb-blue) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: var(--cb-border-radius) !important;
+            padding: 0.75rem 1.5rem !important;
+            font-size: var(--cb-font-size-sm) !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            text-decoration: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            font-family: 'Inter', sans-serif !important;
         }
 
         .cb-btn:hover {
-            background: var(--cb-blue-hover);
-            transform: translateY(-1px);
-            box-shadow: var(--cb-shadow);
-        }
-
-        .cb-btn-secondary {
-            background: white;
-            color: var(--cb-blue);
-            border: 1px solid var(--cb-gray-200);
-        }
-
-        .cb-btn-secondary:hover {
-            background: var(--cb-gray-50);
-            border-color: var(--cb-blue);
+            background: var(--cb-blue-hover) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: var(--cb-shadow) !important;
         }
 
         /* Quick Actions */
         .cb-quick-actions {
-            background: white;
-            border: 1px solid var(--cb-gray-200);
-            border-radius: var(--cb-border-radius-lg);
-            padding: 1.5rem;
+            background: var(--secondary-background-color) !important;
+            border: 1px solid var(--secondary-background-color) !important;
+            border-radius: var(--cb-border-radius-lg) !important;
+            padding: 1.5rem !important;
+            box-shadow: var(--cb-shadow) !important;
         }
 
         .cb-action-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem;
-            border: 1px solid var(--cb-gray-200);
-            border-radius: var(--cb-border-radius);
-            background: white;
-            color: var(--cb-gray-900);
-            text-decoration: none;
-            transition: all 0.2s ease;
-            margin-bottom: 0.5rem;
-            width: 100%;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.75rem !important;
+            padding: 1rem !important;
+            border: 1px solid var(--secondary-background-color) !important;
+            border-radius: var(--cb-border-radius) !important;
+            background: var(--background-color) !important;
+            color: var(--text-color) !important;
+            text-decoration: none !important;
+            transition: all 0.2s ease !important;
+            margin-bottom: 0.5rem !important;
+            width: 100% !important;
+            font-family: 'Inter', sans-serif !important;
         }
 
         .cb-action-btn:hover {
-            background: var(--cb-gray-50);
-            border-color: var(--cb-blue);
-            color: var(--cb-blue);
+            background: var(--secondary-background-color) !important;
+            border-color: var(--cb-blue) !important;
+            color: var(--cb-blue) !important;
+            transform: translateX(4px) !important;
         }
 
         .cb-action-icon {
-            width: 20px;
-            height: 20px;
-            background: var(--cb-blue);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
+            width: 20px !important;
+            height: 20px !important;
+            font-size: 1.2rem !important;
         }
 
-        /* Status Indicators */
+        /* Status indicators */
         .cb-status-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: var(--cb-font-size-sm);
-            font-weight: 500;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            color: var(--text-color) !important;
+            font-family: 'Inter', sans-serif !important;
         }
 
         .cb-status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
+            width: 8px !important;
+            height: 8px !important;
+            border-radius: 50% !important;
         }
 
-        .cb-status-dot.online { background: var(--cb-green); }
-        .cb-status-dot.warning { background: var(--cb-orange); }
-        .cb-status-dot.error { background: var(--cb-red); }
-
-        /* Badges */
-        .cb-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: var(--cb-font-size-xs);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .cb-status-dot.online {
+            background-color: var(--cb-green) !important;
         }
 
-        /* Risk badges */
-        .cb-badge.critical { 
-            background: #fef2f2; 
-            color: #dc2626; 
-            border: 1px solid #fecaca;
-        }
-        .cb-badge.high { 
-            background: #fff7ed; 
-            color: #ea580c; 
-            border: 1px solid #fed7aa;
-        }
-        .cb-badge.medium { 
-            background: #fefce8; 
-            color: #ca8a04; 
-            border: 1px solid #fef08a;
-        }
-        .cb-badge.low { 
-            background: #f0fdf4; 
-            color: #16a34a; 
-            border: 1px solid #bbf7d0;
+        .cb-status-dot.warning {
+            background-color: var(--cb-orange) !important;
         }
 
-        /* Status badges */
-        .cb-badge.confirmed { 
-            background: #f0fdf4; 
-            color: #16a34a; 
-            border: 1px solid #bbf7d0;
-        }
-        .cb-badge.pending { 
-            background: #fefce8; 
-            color: #ca8a04; 
-            border: 1px solid #fef08a;
-        }
-        .cb-badge.flagged { 
-            background: #fef2f2; 
-            color: #dc2626; 
-            border: 1px solid #fecaca;
+        .cb-status-dot.error {
+            background-color: var(--cb-red) !important;
         }
 
-        /* Charts */
-        .cb-chart-container {
-            background: white;
-            border: 1px solid var(--cb-gray-200);
-            border-radius: var(--cb-border-radius-lg);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        /* Tables */
-        .cb-table {
-            width: 100%;
-            background: white;
-            border: 1px solid var(--cb-gray-200);
-            border-radius: var(--cb-border-radius-lg);
-            overflow: hidden;
-        }
-
-        .cb-table th {
-            background: var(--cb-gray-50);
-            padding: 0.75rem 1rem;
-            font-size: var(--cb-font-size-sm);
-            font-weight: 600;
-            color: var(--cb-gray-700);
-            border-bottom: 1px solid var(--cb-gray-200);
-        }
-
-        .cb-table td {
-            padding: 0.75rem 1rem;
-            font-size: var(--cb-font-size-sm);
-            border-bottom: 1px solid var(--cb-gray-200);
-        }
-
-        /* Streamlit overrides */
-        .stMetric {
-            background: white !important;
-            padding: 1.25rem !important;
-            border-radius: var(--cb-border-radius) !important;
-            border: 1px solid var(--cb-gray-200) !important;
-            box-shadow: var(--cb-shadow-sm) !important;
-        }
-
-        .stMetric > div {
-            color: var(--cb-gray-900) !important;
-        }
-
-        .stMetric [data-testid="metric-container"] > div:first-child {
-            font-size: var(--cb-font-size-sm) !important;
-            color: var(--cb-gray-600) !important;
-            font-weight: 500 !important;
-        }
-
-        .stMetric [data-testid="metric-container"] > div:nth-child(2) {
-            font-size: var(--cb-font-size-2xl) !important;
-            font-weight: 700 !important;
-            color: var(--cb-gray-900) !important;
-        }
-
-        /* Make sure our custom cards pick up the secondary background so text remains visible in both modes */
-        .cb-card,
-        .cb-metric-card,
-        .cb-quick-actions,
-        .cb-chart-container,
-        .cb-table,
-        .cb-dashboard-header,
-        .cb-action-btn,
-        .cb-btn-secondary {
+        /* Alert cards */
+        .cb-alert-card {
             background: var(--secondary-background-color) !important;
-        }
-
-        /* Universal text colour override for our components */
-        .cb-card-title,
-        .cb-metric-value,
-        .cb-metric-label,
-        .cb-balance-display,
-        .cb-balance-change,
-        .cb-status-indicator,
-        [data-testid="stSidebar"] .stRadio > div > label > div {
+            border-radius: var(--cb-border-radius) !important;
+            padding: 1rem !important;
+            margin-bottom: 1rem !important;
+            border-left: 4px solid var(--cb-blue) !important;
+            box-shadow: var(--cb-shadow-sm) !important;
             color: var(--text-color) !important;
         }
 
-        /* Responsive */
+        /* Chart containers */
+        .cb-chart-container {
+            background: var(--secondary-background-color) !important;
+            border-radius: var(--cb-border-radius-lg) !important;
+            padding: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+            box-shadow: var(--cb-shadow) !important;
+        }
+
+        /* Override all text to use Inter font */
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        }
+
+        /* Fix any remaining text color issues */
+        .cb-card *,
+        .cb-metric-card *,
+        .cb-dashboard-header *,
+        .cb-quick-actions *,
+        .cb-action-btn * {
+            color: inherit !important;
+        }
+
+        /* Responsive design */
         @media (max-width: 768px) {
             .cb-balance-display {
-                font-size: var(--cb-font-size-3xl);
+                font-size: var(--cb-font-size-3xl) !important;
             }
             
             .cb-metric-value {
-                font-size: var(--cb-font-size-xl);
+                font-size: var(--cb-font-size-xl) !important;
+            }
+            
+            .cb-card, .cb-metric-card {
+                padding: 1rem !important;
             }
         }
         </style>
@@ -448,7 +323,7 @@ def create_status_card(status, description, color="green"):
             <div class="cb-status-dot {status_color}"></div>
             <strong>{status}</strong>
         </div>
-        <div style="margin-top: 0.5rem; color: var(--cb-gray-600); font-size: var(--cb-font-size-sm);">
+        <div style="margin-top: 0.5rem; opacity: 0.8; font-size: var(--cb-font-size-sm);">
             {description}
         </div>
     </div>
@@ -468,7 +343,7 @@ def create_alert_card(title, description, level="info"):
     return f"""
     <div class="cb-card" style="border-left: 4px solid {color};">
         <div class="cb-card-title">{title}</div>
-        <div style="color: var(--cb-gray-600); font-size: var(--cb-font-size-sm);">
+        <div style="opacity: 0.8; font-size: var(--cb-font-size-sm);">
             {description}
         </div>
     </div>

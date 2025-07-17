@@ -4,7 +4,6 @@ import streamlit as st
 import sys
 import os
 import traceback
-import html
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,18 +22,10 @@ except Exception as e:
     st.code(traceback.format_exc())
 
 
-def safe_render_html(html_content, **kwargs):
-    """Safely render HTML content, handling potential escaping issues"""
-    # Check if content contains escaped HTML entities
-    if html_content and ('&lt;' in html_content or '&gt;' in html_content or '&amp;' in html_content):
-        # Unescape the HTML
-        html_content = html.unescape(html_content)
-    
-    # Default to unsafe_allow_html=True for HTML content
-    if 'unsafe_allow_html' not in kwargs:
-        kwargs['unsafe_allow_html'] = True
-    
-    st.markdown(html_content, **kwargs)
+def render_html_safely(html_content):
+    """Safely render HTML content without escaping issues"""
+    if html_content:
+        st.markdown(html_content, unsafe_allow_html=True)
 
 
 def render_dashboard():
@@ -49,7 +40,7 @@ def render_dashboard():
         balance_change = "$394.24 1D"
         
         # Coinbase-style dashboard header with balance
-        safe_render_html(create_dashboard_header(total_balance, balance_change))
+        render_html_safely(create_dashboard_header(total_balance, balance_change))
         
         # Main layout with sidebar for quick actions
         col_main, col_sidebar = st.columns([3, 1])
@@ -62,7 +53,7 @@ def render_dashboard():
             col1, col2 = st.columns(2)
             
             with col1:
-                safe_render_html(
+                render_html_safely(
                     create_metric_card(
                         "Fraud Detection", 
                         f"{metrics['fraud_alerts_today']}", 
@@ -71,7 +62,7 @@ def render_dashboard():
                 )
                 
             with col2:
-                safe_render_html(
+                render_html_safely(
                     create_metric_card(
                         "System Uptime", 
                         f"{metrics['system_uptime']:.1f}%", 
@@ -82,7 +73,7 @@ def render_dashboard():
             col3, col4 = st.columns(2)
             
             with col3:
-                safe_render_html(
+                render_html_safely(
                     create_metric_card(
                         "Transactions Today", 
                         f"{metrics['total_transactions_today']:,}", 
@@ -91,7 +82,7 @@ def render_dashboard():
                 )
                 
             with col4:
-                safe_render_html(
+                render_html_safely(
                     create_metric_card(
                         "Processing Speed", 
                         f"{metrics['api_response_time']:.0f}ms", 
@@ -106,46 +97,46 @@ def render_dashboard():
             col_chart1, col_chart2 = st.columns(2)
             
             with col_chart1:
-                st.markdown('<div class="cb-chart-container">', unsafe_allow_html=True)
+                render_html_safely('<div class="cb-chart-container">')
                 st.subheader("Hourly Transaction Volume")
                 hourly_chart = create_hourly_volume_chart()
                 if hourly_chart:
                     st.plotly_chart(hourly_chart, use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                render_html_safely('</div>')
             
             with col_chart2:
-                st.markdown('<div class="cb-chart-container">', unsafe_allow_html=True)
+                render_html_safely('<div class="cb-chart-container">')
                 st.subheader("Risk Distribution")
                 risk_chart = create_risk_distribution_pie()
                 if risk_chart:
                     st.plotly_chart(risk_chart, use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                render_html_safely('</div>')
             
             # Additional charts row
             col_chart3, col_chart4 = st.columns(2)
             
             with col_chart3:
-                st.markdown('<div class="cb-chart-container">', unsafe_allow_html=True)
+                render_html_safely('<div class="cb-chart-container">')
                 st.subheader("Risk Trend Analysis")
                 trend_chart = create_risk_trend_chart()
                 if trend_chart:
                     st.plotly_chart(trend_chart, use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                render_html_safely('</div>')
             
             with col_chart4:
-                st.markdown('<div class="cb-chart-container">', unsafe_allow_html=True)
+                render_html_safely('<div class="cb-chart-container">')
                 st.subheader("Alert Volume")
                 alert_chart = create_alert_volume_chart()
                 if alert_chart:
                     st.plotly_chart(alert_chart, use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                render_html_safely('</div>')
         
         with col_sidebar:
             # Quick actions panel (Coinbase-style)
             st.markdown("## Quick actions")
             
             # Custom fraud detection actions
-            safe_render_html("""
+            render_html_safely("""
             <div class="cb-quick-actions">
                 <a href="#" class="cb-action-btn">
                     <div class="cb-action-icon">🔍</div>
@@ -189,13 +180,13 @@ def render_dashboard():
                 status_text = "System issues"
                 status_desc = "Please check system status"
             
-            safe_render_html(f"""
+            render_html_safely(f"""
             <div class="cb-card">
                 <div class="cb-status-indicator">
                     <div class="cb-status-dot {'online' if status_color == 'green' else 'warning' if status_color == 'yellow' else 'error'}"></div>
                     <strong>{status_text}</strong>
                 </div>
-                <div style="margin-top: 0.5rem; color: var(--cb-gray-600); font-size: var(--cb-font-size-sm);">
+                <div style="margin-top: 0.5rem; opacity: 0.8; font-size: var(--cb-font-size-sm);">
                     {status_desc}
                 </div>
             </div>
@@ -205,7 +196,7 @@ def render_dashboard():
             st.markdown("## Recent Alerts")
             
             if metrics['fraud_alerts_today'] > 10:
-                safe_render_html(
+                render_html_safely(
                     create_alert_card(
                         "High Alert Volume", 
                         f"{metrics['fraud_alerts_today']} alerts today", 
@@ -213,7 +204,7 @@ def render_dashboard():
                     )
                 )
             elif metrics['fraud_alerts_today'] > 5:
-                safe_render_html(
+                render_html_safely(
                     create_alert_card(
                         "Normal Activity", 
                         f"{metrics['fraud_alerts_today']} alerts today", 
@@ -221,7 +212,7 @@ def render_dashboard():
                     )
                 )
             else:
-                safe_render_html(
+                render_html_safely(
                     create_alert_card(
                         "Low Activity", 
                         f"{metrics['fraud_alerts_today']} alerts today", 
@@ -238,5 +229,5 @@ def render_dashboard():
         
         # Try a simple HTML test
         st.markdown("### Testing HTML rendering:")
-        test_html = '<div style="color: red;">If this is red, HTML works</div>'
+        test_html = '<div style="background: var(--secondary-background-color); padding: 1rem; border-radius: 8px; color: var(--text-color);">✅ If this card is visible with proper styling, HTML works correctly</div>'
         st.markdown(test_html, unsafe_allow_html=True)
