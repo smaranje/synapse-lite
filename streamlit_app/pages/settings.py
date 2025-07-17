@@ -1,326 +1,499 @@
-# Settings page module
+"""
+Settings Page for Synapse-Lite
+Application configuration and user preferences
+"""
 
 import streamlit as st
-import sys
-import os
+import json
+from datetime import datetime
 
-# Add parent directory to path for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-def render_settings():
-    """Render the system configuration settings page"""
-    st.title("⚙️ Settings")
-    st.markdown("### System Configuration & Preferences")
+class SettingsPage:
+    """Settings page implementation"""
     
-    # Settings tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🔧 General", "🔒 Security", "📊 Detection", "🔔 Alerts", "💾 Data"])
+    def __init__(self, app_state):
+        self.app_state = app_state
     
-    with tab1:
-        st.markdown("## General Settings")
-        
-        # Display preferences
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("### Display Preferences")
-            
-            theme = st.selectbox("Theme", ["Light", "Dark", "Auto"], index=0)
-            refresh_rate = st.slider("Auto-refresh Rate (seconds)", 5, 300, 30)
-            show_animations = st.checkbox("Enable animations", value=True)
-            compact_view = st.checkbox("Compact view mode", value=False)
-            
-            st.markdown("### Language & Localization")
-            language = st.selectbox("Language", ["English", "Spanish", "French", "German"], index=0)
-            timezone = st.selectbox("Timezone", ["UTC", "EST", "PST", "CET"], index=0)
-            date_format = st.selectbox("Date Format", ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"], index=0)
-        
-        with col2:
-            st.markdown("### Performance Settings")
-            
-            max_transactions = st.slider("Max transactions to display", 50, 1000, 200)
-            cache_duration = st.slider("Cache duration (minutes)", 1, 60, 5)
-            enable_lazy_loading = st.checkbox("Enable lazy loading", value=True)
-            
-            st.markdown("### User Preferences")
-            default_page = st.selectbox("Default page", ["Dashboard", "Transactions", "Alerts", "Analytics"], index=0)
-            sidebar_collapsed = st.checkbox("Sidebar collapsed by default", value=False)
-            
-        # Save settings
-        if st.button("💾 Save General Settings", type="primary"):
-            st.success("General settings saved successfully!")
+    def render(self):
+        """Render the settings page"""
+        self._render_settings_header()
+        self._render_settings_tabs()
     
-    with tab2:
-        st.markdown("## Security Settings")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("### Authentication")
-            
-            session_timeout = st.selectbox("Session timeout", ["15 min", "30 min", "1 hour", "4 hours", "8 hours"], index=1)
-            require_2fa = st.checkbox("Require two-factor authentication", value=False)
-            password_expiry = st.selectbox("Password expiry", ["Never", "30 days", "60 days", "90 days"], index=2)
-            
-            st.markdown("### Access Control")
-            admin_email = st.text_input("Admin Email", value="admin@company.com")
-            max_failed_logins = st.slider("Max failed login attempts", 3, 10, 5)
-            lockout_duration = st.slider("Account lockout duration (minutes)", 5, 60, 15)
-        
-        with col2:
-            st.markdown("### API Security")
-            
-            api_key_expiry = st.selectbox("API key expiry", ["30 days", "90 days", "1 year", "Never"], index=1)
-            rate_limiting = st.checkbox("Enable API rate limiting", value=True)
-            if rate_limiting:
-                rate_limit = st.slider("Requests per minute", 60, 1000, 300)
-            
-            st.markdown("### Audit & Logging")
-            enable_audit_log = st.checkbox("Enable audit logging", value=True)
-            log_level = st.selectbox("Log Level", ["INFO", "DEBUG", "WARNING", "ERROR"], index=0)
-            retain_logs = st.selectbox("Log retention period", ["30 days", "90 days", "1 year", "2 years"], index=1)
-        
-        # Security status
-        st.markdown("---")
-        st.markdown("### Security Status")
-        
-        status_col1, status_col2, status_col3 = st.columns(3)
-        
-        with status_col1:
-            st.markdown("""
-            <div style="padding: 1rem; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
-                <div style="color: #059669; font-weight: 600; margin-bottom: 0.5rem;">🔒 Security Score</div>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #059669;">94/100</div>
-                <div style="font-size: 0.875rem; color: #16a34a;">Excellent</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with status_col2:
-            st.markdown("""
-            <div style="padding: 1rem; background: #fffbeb; border-radius: 8px; border: 1px solid #fed7aa;">
-                <div style="color: #ea580c; font-weight: 600; margin-bottom: 0.5rem;">⚠️ Vulnerabilities</div>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #ea580c;">2</div>
-                <div style="font-size: 0.875rem; color: #ea580c;">Needs attention</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with status_col3:
-            st.markdown("""
-            <div style="padding: 1rem; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe;">
-                <div style="color: #0052ff; font-weight: 600; margin-bottom: 0.5rem;">🛡️ Last Scan</div>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #0052ff;">2h ago</div>
-                <div style="font-size: 0.875rem; color: #0052ff;">Up to date</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        if st.button("🔒 Save Security Settings", type="primary"):
-            st.success("Security settings updated successfully!")
+    def _render_settings_header(self):
+        """Render settings page header"""
+        st.markdown("## ⚙️ Settings & Configuration")
+        st.markdown("Configure application preferences, system settings, and user options")
     
-    with tab3:
-        st.markdown("## Detection Settings")
+    def _render_settings_tabs(self):
+        """Render settings organized in tabs"""
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "🎨 Appearance", 
+            "🔔 Notifications", 
+            "🔒 Security", 
+            "⚙️ System", 
+            "📊 Data"
+        ])
+        
+        with tab1:
+            self._render_appearance_settings()
+        
+        with tab2:
+            self._render_notification_settings()
+        
+        with tab3:
+            self._render_security_settings()
+        
+        with tab4:
+            self._render_system_settings()
+        
+        with tab5:
+            self._render_data_settings()
+    
+    def _render_appearance_settings(self):
+        """Render appearance and UI settings"""
+        st.markdown("### 🎨 Appearance Settings")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("### Risk Thresholds")
+            st.markdown("#### Theme & Layout")
             
-            critical_threshold = st.slider("Critical Risk Threshold (%)", 70, 100, 80)
-            high_threshold = st.slider("High Risk Threshold (%)", 50, 90, 60)
-            medium_threshold = st.slider("Medium Risk Threshold (%)", 20, 70, 40)
+            # Theme selection
+            current_theme = self.app_state.get_setting('theme', 'dark')
+            theme = st.selectbox(
+                "Color Theme",
+                ["dark", "light"],
+                index=0 if current_theme == 'dark' else 1,
+                help="Choose between dark and light theme"
+            )
             
-            st.markdown("### Detection Rules")
-            enable_ml_detection = st.checkbox("Enable ML-based detection", value=True)
-            enable_rule_engine = st.checkbox("Enable rule engine", value=True)
-            enable_pattern_matching = st.checkbox("Enable pattern matching", value=True)
+            if theme != current_theme:
+                self.app_state.set_setting('theme', theme)
+                st.rerun()
             
-            st.markdown("### Transaction Limits")
-            max_transaction_amount = st.number_input("Max transaction amount ($)", value=10000, min_value=0)
-            daily_volume_limit = st.number_input("Daily volume limit ($)", value=50000, min_value=0)
+            # Layout preferences
+            compact_view = st.checkbox(
+                "Compact View",
+                value=self.app_state.get_setting('compact_view', False),
+                help="Use compact layout to show more information"
+            )
+            self.app_state.set_setting('compact_view', compact_view)
+            
+            # Chart animations
+            chart_animation = st.checkbox(
+                "Chart Animations",
+                value=self.app_state.get_setting('chart_animation', True),
+                help="Enable smooth animations in charts and graphs"
+            )
+            self.app_state.set_setting('chart_animation', chart_animation)
         
         with col2:
-            st.markdown("### Model Configuration")
+            st.markdown("#### Display Options")
             
-            model_version = st.selectbox("Active Model Version", ["v2.1.3", "v2.1.2", "v2.0.8"], index=0)
-            model_sensitivity = st.slider("Model Sensitivity", 0.1, 1.0, 0.7, 0.1)
-            auto_retrain = st.checkbox("Enable automatic retraining", value=True)
+            # Currency display
+            currency = st.selectbox(
+                "Currency Display",
+                ["USD", "EUR", "GBP", "BTC"],
+                index=["USD", "EUR", "GBP", "BTC"].index(self.app_state.get_setting('currency', 'USD')),
+                help="Primary currency for displaying amounts"
+            )
+            self.app_state.set_setting('currency', currency)
             
-            st.markdown("### Real-time Processing")
-            processing_mode = st.selectbox("Processing Mode", ["Real-time", "Batch", "Hybrid"], index=0)
-            batch_size = st.slider("Batch Size", 100, 10000, 1000)
-            processing_timeout = st.slider("Processing Timeout (seconds)", 1, 30, 10)
+            # Timezone
+            timezone = st.selectbox(
+                "Timezone",
+                ["UTC", "America/New_York", "Europe/London", "Asia/Tokyo", "America/Los_Angeles"],
+                index=["UTC", "America/New_York", "Europe/London", "Asia/Tokyo", "America/Los_Angeles"].index(
+                    self.app_state.get_setting('timezone', 'UTC')
+                ),
+                help="Timezone for displaying timestamps"
+            )
+            self.app_state.set_setting('timezone', timezone)
             
-            st.markdown("### False Positive Management")
-            auto_dismiss_threshold = st.slider("Auto-dismiss threshold (%)", 0, 50, 15)
-            whitelist_addresses = st.text_area("Whitelisted Addresses (one per line)", height=100)
+            # Max transactions to display
+            max_transactions = st.slider(
+                "Max Transactions Display",
+                min_value=100,
+                max_value=5000,
+                value=self.app_state.get_setting('max_transactions_display', 1000),
+                step=100,
+                help="Maximum number of transactions to show in tables"
+            )
+            self.app_state.set_setting('max_transactions_display', max_transactions)
         
-        # Model performance metrics
-        st.markdown("---")
-        st.markdown("### Current Model Performance")
-        
-        perf_col1, perf_col2, perf_col3, perf_col4 = st.columns(4)
-        
-        with perf_col1:
-            st.metric("Accuracy", "94.2%", "+1.3%")
-        with perf_col2:
-            st.metric("Precision", "91.8%", "+0.7%")
-        with perf_col3:
-            st.metric("Recall", "93.0%", "-0.2%")
-        with perf_col4:
-            st.metric("F1-Score", "92.4%", "+0.5%")
-        
-        if st.button("🎯 Save Detection Settings", type="primary"):
-            st.success("Detection settings configured successfully!")
+        # Theme preview
+        st.markdown("#### Theme Preview")
+        with st.container():
+            preview_col1, preview_col2, preview_col3 = st.columns(3)
+            
+            with preview_col1:
+                st.markdown("""
+                    <div class="metric-card">
+                        <div class="metric-label">Sample Metric</div>
+                        <div class="metric-value">1,234</div>
+                        <div class="metric-delta positive">+5.2%</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with preview_col2:
+                st.markdown("""
+                    <div class="alert-card medium">
+                        <strong>Sample Alert</strong><br>
+                        This is how alerts will appear with your current theme settings.
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with preview_col3:
+                st.info("This is a sample info message showing your theme colors.")
     
-    with tab4:
-        st.markdown("## Alert Settings")
+    def _render_notification_settings(self):
+        """Render notification preferences"""
+        st.markdown("### 🔔 Notification Settings")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("### Notification Preferences")
+            st.markdown("#### Alert Notifications")
             
-            email_alerts = st.checkbox("Enable email alerts", value=True)
-            if email_alerts:
-                alert_email = st.text_input("Alert Email Address", value="alerts@company.com")
-                email_frequency = st.selectbox("Email Frequency", ["Immediate", "Every 5 min", "Hourly", "Daily"], index=0)
+            # General notifications
+            show_notifications = st.checkbox(
+                "Enable Notifications",
+                value=self.app_state.get_setting('show_notifications', True),
+                help="Show system notifications and alerts"
+            )
+            self.app_state.set_setting('show_notifications', show_notifications)
             
-            sms_alerts = st.checkbox("Enable SMS alerts", value=False)
-            if sms_alerts:
-                sms_number = st.text_input("SMS Number", placeholder="+1234567890")
-                sms_critical_only = st.checkbox("SMS for critical alerts only", value=True)
+            # Sound alerts
+            sound_alerts = st.checkbox(
+                "Sound Alerts",
+                value=self.app_state.get_setting('enable_sound_alerts', False),
+                help="Play sound for critical alerts",
+                disabled=not show_notifications
+            )
+            self.app_state.set_setting('enable_sound_alerts', sound_alerts)
             
-            webhook_alerts = st.checkbox("Enable webhook notifications", value=False)
-            if webhook_alerts:
-                webhook_url = st.text_input("Webhook URL", placeholder="https://your-webhook.com/alerts")
+            # Alert threshold
+            alert_threshold = st.slider(
+                "Alert Threshold",
+                min_value=50,
+                max_value=100,
+                value=self.app_state.get_setting('alert_threshold', 80),
+                help="Minimum risk score to trigger notifications"
+            )
+            self.app_state.set_setting('alert_threshold', alert_threshold)
         
         with col2:
-            st.markdown("### Alert Rules")
+            st.markdown("#### Email Notifications")
             
-            st.markdown("#### Critical Alerts")
-            critical_immediate = st.checkbox("Immediate notification for critical alerts", value=True)
-            critical_escalation = st.selectbox("Escalation after", ["5 min", "15 min", "30 min", "1 hour"], index=1)
+            # Email settings (mock implementation)
+            email_enabled = st.checkbox("Enable Email Notifications", value=False)
             
-            st.markdown("#### High Risk Alerts")
-            high_risk_frequency = st.selectbox("High risk alert frequency", ["Immediate", "5 min", "15 min"], index=1)
-            
-            st.markdown("#### Alert Suppression")
-            suppress_duplicates = st.checkbox("Suppress duplicate alerts", value=True)
-            if suppress_duplicates:
-                suppression_window = st.slider("Suppression window (minutes)", 1, 60, 10)
+            if email_enabled:
+                email_address = st.text_input("Email Address", placeholder="your.email@company.com")
+                
+                st.markdown("**Email Alert Types:**")
+                critical_alerts = st.checkbox("Critical Alerts", value=True)
+                daily_summary = st.checkbox("Daily Summary", value=True)
+                weekly_report = st.checkbox("Weekly Report", value=False)
+                system_alerts = st.checkbox("System Alerts", value=True)
+                
+                email_frequency = st.selectbox(
+                    "Email Frequency",
+                    ["Immediate", "Every 15 minutes", "Hourly", "Daily"]
+                )
         
-        # Alert statistics
-        st.markdown("---")
-        st.markdown("### Alert Statistics (Last 24h)")
+        # Notification test
+        st.markdown("#### Test Notifications")
+        test_col1, test_col2, test_col3 = st.columns(3)
         
-        alert_col1, alert_col2, alert_col3, alert_col4 = st.columns(4)
+        with test_col1:
+            if st.button("Test Info Notification"):
+                st.info("ℹ️ This is a test information notification")
         
-        with alert_col1:
-            st.metric("Total Alerts", "127", "+15")
-        with alert_col2:
-            st.metric("Critical", "8", "+3")
-        with alert_col3:
-            st.metric("Resolved", "89", "+12")
-        with alert_col4:
-            st.metric("False Positives", "4", "-2")
+        with test_col2:
+            if st.button("Test Warning Notification"):
+                st.warning("⚠️ This is a test warning notification")
         
-        if st.button("🔔 Save Alert Settings", type="primary"):
-            st.success("Alert settings updated successfully!")
+        with test_col3:
+            if st.button("Test Error Notification"):
+                st.error("🚨 This is a test error notification")
     
-    with tab5:
-        st.markdown("## Data Management")
+    def _render_security_settings(self):
+        """Render security and access settings"""
+        st.markdown("### 🔒 Security Settings")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("### Data Sources")
+            st.markdown("#### Access Control")
             
-            primary_source = st.selectbox("Primary Data Source", ["Neo4j Database", "PostgreSQL", "MongoDB"], index=0)
-            backup_source = st.selectbox("Backup Data Source", ["None", "S3 Bucket", "Local Storage"], index=1)
+            # Session settings
+            session_timeout = st.selectbox(
+                "Session Timeout",
+                ["15 minutes", "30 minutes", "1 hour", "4 hours", "8 hours"],
+                index=2,
+                help="Automatic logout after inactivity"
+            )
             
-            st.markdown("### Data Retention")
-            transaction_retention = st.selectbox("Transaction Data Retention", ["30 days", "90 days", "1 year", "5 years"], index=2)
-            alert_retention = st.selectbox("Alert Data Retention", ["90 days", "1 year", "2 years", "5 years"], index=1)
-            log_retention = st.selectbox("Log Data Retention", ["30 days", "90 days", "1 year"], index=1)
+            # Two-factor authentication
+            two_factor_enabled = st.checkbox("Two-Factor Authentication", value=True)
             
-            st.markdown("### Data Export")
-            export_format = st.selectbox("Default Export Format", ["CSV", "JSON", "XML", "Parquet"], index=0)
-            include_sensitive = st.checkbox("Include sensitive data in exports", value=False)
+            if two_factor_enabled:
+                st.success("✅ 2FA is enabled for your account")
+                if st.button("Configure 2FA"):
+                    st.info("2FA configuration would open here")
+            else:
+                st.warning("⚠️ 2FA is disabled. Enable for better security.")
+            
+            # API access
+            st.markdown("#### API Access")
+            api_enabled = st.checkbox("Enable API Access", value=False)
+            
+            if api_enabled:
+                api_key_display = "sk-..." + "*" * 20 + "abc123"
+                st.code(api_key_display)
+                
+                api_col1, api_col2 = st.columns(2)
+                with api_col1:
+                    if st.button("Generate New Key"):
+                        st.success("New API key generated")
+                with api_col2:
+                    if st.button("Revoke Key"):
+                        st.warning("API key revoked")
         
         with col2:
-            st.markdown("### Database Configuration")
+            st.markdown("#### Audit & Logging")
             
-            st.text_input("Neo4j Connection String", value="bolt://neo4j:7687")
-            st.text_input("Database Username", value="neo4j")
-            st.text_input("Database Password", type="password", value="password")
+            # Audit settings
+            audit_enabled = st.checkbox("Enable Audit Logging", value=True)
             
-            st.markdown("### Backup Settings")
-            auto_backup = st.checkbox("Enable automatic backups", value=True)
-            if auto_backup:
-                backup_frequency = st.selectbox("Backup Frequency", ["Daily", "Weekly", "Monthly"], index=0)
-                backup_location = st.text_input("Backup Location", value="/backups/")
+            # Data retention
+            audit_retention = st.selectbox(
+                "Audit Log Retention",
+                ["30 days", "90 days", "1 year", "2 years", "5 years"],
+                index=2,
+                help="How long to keep audit logs"
+            )
             
-            st.markdown("### Data Quality")
-            enable_validation = st.checkbox("Enable data validation", value=True)
-            remove_duplicates = st.checkbox("Automatically remove duplicates", value=True)
+            # Failed login attempts
+            failed_login_threshold = st.number_input(
+                "Failed Login Threshold", 
+                min_value=3, 
+                max_value=10, 
+                value=5,
+                help="Lock account after this many failed attempts"
+            )
+            
+            # Recent security events
+            st.markdown("#### Recent Security Events")
+            security_events = [
+                {"event": "Successful login", "time": "2 minutes ago", "ip": "192.168.1.100"},
+                {"event": "Password changed", "time": "3 days ago", "ip": "192.168.1.100"},
+                {"event": "2FA enabled", "time": "1 week ago", "ip": "192.168.1.100"}
+            ]
+            
+            for event in security_events:
+                st.markdown(f"• {event['event']} - {event['time']} ({event['ip']})")
+    
+    def _render_system_settings(self):
+        """Render system configuration settings"""
+        st.markdown("### ⚙️ System Settings")
         
-        # Storage statistics
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### Performance")
+            
+            # Auto-refresh settings
+            auto_refresh = st.checkbox(
+                "Auto Refresh",
+                value=self.app_state.get_setting('auto_refresh', True),
+                help="Automatically refresh data"
+            )
+            self.app_state.set_setting('auto_refresh', auto_refresh)
+            
+            if auto_refresh:
+                refresh_interval = st.slider(
+                    "Refresh Interval (seconds)",
+                    min_value=10,
+                    max_value=300,
+                    value=self.app_state.get_setting('refresh_interval', 30),
+                    step=10,
+                    help="How often to refresh data"
+                )
+                self.app_state.set_setting('refresh_interval', refresh_interval)
+            
+            # Real-time features
+            enable_realtime = st.checkbox(
+                "Enable Real-time Features",
+                value=self.app_state.get_setting('enable_real_time', True),
+                help="Enable real-time monitoring and updates"
+            )
+            self.app_state.set_setting('enable_real_time', enable_realtime)
+            
+            # Debug mode
+            debug_mode = st.checkbox(
+                "Debug Mode",
+                value=self.app_state.get_setting('debug_mode', False),
+                help="Enable debug information and verbose logging"
+            )
+            self.app_state.set_setting('debug_mode', debug_mode)
+        
+        with col2:
+            st.markdown("#### System Information")
+            
+            # System stats
+            st.markdown("**Application Version:** 2.0.0")
+            st.markdown("**Build Date:** 2024-12-08")
+            st.markdown("**Environment:** Production")
+            st.markdown("**Database:** Connected")
+            st.markdown("**Cache:** Redis Online")
+            
+            # System resources
+            st.markdown("#### Resource Usage")
+            
+            # Mock system metrics
+            st.metric("Memory Usage", "342 MB", "-12 MB")
+            st.metric("CPU Usage", "23.4%", "+2.1%")
+            st.metric("Disk Usage", "67.8%", "+0.3%")
+            
+            # System actions
+            st.markdown("#### System Actions")
+            
+            action_col1, action_col2 = st.columns(2)
+            
+            with action_col1:
+                if st.button("Clear Cache"):
+                    self.app_state.clear_cache()
+                    st.success("Cache cleared successfully")
+            
+            with action_col2:
+                if st.button("Restart Services"):
+                    st.info("Service restart would be initiated")
+    
+    def _render_data_settings(self):
+        """Render data management settings"""
+        st.markdown("### 📊 Data Settings")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### Data Retention")
+            
+            # Data retention policies
+            transaction_retention = st.selectbox(
+                "Transaction Data Retention",
+                ["30 days", "90 days", "1 year", "2 years", "5 years", "Indefinite"],
+                index=3,
+                help="How long to keep transaction data"
+            )
+            
+            alert_retention = st.selectbox(
+                "Alert Data Retention",
+                ["90 days", "6 months", "1 year", "2 years", "5 years"],
+                index=2,
+                help="How long to keep alert data"
+            )
+            
+            log_retention = st.selectbox(
+                "Log Data Retention",
+                ["30 days", "90 days", "6 months", "1 year"],
+                index=1,
+                help="How long to keep system logs"
+            )
+            
+            # Data archival
+            st.markdown("#### Data Archival")
+            
+            auto_archive = st.checkbox("Enable Auto-Archival", value=True)
+            
+            if auto_archive:
+                archive_threshold = st.selectbox(
+                    "Archive After",
+                    ["90 days", "6 months", "1 year", "2 years"],
+                    index=2
+                )
+        
+        with col2:
+            st.markdown("#### Data Export")
+            
+            # Export options
+            export_format = st.selectbox(
+                "Default Export Format",
+                ["CSV", "JSON", "Excel", "PDF"],
+                help="Default format for data exports"
+            )
+            
+            # Data sources
+            st.markdown("#### Data Sources")
+            
+            data_sources = {
+                "Internal Database": True,
+                "External API": True,
+                "Blockchain Data": True,
+                "Third-party Feeds": False
+            }
+            
+            for source, enabled in data_sources.items():
+                status = "🟢 Connected" if enabled else "🔴 Disabled"
+                st.markdown(f"• {source}: {status}")
+            
+            # Data quality
+            st.markdown("#### Data Quality")
+            
+            st.metric("Data Completeness", "98.7%", "+0.2%")
+            st.metric("Data Accuracy", "99.2%", "+0.1%")
+            st.metric("Data Freshness", "Real-time", "✅")
+            
+            # Backup settings
+            st.markdown("#### Backup Settings")
+            
+            backup_enabled = st.checkbox("Enable Automatic Backups", value=True)
+            
+            if backup_enabled:
+                backup_frequency = st.selectbox(
+                    "Backup Frequency",
+                    ["Daily", "Weekly", "Monthly"],
+                    index=0
+                )
+                
+                st.markdown("**Last Backup:** 2 hours ago ✅")
+        
+        # Settings management
         st.markdown("---")
-        st.markdown("### Storage Statistics")
+        st.markdown("### 🔧 Settings Management")
         
-        storage_col1, storage_col2, storage_col3, storage_col4 = st.columns(4)
+        settings_col1, settings_col2, settings_col3 = st.columns(3)
         
-        with storage_col1:
-            st.metric("Total Storage", "2.3 TB", "+120 GB")
-        with storage_col2:
-            st.metric("Transaction Data", "1.8 TB", "+95 GB")
-        with storage_col3:
-            st.metric("Alert Data", "245 GB", "+12 GB")
-        with storage_col4:
-            st.metric("Log Data", "378 GB", "+18 GB")
+        with settings_col1:
+            if st.button("💾 Export Settings"):
+                settings_json = self.app_state.export_settings()
+                st.download_button(
+                    label="📥 Download Settings",
+                    data=settings_json,
+                    file_name=f"synapse_settings_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json"
+                )
         
-        # Data management actions
-        st.markdown("---")
-        st.markdown("### Data Management Actions")
+        with settings_col2:
+            uploaded_file = st.file_uploader("📤 Import Settings", type=['json'])
+            if uploaded_file is not None:
+                try:
+                    settings_data = json.load(uploaded_file)
+                    if st.button("Apply Imported Settings"):
+                        success = self.app_state.import_settings(json.dumps(settings_data))
+                        if success:
+                            st.success("Settings imported successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Failed to import settings")
+                except Exception as e:
+                    st.error(f"Invalid settings file: {str(e)}")
         
-        action_col1, action_col2, action_col3 = st.columns(3)
-        
-        with action_col1:
-            if st.button("🔄 Backup Now"):
-                st.success("Backup initiated successfully!")
-        
-        with action_col2:
-            if st.button("🧹 Clean Old Data"):
-                st.success("Data cleanup completed!")
-        
-        with action_col3:
-            if st.button("📊 Generate Report"):
-                st.success("Data usage report generated!")
-        
-        if st.button("💾 Save Data Settings", type="primary"):
-            st.success("Data management settings saved successfully!")
-    
-    # Footer with system info
-    st.markdown("---")
-    st.markdown("### System Information")
-    
-    info_col1, info_col2, info_col3 = st.columns(3)
-    
-    with info_col1:
-        st.markdown("""
-        **Application Version:** v2.1.3  
-        **Build Date:** 2024-07-17  
-        **Environment:** Production
-        """)
-    
-    with info_col2:
-        st.markdown("""
-        **Last Updated:** 2 hours ago  
-        **Uptime:** 15 days, 3 hours  
-        **Active Users:** 23
-        """)
-    
-    with info_col3:
-        st.markdown("""
-        **Support:** support@company.com  
-        **Documentation:** [View Docs](/)  
-        **Status Page:** [System Status](/)
-        """)
+        with settings_col3:
+            if st.button("🔄 Reset to Defaults"):
+                if st.button("⚠️ Confirm Reset", type="secondary"):
+                    self.app_state.reset_settings()
+                    st.success("Settings reset to defaults!")
+                    st.rerun()
+                else:
+                    st.warning("Click 'Confirm Reset' to proceed")
