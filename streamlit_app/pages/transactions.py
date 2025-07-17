@@ -59,7 +59,10 @@ def render_transactions():
     
     # Summary statistics
     st.markdown("## Transaction Summary")
-    
+
+    # Debug: Show first few rows of filtered_df
+    st.write("Filtered transactions (head):", filtered_df.head())
+
     summary_col1, summary_col2, summary_col3, summary_col4 = st.columns(4)
     
     with summary_col1:
