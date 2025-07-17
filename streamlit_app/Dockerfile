@@ -6,8 +6,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY dashboard.py . # Assuming dashboard.py is the main Streamlit script
+COPY streamlit_app.py . # CORRECTED: Now copies streamlit_app.py
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "dashboard.py"]
+CMD ["streamlit", "run", "streamlit_app.py"] # CORRECTED: Now runs streamlit_app.py
