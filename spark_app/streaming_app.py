@@ -1,20 +1,15 @@
-# spark_app/streaming_app.py
+# spark_app/streaming_app.py - Gemini-Only Fraud Analysis
 import os
 import sys
 import json
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, lit, udf, explode, when
+from pyspark.sql.functions import from_json, col, lit, udf
 from pyspark.sql.types import (
-    StructType, StringType, LongType, DoubleType, BooleanType, ArrayType, MapType,
-    StructField, IntegerType
+    StructType, StringType, LongType, DoubleType, BooleanType, ArrayType, StructField
 )
 from neo4j import GraphDatabase, basic_auth
 import time # For retry logic
-from model import load_model, preprocess_features, explain_prediction
-from fraud_rules import detect_smurfing_rule # Corrected function name
-
-import pandas as pd # Needed for toPandas and apply
-import requests # Import requests here as it's used in process_batch for LLM call
+import requests # Used for LLM service call
 
 # --- Environment Variables ---
 KAFKA_BROKER = os.environ.get('KAFKA_BROKER', 'kafka:29092')
@@ -27,7 +22,7 @@ LLM_SERVICE_URL = os.environ.get('LLM_SERVICE_URL', 'http://flask-llm-service:50
 # --- Spark Session Initialization ---
 print("Initializing Spark Session...")
 spark = SparkSession.builder \
-    .appName("BitcoinFraudDetection") \
+    .appName("BitcoinFraudDetection_GeminiOnly") \
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6") \
     .config("spark.jars", "/app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar") \
     .config("spark.driver.extraJavaOptions", "-Dlog4j.configuration=file:/opt/bitnami/spark/conf/log4j2.properties") \
@@ -53,15 +48,6 @@ if not neo4j_driver:
     print("Failed to connect to Neo4j after multiple retries. Exiting Spark application.", file=sys.stderr)
     sys.exit(1)
 
-# --- Load ML Model ---
-ml_model = None # Initialize to None
-try:
-    ml_model = load_model("/app/bitcoin_fraud_model.pkl") # Path to dummy model
-    print("ML Model loaded successfully.")
-except Exception as e:
-    print(f"Error loading ML model: {e}. ML predictions will be skipped.", file=sys.stderr)
-    ml_model = None
-
 # --- Define Kafka Schema for Bitcoin Transaction Data ---
 # Read 'inputs' and 'out' as StringType from Kafka, then parse them later
 schema = StructType() \
@@ -72,7 +58,6 @@ schema = StructType() \
     .add("size", LongType()) \
     .add("weight", LongType()) \
     .add("fee", LongType()) \
-    .add("relayed_by", StringType()) \
     .add("relayed_by", StringType()) \
     .add("lock_time", LongType()) \
     .add("tx_index", LongType()) \
@@ -112,7 +97,6 @@ kafka_df = spark \
     .load()
 
 # Parse the Kafka value (JSON string) into a structured DataFrame
-# We still cast to string first, then apply the main schema.
 parsed_df = kafka_df.selectExpr("CAST(value AS STRING) as json_value") \
     .select(from_json(col("json_value"), schema).alias("data")) \
     .select("data.*")
@@ -150,103 +134,22 @@ sum_values_pyspark_udf = udf(sum_values_from_parsed_array_udf, DoubleType())
 features_df = features_df.withColumn("total_input_value", sum_values_pyspark_udf(col("inputs_parsed"))) \
                          .withColumn("total_output_value", sum_values_pyspark_udf(col("out_parsed")))
 
-# --- Apply Smurfing Rule as a Spark UDF ---
-def detect_smurfing_rule_spark_udf(tx_type, amount, inputs_parsed, out_parsed):
-    # This UDF will operate on the parsed 'inputs_parsed' and 'out_parsed' columns.
-    # Note: The original 'detect_smurfing_rule' from fraud_rules.py expects a pandas Series.
-    # We are re-implementing its logic here for a Spark UDF.
-    
-    # Assuming 'transfer' is a transaction type we'd infer or receive.
-    # For now, we'll assume all transactions are "transfer" for the rule to apply.
-    if tx_type != "transfer":
-        return False
-
-    # Convert amount to float and check threshold
-    if amount is not None and float(amount) >= 100 * 10**8: # Assuming 100 USD threshold, convert to satoshis
-        return False
-
-    # Check sender accounts (from inputs) for "SMURF"
-    if inputs_parsed:
-        for input_data in inputs_parsed:
-            if isinstance(input_data, dict) and 'prev_out' in input_data and isinstance(input_data['prev_out'], dict) and 'addr' in input_data['prev_out']:
-                if "SMURF" in str(input_data['prev_out']['addr']).upper():
-                    return True
-    
-    # Check receiver accounts (from outputs) for "SMURF"
-    if out_parsed:
-        for output_data in out_parsed:
-            if isinstance(output_data, dict) and 'addr' in output_data:
-                if "SMURF" in str(output_data['addr']).upper():
-                    return True
-    return False
-
-smurfing_udf = udf(detect_smurfing_rule_spark_udf, BooleanType())
-
-features_df = features_df.withColumn("transaction_type", lit("transfer"))
-features_df = features_df.withColumn(
-    "isSmurfingRule",
-    smurfing_udf(col("transaction_type"), col("total_output_value"), col("inputs_parsed"), col("out_parsed"))
-)
-
-# Add dummy ML prediction columns for now
+# Add dummy ML prediction columns for consistency with dashboard, but they will always be 0/false
 features_df = features_df.withColumn("mlFraudScore", lit(0.0).cast(DoubleType()))
 features_df = features_df.withColumn("mlPrediction", lit(0).cast(IntegerType()))
-features_df = features_df.withColumn("shap_features_json", lit("{}").cast(StringType()))
-
+features_df = features_df.withColumn("isSmurfingRule", lit(False).cast(BooleanType()))
+features_df = features_df.withColumn("shap_features_json", lit("{}").cast(StringType())) # Empty SHAP for Gemini only
 
 # --- Define process_batch function for full processing including Neo4j and LLM ---
 def process_batch(df, epoch_id):
-    # No df.isEmpty() or df.count() calls here to avoid immediate actions.
-    # foreachPartition will handle empty partitions gracefully.
-
-    # Filter out records where 'hash' is null or empty before converting to Pandas
-    # This prevents errors if malformed data comes through Kafka
+    # Filter out records where 'hash' is null or empty before processing
     filtered_df = df.filter(col("hash").isNotNull() & (col("hash") != ""))
 
-    # If the filtered DataFrame is empty, just return.
-    # This check is safer as it's done *after* initial parsing.
-    if filtered_df.rdd.isEmpty(): # Using rdd.isEmpty() as df.isEmpty() can be problematic
+    if filtered_df.rdd.isEmpty():
         print(f"Batch {epoch_id}: No valid data after filtering or batch was empty.")
         return
 
-    print(f"Batch {epoch_id}: Processing {filtered_df.count()} records for ML/Neo4j/LLM.") # Now count() is safer here
-
-    # Convert to Pandas for ML model (which expects Pandas DataFrame)
-    # We'll use coalesce(1) to ensure all data goes to one partition before toPandas
-    # This is generally not scalable for very large batches, but good for debugging.
-    # For production, consider Pandas UDFs or Spark MLlib models.
-    pandas_df = None # Initialize to None
-    try:
-        pandas_df = filtered_df.coalesce(1).toPandas()
-    except Exception as e:
-        print(f"Batch {epoch_id}: Error converting to Pandas: {e}", file=sys.stderr)
-        return # Skip processing this batch if conversion fails
-
-    if ml_model and not pandas_df.empty:
-        # Ensure 'inputs' and 'out' are properly handled by preprocess_features
-        # The preprocess_features expects 'inputs' and 'out' as JSON strings
-        # We pass the original 'inputs' and 'out' columns (which are strings)
-        processed_df_for_ml, feature_names = preprocess_features(pandas_df)
-
-        predictions = ml_model.predict(processed_df_for_ml)
-        probabilities = ml_model.predict_proba(processed_df_for_ml) # Get probabilities for SHAP
-
-        # Explain predictions using SHAP
-        shap_values = explain_prediction(ml_model, processed_df_for_ml, feature_names)
-
-        # Add predictions and SHAP values back to DataFrame
-        pandas_df['mlFraudScore'] = [prob[1] for prob in probabilities] # Probability of fraud class
-        pandas_df['mlPrediction'] = predictions
-        
-        # Ensure shap_features is a JSON string
-        pandas_df['shap_features_json'] = [
-            json.dumps({name: value for name, value in zip(feature_names, shap_val) if abs(value) > 0.01})
-            for shap_val in shap_values
-        ]
-    else:
-        pandas_df['mlFraudScore'] = 0.0 # Default if no model
-        pandas_df['mlPrediction'] = 0 # Default if no model
-        pandas_df['shap_features_json'] = "{}" # Default to empty JSON object
+    print(f"Batch {epoch_id}: Processing {filtered_df.count()} records for Neo4j/LLM.")
 
     # --- Write to Neo4j using foreachPartition ---
     def write_partition_to_neo4j(partition_rows):
@@ -259,8 +162,6 @@ def process_batch(df, epoch_id):
                     rows_written_in_partition += 1
                     # Extract data from Spark Row object
                     tx_hash = row["hash"]
-                    ml_fraud_score = row["mlFraudScore"]
-                    is_smurfing_rule = row["isSmurfingRule"]
                     timestamp = row["time"]
                     vin_sz = row["vin_sz"]
                     vout_sz = row["vout_sz"]
@@ -269,7 +170,11 @@ def process_batch(df, epoch_id):
                     fee_per_byte = row["fee_per_byte"]
                     total_input_value = row["total_input_value"]
                     total_output_value = row["total_output_value"]
-                    shap_features_json = row["shap_features_json"]
+                    
+                    # For Gemini-only, ML/Smurfing values are always default
+                    ml_fraud_score = 0.0 
+                    is_smurfing_rule = False
+                    shap_features_json = "{}"
 
                     tx_node_props = {
                         "hash": tx_hash,
@@ -338,31 +243,28 @@ def process_batch(df, epoch_id):
                 local_neo4j_driver.close() # Close driver for each partition
 
     # Apply the function to each partition of the DataFrame
-    if pandas_df is not None and not pandas_df.empty:
-        # Convert the pandas_df back to a Spark DataFrame for foreachPartition
-        spark_df_for_neo4j = spark.createDataFrame(pandas_df)
-        spark_df_for_neo4j.foreachPartition(write_partition_to_neo4j)
-    else:
-        print(f"Batch {epoch_id}: No records to write to Neo4j after ML processing.")
-
+    filtered_df.foreachPartition(write_partition_to_neo4j)
 
     # --- Call LLM Service for Alerts ---
-    fraud_transactions = pandas_df[(pandas_df['mlPrediction'] == 1) | (pandas_df['isSmurfingRule'] == True)]
-    
-    if not fraud_transactions.empty:
-        print(f"Batch {epoch_id}: Detected {len(fraud_transactions)} fraudulent transactions. Calling LLM service...")
-        for index, row in fraud_transactions.iterrows():
+    # Convert to Pandas for iteration and LLM calls
+    pandas_df = filtered_df.coalesce(1).toPandas() # Use coalesce(1) for small batches, but be aware of scalability
+
+    if not pandas_df.empty:
+        print(f"Batch {epoch_id}: Processing {len(pandas_df)} records for LLM analysis.")
+        for index, row in pandas_df.iterrows():
+            # You might define conditions here to call LLM, e.g., for certain transaction patterns
+            # For now, we call LLM for every transaction to demonstrate flow.
             alert_data = {
                 "transaction_hash": str(row["hash"]),
-                "ml_fraud_score": float(row["mlFraudScore"]),
-                "is_smurfing_rule": bool(row["isSmurfingRule"]),
+                "ml_fraud_score": float(row["mlFraudScore"]), # Will be 0.0
+                "is_smurfing_rule": bool(row["isSmurfingRule"]), # Will be False
                 "num_inputs": int(row["vin_sz"]),
                 "num_outputs": int(row["vout_sz"]),
                 "total_input_value": float(row["total_input_value"]),
                 "total_output_value": float(row["total_output_value"]),
                 "transaction_fee": int(row["fee"]),
                 "fee_per_byte": float(row["fee_per_byte"]),
-                "shap_features_json": str(row["shap_features_json"])
+                "shap_features_json": str(row["shap_features_json"]) # Will be "{}"
             }
             try:
                 response = requests.post(LLM_SERVICE_URL, json=alert_data, timeout=30)
@@ -376,7 +278,7 @@ def process_batch(df, epoch_id):
             except Exception as e:
                 print(f"Batch {epoch_id}: An unexpected error occurred when calling LLM service for {row['hash']}: {e}", file=sys.stderr)
     else:
-        print(f"Batch {epoch_id}: No fraudulent transactions detected for LLM call.")
+        print(f"Batch {epoch_id}: No transactions to send to LLM service.")
 
     print(f"Batch {epoch_id}: Completed processing cycle.")
 
