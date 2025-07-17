@@ -2,3 +2,5 @@ streamlit
 neo4j
 pandas
 requests
+plotly
+numpy
