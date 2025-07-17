@@ -1,4 +1,4 @@
-# Dashboard page module
+# Dashboard page module - Coinbase Business Style
 
 import streamlit as st
 import sys
@@ -14,167 +14,202 @@ from charts import (
     create_risk_trend_chart,
     create_alert_volume_chart
 )
-from styling import create_metric_card
+from styling import create_metric_card, create_dashboard_header, create_quick_actions, create_alert_card
 
 def render_dashboard():
-    """Render the main dashboard page"""
-    st.title("🏠 Dashboard")
-    st.markdown("### Real-time Fraud Detection Overview")
+    """Render the main dashboard page in Coinbase Business style"""
     
     # Generate system metrics
     metrics = generate_system_metrics()
     
-    # Key metrics row
-    col1, col2, col3, col4 = st.columns(4)
+    # Calculate total balance (portfolio value)
+    total_balance = metrics['total_transactions_today'] * 125.50  # Simulate portfolio value
+    balance_change = "$394.24 1D"
     
-    with col1:
-        st.metric(
-            "Total Transactions Today", 
-            f"{metrics['total_transactions_today']:,}", 
-            "+5.2%"
-        )
+    # Coinbase-style dashboard header with balance
+    st.markdown(create_dashboard_header(total_balance, balance_change), unsafe_allow_html=True)
     
-    with col2:
-        st.metric(
-            "Fraud Alerts", 
-            str(metrics['fraud_alerts_today']), 
-            "+12%"
-        )
+    # Main layout with sidebar for quick actions
+    col_main, col_sidebar = st.columns([3, 1])
     
-    with col3:
-        st.metric(
-            "System Uptime", 
-            f"{metrics['system_uptime']:.1f}%", 
-            "0%"
-        )
+    with col_main:
+        # Portfolio allocation cards
+        st.markdown("## Portfolio")
+        
+        # Key metrics in a 2x2 grid
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown(
+                create_metric_card(
+                    "Fraud Detection", 
+                    f"{metrics['fraud_alerts_today']}", 
+                    "+12.3%"
+                ), 
+                unsafe_allow_html=True
+            )
+            
+        with col2:
+            st.markdown(
+                create_metric_card(
+                    "System Uptime", 
+                    f"{metrics['system_uptime']:.1f}%", 
+                    "+0.1%"
+                ), 
+                unsafe_allow_html=True
+            )
+            
+        col3, col4 = st.columns(2)
+        
+        with col3:
+            st.markdown(
+                create_metric_card(
+                    "Transactions Today", 
+                    f"{metrics['total_transactions_today']:,}", 
+                    "+5.2%"
+                ), 
+                unsafe_allow_html=True
+            )
+            
+        with col4:
+            st.markdown(
+                create_metric_card(
+                    "Processing Speed", 
+                    f"{metrics['avg_processing_speed_ms']:.0f}ms", 
+                    "-2.1%"
+                ), 
+                unsafe_allow_html=True
+            )
+        
+        # Charts section
+        st.markdown("## Analytics")
+        
+        # Charts in card containers
+        col_chart1, col_chart2 = st.columns(2)
+        
+        with col_chart1:
+            st.markdown('<div class="cb-chart-container">', unsafe_allow_html=True)
+            st.subheader("Hourly Transaction Volume")
+            hourly_chart = create_hourly_volume_chart()
+            if hourly_chart:
+                st.plotly_chart(hourly_chart, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with col_chart2:
+            st.markdown('<div class="cb-chart-container">', unsafe_allow_html=True)
+            st.subheader("Risk Distribution")
+            risk_chart = create_risk_distribution_pie()
+            if risk_chart:
+                st.plotly_chart(risk_chart, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Additional charts row
+        col_chart3, col_chart4 = st.columns(2)
+        
+        with col_chart3:
+            st.markdown('<div class="cb-chart-container">', unsafe_allow_html=True)
+            st.subheader("Risk Trend Analysis")
+            trend_chart = create_risk_trend_chart()
+            if trend_chart:
+                st.plotly_chart(trend_chart, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with col_chart4:
+            st.markdown('<div class="cb-chart-container">', unsafe_allow_html=True)
+            st.subheader("Alert Volume")
+            alert_chart = create_alert_volume_chart()
+            if alert_chart:
+                st.plotly_chart(alert_chart, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
     
-    with col4:
-        st.metric(
-            "Detection Accuracy", 
-            f"{metrics['detection_accuracy']:.1f}%", 
-            "+2.1%"
-        )
-    
-    st.markdown("---")
-    
-    # Charts section
-    st.markdown("## Real-time Analytics")
-    
-    # Main charts row
-    chart_col1, chart_col2 = st.columns([2, 1])
-    
-    with chart_col1:
-        st.subheader("Transaction Volume (24h)")
-        fig_volume = create_hourly_volume_chart()
-        st.plotly_chart(fig_volume, use_container_width=True)
-    
-    with chart_col2:
-        st.subheader("Risk Distribution")
-        fig_risk_pie = create_risk_distribution_pie()
-        st.plotly_chart(fig_risk_pie, use_container_width=True)
-    
-    # Secondary charts row
-    chart_col3, chart_col4 = st.columns(2)
-    
-    with chart_col3:
-        st.subheader("Risk Score Trend")
-        fig_risk_trend = create_risk_trend_chart()
-        st.plotly_chart(fig_risk_trend, use_container_width=True)
-    
-    with chart_col4:
-        st.subheader("Alert Volume")
-        fig_alerts = create_alert_volume_chart()
-        st.plotly_chart(fig_alerts, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # System performance metrics
-    st.markdown("## System Performance")
-    
-    perf_col1, perf_col2, perf_col3, perf_col4 = st.columns(4)
-    
-    with perf_col1:
-        st.markdown(
-            create_metric_card(
-                "Processing Speed", 
-                f"{metrics['processing_speed']} tx/min",
-                "+8.2%",
-                "normal"
-            ), 
-            unsafe_allow_html=True
-        )
-    
-    with perf_col2:
-        st.markdown(
-            create_metric_card(
-                "API Response Time", 
-                f"{metrics['api_response_time']:.0f}ms",
-                "-12ms",
-                "inverse"
-            ), 
-            unsafe_allow_html=True
-        )
-    
-    with perf_col3:
-        st.markdown(
-            create_metric_card(
-                "Active Users", 
-                str(metrics['active_users']),
-                "+15",
-                "normal"
-            ), 
-            unsafe_allow_html=True
-        )
-    
-    with perf_col4:
-        st.markdown(
-            create_metric_card(
-                "DB Connections", 
-                str(metrics['database_connections']),
-                "Healthy",
-                "normal"
-            ), 
-            unsafe_allow_html=True
-        )
-    
-    # Live status indicators
-    st.markdown("---")
-    st.markdown("## System Status")
-    
-    status_col1, status_col2, status_col3 = st.columns(3)
-    
-    with status_col1:
+    with col_sidebar:
+        # Quick actions panel (Coinbase-style)
+        st.markdown("## Quick actions")
+        
+        # Custom fraud detection actions
         st.markdown("""
-        <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #f0f3f7;">
-            <h4 style="margin: 0 0 0.5rem 0; color: #1a1a1a;">Data Pipeline</h4>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 8px; height: 8px; border-radius: 50%; background: #059669;"></div>
-                <span style="color: #059669; font-weight: 500;">Operational</span>
-            </div>
-            <small style="color: #6b7280;">Last update: 2 seconds ago</small>
+        <div class="cb-quick-actions">
+            <a href="#" class="cb-action-btn">
+                <div class="cb-action-icon">🔍</div>
+                <span>Manual Review</span>
+            </a>
+            <a href="#" class="cb-action-btn">
+                <div class="cb-action-icon">⚙️</div>
+                <span>Configure Rules</span>
+            </a>
+            <a href="#" class="cb-action-btn">
+                <div class="cb-action-icon">📊</div>
+                <span>Export Report</span>
+            </a>
+            <a href="#" class="cb-action-btn">
+                <div class="cb-action-icon">🔔</div>
+                <span>Alert Settings</span>
+            </a>
+            <a href="#" class="cb-action-btn">
+                <div class="cb-action-icon">📈</div>
+                <span>View Analytics</span>
+            </a>
         </div>
         """, unsafe_allow_html=True)
-    
-    with status_col2:
-        st.markdown("""
-        <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #f0f3f7;">
-            <h4 style="margin: 0 0 0.5rem 0; color: #1a1a1a;">ML Models</h4>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 8px; height: 8px; border-radius: 50%; background: #059669;"></div>
-                <span style="color: #059669; font-weight: 500;">Active</span>
+        
+        st.markdown("---")
+        
+        # System status
+        st.markdown("## System Status")
+        
+        # Status indicators
+        if metrics['system_uptime'] > 99.5:
+            status_color = "green"
+            status_text = "All systems operational"
+            status_desc = "Fraud detection running smoothly"
+        elif metrics['system_uptime'] > 95:
+            status_color = "yellow"
+            status_text = "Minor issues detected"
+            status_desc = "Some delays in processing"
+        else:
+            status_color = "red"
+            status_text = "System issues"
+            status_desc = "Please check system status"
+        
+        st.markdown(f"""
+        <div class="cb-card">
+            <div class="cb-status-indicator">
+                <div class="cb-status-dot {'online' if status_color == 'green' else 'warning' if status_color == 'yellow' else 'error'}"></div>
+                <strong>{status_text}</strong>
             </div>
-            <small style="color: #6b7280;">Model v2.1.3 deployed</small>
+            <div style="margin-top: 0.5rem; color: var(--cb-gray-600); font-size: var(--cb-font-size-sm);">
+                {status_desc}
+            </div>
         </div>
         """, unsafe_allow_html=True)
-    
-    with status_col3:
-        st.markdown("""
-        <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #f0f3f7;">
-            <h4 style="margin: 0 0 0.5rem 0; color: #1a1a1a;">Alert System</h4>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 8px; height: 8px; border-radius: 50%; background: #ea580c;"></div>
-                <span style="color: #ea580c; font-weight: 500;">5 Pending</span>
-            </div>
-            <small style="color: #6b7280;">Requires attention</small>
-        </div>
-        """, unsafe_allow_html=True)
+        
+        # Recent alerts
+        st.markdown("## Recent Alerts")
+        
+        if metrics['fraud_alerts_today'] > 10:
+            st.markdown(
+                create_alert_card(
+                    "High Alert Volume", 
+                    f"{metrics['fraud_alerts_today']} alerts today", 
+                    "warning"
+                ), 
+                unsafe_allow_html=True
+            )
+        elif metrics['fraud_alerts_today'] > 5:
+            st.markdown(
+                create_alert_card(
+                    "Normal Activity", 
+                    f"{metrics['fraud_alerts_today']} alerts today", 
+                    "info"
+                ), 
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                create_alert_card(
+                    "Low Activity", 
+                    f"{metrics['fraud_alerts_today']} alerts today", 
+                    "success"
+                ), 
+                unsafe_allow_html=True
+            )
