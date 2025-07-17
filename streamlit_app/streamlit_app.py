@@ -1,4 +1,10 @@
-# Main application entry point with routing
+"""
+Synapse-Lite Fraud Detection System
+Main Streamlit Application
+
+This modular application provides real-time Bitcoin transaction monitoring
+and AI-powered fraud detection capabilities.
+"""
 
 import streamlit as st
 import sys
@@ -8,6 +14,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import core modules
+from config import configure_page
 from styling import apply_styling
 from sidebar import render_sidebar
 
@@ -30,7 +37,10 @@ def render_footer():
 
 def main():
     """Main application function with routing"""
-    # Apply styling and configuration
+    # Configure page settings
+    configure_page()
+    
+    # Apply styling
     apply_styling()
     
     # Render sidebar and get selected page
