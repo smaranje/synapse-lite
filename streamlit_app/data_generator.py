@@ -7,6 +7,7 @@ import time
 from datetime import datetime, timedelta
 import numpy as np
 from config import BTC_USD_RATE
+import streamlit as st
 
 def generate_transaction_data(count=50):
     """Generate dummy transaction data"""
@@ -31,7 +32,12 @@ def generate_transaction_data(count=50):
         tx["Fee USD"] = round(tx["Fee (BTC)"] * BTC_USD_RATE, 2)
         transactions.append(tx)
     
-    return pd.DataFrame(transactions)
+    df = pd.DataFrame(transactions)
+    if df.empty:
+        st.warning("No transaction data generated!")
+    else:
+        st.write("Generated transactions:", df.head())
+    return df
 
 def generate_alert_data(count=15):
     """Generate dummy fraud alert data"""

@@ -16,6 +16,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Custom header for branding
+st.markdown(
+    """
+    <div style="position: fixed; top: 0; right: 0; width: 100%; z-index: 9999; background: white; border-bottom: 1px solid #f0f3f7; display: flex; justify-content: flex-end; align-items: center; height: 48px;">
+        <span style="font-size: 1.1rem; font-weight: 700; color: #0052ff; margin-right: 2rem; letter-spacing: 2px;">SMARAN TECHNOLOGIES</span>
+    </div>
+    <div style="height: 48px;"></div>
+    """,
+    unsafe_allow_html=True
+)
+
 import sys
 import os
 
@@ -37,12 +48,16 @@ from pages.settings import render_settings
 def render_footer():
     """Render the application footer"""
     st.markdown("---")
-    st.markdown("""
-    <div class="footer">
-        <p>Synapse-Lite Fraud Detection System | Built with Streamlit</p>
-        <p>Real-time Bitcoin transaction monitoring and AI-powered threat detection</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="footer">
+            <p>Synapse-Lite Fraud Detection System | Built with Streamlit</p>
+            <p>Real-time Bitcoin transaction monitoring and AI-powered threat detection</p>
+            <p style='font-size:0.9rem; color:#6b7280;'>Made by Smaranjeet Singh</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 def main():
     """Main application function with routing"""

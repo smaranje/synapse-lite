@@ -6,13 +6,42 @@ from config import APP_TITLE, APP_ICON
 # Removed apply_page_config since st.set_page_config is now called at the top of streamlit_app.py
 
 def apply_custom_css():
-    """Apply the Coinbase-inspired CSS styling and hide default Streamlit sidebar nav header"""
+    """Apply the Coinbase-inspired CSS styling and hide default Streamlit sidebar nav header. Update sidebar and main background colors for Coinbase palette and high contrast."""
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         /* Hide the default Streamlit sidebar navigation header */
         [data-testid="stSidebarNav"] {
             display: none;
+        }
+        /* Sidebar Coinbase blue */
+        section[data-testid="stSidebar"] {
+            background: #0052ff !important;
+            color: #fff !important;
+        }
+        section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3, section[data-testid="stSidebar"] h4, section[data-testid="stSidebar"] h5, section[data-testid="stSidebar"] h6, section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] label, section[data-testid="stSidebar"] span {
+            color: #fff !important;
+        }
+        /* Main content white background */
+        .main, .stApp, [data-testid="stAppViewContainer"] {
+            background: #fff !important;
+            color: #1a1a1a !important;
+        }
+        /* High contrast for dark mode */
+        @media (prefers-color-scheme: dark) {
+            section[data-testid="stSidebar"] {
+                background: #003399 !important;
+                color: #fff !important;
+            }
+            .main, .stApp, [data-testid="stAppViewContainer"] {
+                background: #181c24 !important;
+                color: #fff !important;
+            }
+            .metric-card, .alert-card, .transaction-card {
+                background: #232b3b !important;
+                color: #fff !important;
+                border-color: #2d3a54 !important;
+            }
         }
         
         .main {
