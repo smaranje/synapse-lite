@@ -182,22 +182,22 @@ def apply_custom_css():
             margin-top: 0.25rem;
             color: var(--card-secondary-text-light);
         }
-        @media (prefers-color-scheme: dark) {
-            .metric-card {
-                background: #232b3b !important;
-                color: var(--card-text-color-dark) !important;
-                border-color: #2d3a54 !important;
-            }
-            .metric-card .metric-title {
-                color: var(--card-secondary-text-dark) !important;
-            }
-            .metric-card .metric-value {
-                color: var(--card-text-color-dark) !important;
-            }
-            .metric-card .metric-delta {
-                color: var(--card-secondary-text-dark) !important;
-            }
+        /* FORCE DARK MODE CARD STYLES FOR TESTING */
+        .metric-card {
+            background: #232b3b !important;
+            color: #fff !important;
+            border-color: #2d3a54 !important;
         }
+        .metric-card .metric-title {
+            color: #b0b8c1 !important;
+        }
+        .metric-card .metric-value {
+            color: #fff !important;
+        }
+        .metric-card .metric-delta {
+            color: #b0b8c1 !important;
+        }
+        /* END FORCE DARK MODE CARD STYLES */
         
         .metric-card:hover {
             border-color: #0052ff;
