@@ -10,26 +10,27 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
+import requests
 
 # Configuration
 USE_DUMMY_DATA = True
 BTC_USD_RATE = 65000
 st.set_page_config(
     layout="wide", 
-    page_title="🛡️ Synapse-Lite Fraud Detector",
+    page_title="Synapse-Lite Fraud Detector",
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
 
-# Enhanced Custom CSS with modern design
+# Professional CSS with Montserrat font and clean design
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
     
     .main {
         background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
         color: #e0e0e0;
-        font-family: 'Inter', sans-serif;
+        font-family: 'Montserrat', sans-serif;
     }
     
     .stApp {
@@ -44,6 +45,7 @@ st.markdown("""
         text-align: center;
         margin-bottom: 0.5rem;
         text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        font-family: 'Montserrat', sans-serif;
     }
     
     h2, h3 {
@@ -51,6 +53,7 @@ st.markdown("""
         font-weight: 600;
         margin-top: 2rem;
         margin-bottom: 1rem;
+        font-family: 'Montserrat', sans-serif;
     }
     
     /* Sidebar styling */
@@ -86,6 +89,7 @@ st.markdown("""
         font-weight: 700;
         color: #63b3ed;
         margin: 0.5rem 0;
+        font-family: 'Montserrat', sans-serif;
     }
     
     .metric-label {
@@ -94,12 +98,14 @@ st.markdown("""
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        font-family: 'Montserrat', sans-serif;
     }
     
     .metric-delta {
         font-size: 0.8rem;
         font-weight: 600;
         margin-top: 0.5rem;
+        font-family: 'Montserrat', sans-serif;
     }
     
     .metric-delta.positive {
@@ -125,6 +131,7 @@ st.markdown("""
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        font-family: 'Montserrat', sans-serif;
     }
     
     .status-live {
@@ -230,6 +237,7 @@ st.markdown("""
         font-size: 0.9rem;
         transition: all 0.3s ease;
         box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
+        font-family: 'Montserrat', sans-serif;
     }
     
     .stButton > button:hover {
@@ -256,6 +264,7 @@ st.markdown("""
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        font-family: 'Montserrat', sans-serif;
     }
     
     .risk-badge.critical {
@@ -278,19 +287,51 @@ st.markdown("""
         color: white;
     }
     
-    /* Loading animations */
-    .loading-spinner {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 2px solid #4a5568;
-        border-radius: 50%;
-        border-top-color: #63b3ed;
-        animation: spin 1s ease-in-out infinite;
+    /* Chat interface */
+    .chat-container {
+        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        border-radius: 15px;
+        border: 1px solid #4a5568;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        max-height: 400px;
+        overflow-y: auto;
     }
     
-    @keyframes spin {
-        to { transform: rotate(360deg); }
+    .chat-message {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border-radius: 10px;
+        font-family: 'Montserrat', sans-serif;
+    }
+    
+    .chat-message.user {
+        background: linear-gradient(135deg, #4299e1, #3182ce);
+        color: white;
+        margin-left: 2rem;
+    }
+    
+    .chat-message.assistant {
+        background: linear-gradient(135deg, #2d3748, #1a202c);
+        color: #e0e0e0;
+        border: 1px solid #4a5568;
+        margin-right: 2rem;
+    }
+    
+    .chat-input {
+        background: #2d3748;
+        border: 1px solid #4a5568;
+        border-radius: 10px;
+        padding: 0.75rem;
+        color: #e0e0e0;
+        font-family: 'Montserrat', sans-serif;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .chat-input:focus {
+        outline: none;
+        border-color: #63b3ed;
     }
     
     /* Chart containers */
@@ -303,28 +344,7 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
     
-    /* Tabs styling */
-    .stTabs [data-baseweb="tab-list"] {
-        background: rgba(45, 55, 72, 0.5);
-        border-radius: 10px;
-        padding: 0.25rem;
-        margin-bottom: 1rem;
-    }
-    
-    .stTabs [data-baseweb="tab-list"] button {
-        background: transparent;
-        color: #a0aec0;
-        border-radius: 8px;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    
-    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
-        background: linear-gradient(135deg, #4299e1, #3182ce);
-        color: white;
-    }
-    
-    /* Sidebar navigation */
+    /* Professional navigation */
     .nav-item {
         display: flex;
         align-items: center;
@@ -336,6 +356,8 @@ st.markdown("""
         text-decoration: none;
         transition: all 0.3s ease;
         cursor: pointer;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 500;
     }
     
     .nav-item:hover {
@@ -348,6 +370,25 @@ st.markdown("""
         color: white;
     }
     
+    /* Professional text styling */
+    .professional-text {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 400;
+        line-height: 1.6;
+    }
+    
+    .professional-heading {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+        color: #ffffff;
+    }
+    
+    .professional-subheading {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 600;
+        color: #f0f0f0;
+    }
+    
     /* Footer */
     .footer {
         text-align: center;
@@ -356,6 +397,7 @@ st.markdown("""
         font-size: 0.9rem;
         border-top: 1px solid #2d3748;
         margin-top: 3rem;
+        font-family: 'Montserrat', sans-serif;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -388,12 +430,76 @@ def create_metric_card(label, value, delta=None, delta_type="neutral"):
 
 def create_status_indicator(status, text):
     """Create a status indicator badge"""
-    return f'<span class="status-indicator status-{status}">● {text}</span>'
+    return f'<span class="status-indicator status-{status}">{text}</span>'
 
 def create_risk_badge(risk_level, score=None):
     """Create a risk level badge"""
     score_text = f" ({int(score*100)}%)" if score else ""
     return f'<span class="risk-badge {risk_level.lower()}">{risk_level}{score_text}</span>'
+
+def generate_sar_with_gemini(transaction_data, user_query=""):
+    """Generate SAR using Gemini API"""
+    try:
+        # Prepare transaction context
+        context = f"""
+        Transaction Hash: {transaction_data.get('hash', 'N/A')}
+        Amount: {transaction_data.get('amount_btc', 0):.4f} BTC (${transaction_data.get('amount_usd', 0):,.2f})
+        Risk Score: {transaction_data.get('risk_score', 0):.2f}
+        Timestamp: {transaction_data.get('timestamp', 'N/A')}
+        Inputs: {transaction_data.get('inputs', 0)}
+        Outputs: {transaction_data.get('outputs', 0)}
+        Smurfing Rule Triggered: {transaction_data.get('smurfing', False)}
+        """
+        
+        # Call Flask LLM service
+        response = requests.post(
+            "http://flask-llm-service:5000/generate-sar",
+            json={
+                "transaction_hash": transaction_data.get('hash', ''),
+                "ml_fraud_score": transaction_data.get('risk_score', 0),
+                "is_smurfing_rule": transaction_data.get('smurfing', False),
+                "total_input_value": transaction_data.get('amount_btc', 0) * 1e8,
+                "total_output_value": transaction_data.get('amount_btc', 0) * 1e8,
+                "num_inputs": transaction_data.get('inputs', 1),
+                "num_outputs": transaction_data.get('outputs', 1),
+                "context": user_query if user_query else "Generate a comprehensive SAR report for this suspicious transaction."
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            return response.json().get('sar_draft', 'Failed to generate SAR')
+        else:
+            return f"Error generating SAR: {response.status_code}"
+            
+    except Exception as e:
+        return f"Error connecting to AI service: {str(e)}"
+
+def chat_with_gemini(user_message, context=""):
+    """Chat with Gemini for general fraud analysis queries"""
+    try:
+        response = requests.post(
+            "http://flask-llm-service:5000/generate-sar",
+            json={
+                "transaction_hash": "CHAT_QUERY",
+                "ml_fraud_score": 0.0,
+                "is_smurfing_rule": False,
+                "total_input_value": 0,
+                "total_output_value": 0,
+                "num_inputs": 0,
+                "num_outputs": 0,
+                "context": f"User query: {user_message}\n\nContext: {context}\n\nPlease provide a helpful response about fraud detection, compliance, or SAR reporting."
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            return response.json().get('sar_draft', 'I apologize, but I cannot process your request at the moment.')
+        else:
+            return "I'm experiencing technical difficulties. Please try again later."
+            
+    except Exception as e:
+        return "I'm currently unable to connect to the AI service. Please check your connection and try again."
 
 @st.cache_data(ttl=5)
 def generate_dummy_transactions(limit=10):
@@ -513,7 +619,8 @@ def create_advanced_charts():
         yaxis_title='Risk Score',
         template='plotly_dark',
         height=400,
-        showlegend=False
+        showlegend=False,
+        font=dict(family="Montserrat, sans-serif")
     )
     
     # Transaction Volume Chart
@@ -530,7 +637,8 @@ def create_advanced_charts():
         yaxis_title='Transaction Count',
         template='plotly_dark',
         height=400,
-        showlegend=False
+        showlegend=False,
+        font=dict(family="Montserrat, sans-serif")
     )
     
     # Alert Distribution Pie Chart
@@ -546,29 +654,36 @@ def create_advanced_charts():
     fig_pie.update_layout(
         title='Alert Distribution by Risk Level',
         template='plotly_dark',
-        height=400
+        height=400,
+        font=dict(family="Montserrat, sans-serif")
     )
     
     return fig_risk, fig_volume, fig_pie
 
-# Enhanced Sidebar
+# Initialize session state for chat
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'selected_transaction' not in st.session_state:
+    st.session_state.selected_transaction = None
+
+# Enhanced Sidebar with AI Chat
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0;">
-        <h1 style="font-size: 1.5rem; margin: 0; color: #63b3ed;">🛡️ Synapse-Lite</h1>
-        <p style="color: #a0aec0; font-size: 0.9rem; margin: 0.5rem 0;">Fraud Detection System</p>
+        <h1 style="font-size: 1.5rem; margin: 0; color: #63b3ed; font-family: 'Montserrat', sans-serif;">SYNAPSE-LITE</h1>
+        <p style="color: #a0aec0; font-size: 0.9rem; margin: 0.5rem 0; font-family: 'Montserrat', sans-serif;">Fraud Detection System</p>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # Navigation with icons
+    # Navigation without icons
     pages = {
-        "🏠 Dashboard": "Dashboard",
-        "💳 Transactions": "Transactions", 
-        "🚨 Alerts": "Alerts",
-        "📊 Analytics": "Analytics",
-        "⚙️ Settings": "Settings"
+        "Dashboard": "Dashboard",
+        "Transactions": "Transactions", 
+        "Alerts": "Alerts",
+        "Analytics": "Analytics",
+        "Settings": "Settings"
     }
     
     selected_page = st.radio("", list(pages.keys()), index=0)
@@ -576,11 +691,51 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # AI Chat Interface
+    st.markdown("### AI Assistant")
+    st.markdown('<p class="professional-text">Ask about fraud patterns, compliance, or generate SAR reports</p>', unsafe_allow_html=True)
+    
+    # Chat container
+    chat_container = st.container()
+    
+    # Display chat history
+    with chat_container:
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        for i, (role, message) in enumerate(st.session_state.chat_history[-5:]):  # Show last 5 messages
+            st.markdown(f'<div class="chat-message {role}">{message}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Chat input
+    user_input = st.text_input("Type your message...", key="chat_input", placeholder="e.g., Generate SAR for high-risk transaction")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Send", use_container_width=True):
+            if user_input:
+                st.session_state.chat_history.append(("user", user_input))
+                
+                # Generate AI response
+                with st.spinner("AI is thinking..."):
+                    if "sar" in user_input.lower() and st.session_state.selected_transaction:
+                        response = generate_sar_with_gemini(st.session_state.selected_transaction, user_input)
+                    else:
+                        response = chat_with_gemini(user_input)
+                
+                st.session_state.chat_history.append(("assistant", response))
+                st.rerun()
+    
+    with col2:
+        if st.button("Clear", use_container_width=True):
+            st.session_state.chat_history = []
+            st.rerun()
+    
+    st.markdown("---")
+    
     # System Status
     st.markdown("### System Status")
     st.markdown(create_status_indicator("live", "Monitoring Active"), unsafe_allow_html=True)
     st.markdown(create_status_indicator("warning", "5 Alerts Pending"), unsafe_allow_html=True)
-    st.markdown(create_status_indicator("live", "API Connected"), unsafe_allow_html=True)
+    st.markdown(create_status_indicator("live", "AI Connected"), unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -593,7 +748,7 @@ with st.sidebar:
     }
     
     st.markdown(f"""
-    <div style="font-size: 0.9rem; color: #a0aec0;">
+    <div style="font-size: 0.9rem; color: #a0aec0; font-family: 'Montserrat', sans-serif;">
         <p>Transactions Today: <strong style="color: #63b3ed;">{metrics['transactions_today']}</strong></p>
         <p>Alerts Today: <strong style="color: #ed8936;">{metrics['alerts_today']}</strong></p>
         <p>Avg Risk Score: <strong style="color: #48bb78;">{metrics['risk_score']:.1f}%</strong></p>
@@ -602,15 +757,15 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("""
-    <div style="text-align: center; color: #718096; font-size: 0.8rem;">
+    <div style="text-align: center; color: #718096; font-size: 0.8rem; font-family: 'Montserrat', sans-serif;">
         <p>© 2024 Synapse-Lite<br>Fraud Detection System</p>
     </div>
     """, unsafe_allow_html=True)
 
 # Main Content
 if page_selection == "Dashboard":
-    st.markdown("# 🛡️ Fraud Detection Dashboard")
-    st.markdown("### Real-time Bitcoin transaction monitoring and threat analysis")
+    st.markdown('<h1 class="professional-heading">FRAUD DETECTION DASHBOARD</h1>', unsafe_allow_html=True)
+    st.markdown('<h3 class="professional-subheading">Real-time Bitcoin transaction monitoring and threat analysis</h3>', unsafe_allow_html=True)
     
     # Status indicator
     st.markdown(create_status_indicator("live", "Live Monitoring Active"), unsafe_allow_html=True)
@@ -654,7 +809,7 @@ if page_selection == "Dashboard":
     st.markdown("---")
     
     # Charts section
-    st.markdown("## 📈 Real-time Analytics")
+    st.markdown('<h2 class="professional-subheading">Real-time Analytics</h2>', unsafe_allow_html=True)
     
     chart_col1, chart_col2 = st.columns(2)
     
@@ -674,18 +829,33 @@ if page_selection == "Dashboard":
     recent_col1, recent_col2 = st.columns(2)
     
     with recent_col1:
-        st.markdown("## 💳 Recent Transactions")
+        st.markdown('<h2 class="professional-subheading">Recent Transactions</h2>', unsafe_allow_html=True)
         transactions = generate_dummy_transactions(5)
         
         for _, tx in transactions.iterrows():
             risk_level = get_risk_level(tx['ML_Score'], tx['Smurfing_Rule'])
+            tx_data = {
+                'hash': tx['Hash'],
+                'amount_btc': tx['TotalOutputValueBTC'],
+                'amount_usd': tx['TotalOutputValueBTC'] * BTC_USD_RATE,
+                'risk_score': tx['ML_Score'],
+                'timestamp': tx['Timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
+                'inputs': tx['NumInputs'],
+                'outputs': tx['NumOutputs'],
+                'smurfing': tx['Smurfing_Rule']
+            }
+            
+            if st.button(f"Select {tx['Hash'][:12]}...", key=f"select_tx_{tx['Hash'][:8]}"):
+                st.session_state.selected_transaction = tx_data
+                st.success("Transaction selected for AI analysis")
+            
             st.markdown(f"""
             <div class="transaction-card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <strong>{tx['Hash'][:12]}...</strong>
+                        <strong style="font-family: 'Montserrat', sans-serif;">{tx['Hash'][:12]}...</strong>
                         <br>
-                        <small style="color: #a0aec0;">{tx['TotalOutputValueBTC']:.4f} BTC</small>
+                        <small style="color: #a0aec0; font-family: 'Montserrat', sans-serif;">{tx['TotalOutputValueBTC']:.4f} BTC</small>
                     </div>
                     <div>
                         {create_risk_badge(risk_level, tx['ML_Score'])}
@@ -695,18 +865,36 @@ if page_selection == "Dashboard":
             """, unsafe_allow_html=True)
     
     with recent_col2:
-        st.markdown("## 🚨 Recent Alerts")
+        st.markdown('<h2 class="professional-subheading">Recent Alerts</h2>', unsafe_allow_html=True)
         alerts = generate_dummy_alerts(5)
         
         for _, alert in alerts.iterrows():
             risk_level = alert['Risk_Level']
+            alert_data = {
+                'hash': alert['Hash'],
+                'amount_btc': alert['TotalOutputValue'] / 1e8,
+                'amount_usd': (alert['TotalOutputValue'] / 1e8) * BTC_USD_RATE,
+                'risk_score': alert['ML_Score'],
+                'timestamp': alert['Timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
+                'inputs': random.randint(1, 5),
+                'outputs': random.randint(1, 5),
+                'smurfing': alert['Smurfing_Rule']
+            }
+            
+            if st.button(f"Generate SAR {alert['Hash'][:8]}...", key=f"sar_alert_{alert['Hash'][:8]}"):
+                st.session_state.selected_transaction = alert_data
+                with st.spinner("Generating SAR with AI..."):
+                    sar_response = generate_sar_with_gemini(alert_data, "Generate a comprehensive SAR report for this suspicious transaction")
+                st.session_state.chat_history.append(("assistant", f"SAR Report for {alert['Hash'][:12]}...\n\n{sar_response}"))
+                st.success("SAR generated! Check AI Assistant.")
+            
             st.markdown(f"""
             <div class="alert-card {risk_level.lower()}">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <strong>{alert['Hash'][:12]}...</strong>
+                        <strong style="font-family: 'Montserrat', sans-serif;">{alert['Hash'][:12]}...</strong>
                         <br>
-                        <small style="color: #a0aec0;">{alert['Timestamp'].strftime('%H:%M:%S')}</small>
+                        <small style="color: #a0aec0; font-family: 'Montserrat', sans-serif;">{alert['Timestamp'].strftime('%H:%M:%S')}</small>
                     </div>
                     <div>
                         {create_risk_badge(risk_level, alert['ML_Score'])}
@@ -716,20 +904,20 @@ if page_selection == "Dashboard":
             """, unsafe_allow_html=True)
 
 elif page_selection == "Transactions":
-    st.markdown("# 💳 Transaction Monitor")
-    st.markdown("### Real-time Bitcoin transaction analysis")
+    st.markdown('<h1 class="professional-heading">TRANSACTION MONITOR</h1>', unsafe_allow_html=True)
+    st.markdown('<h3 class="professional-subheading">Real-time Bitcoin transaction analysis</h3>', unsafe_allow_html=True)
     
     # Controls
     control_col1, control_col2, control_col3 = st.columns([2, 1, 1])
     
     with control_col1:
-        search_term = st.text_input("🔍 Search transactions...", placeholder="Enter hash, address, or amount")
+        search_term = st.text_input("Search transactions...", placeholder="Enter hash, address, or amount")
     
     with control_col2:
         risk_filter = st.selectbox("Risk Level", ["All", "Critical", "High", "Medium", "Low"])
     
     with control_col3:
-        if st.button("🔄 Refresh", use_container_width=True):
+        if st.button("Refresh", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
     
@@ -752,33 +940,52 @@ elif page_selection == "Transactions":
         for _, tx in transactions.iterrows():
             risk_level = get_risk_level(tx['ML_Score'], tx['Smurfing_Rule'])
             
-            st.markdown(f"""
-            <div class="transaction-card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; font-size: 1.1rem;">{tx['Hash'][:16]}...</div>
-                        <div style="color: #a0aec0; font-size: 0.9rem; margin: 0.25rem 0;">
-                            {tx['NumInputs']} inputs → {tx['NumOutputs']} outputs
+            col1, col2 = st.columns([4, 1])
+            
+            with col1:
+                st.markdown(f"""
+                <div class="transaction-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1.1rem; font-family: 'Montserrat', sans-serif;">{tx['Hash'][:16]}...</div>
+                            <div style="color: #a0aec0; font-size: 0.9rem; margin: 0.25rem 0; font-family: 'Montserrat', sans-serif;">
+                                {tx['NumInputs']} inputs → {tx['NumOutputs']} outputs
+                            </div>
+                            <div style="color: #63b3ed; font-weight: 500; font-family: 'Montserrat', sans-serif;">
+                                {tx['TotalOutputValueBTC']:.4f} BTC (${tx['TotalOutputValueBTC'] * BTC_USD_RATE:,.2f})
+                            </div>
                         </div>
-                        <div style="color: #63b3ed; font-weight: 500;">
-                            {tx['TotalOutputValueBTC']:.4f} BTC (${tx['TotalOutputValueBTC'] * BTC_USD_RATE:,.2f})
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        {create_risk_badge(risk_level, tx['ML_Score'])}
-                        <div style="color: #a0aec0; font-size: 0.8rem; margin-top: 0.5rem;">
-                            {tx['Timestamp'].strftime('%H:%M:%S')}
+                        <div style="text-align: right;">
+                            {create_risk_badge(risk_level, tx['ML_Score'])}
+                            <div style="color: #a0aec0; font-size: 0.8rem; margin-top: 0.5rem; font-family: 'Montserrat', sans-serif;">
+                                {tx['Timestamp'].strftime('%H:%M:%S')}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                tx_data = {
+                    'hash': tx['Hash'],
+                    'amount_btc': tx['TotalOutputValueBTC'],
+                    'amount_usd': tx['TotalOutputValueBTC'] * BTC_USD_RATE,
+                    'risk_score': tx['ML_Score'],
+                    'timestamp': tx['Timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
+                    'inputs': tx['NumInputs'],
+                    'outputs': tx['NumOutputs'],
+                    'smurfing': tx['Smurfing_Rule']
+                }
+                
+                if st.button("Analyze", key=f"analyze_{tx['Hash'][:8]}", use_container_width=True):
+                    st.session_state.selected_transaction = tx_data
+                    st.success("Transaction selected for AI analysis")
     else:
         st.info("No transactions found matching your criteria.")
 
 elif page_selection == "Alerts":
-    st.markdown("# 🚨 Security Alerts")
-    st.markdown("### Monitor and investigate suspicious activity")
+    st.markdown('<h1 class="professional-heading">SECURITY ALERTS</h1>', unsafe_allow_html=True)
+    st.markdown('<h3 class="professional-subheading">Monitor and investigate suspicious activity</h3>', unsafe_allow_html=True)
     
     # Alert summary metrics
     alert_col1, alert_col2, alert_col3, alert_col4 = st.columns(4)
@@ -807,13 +1014,13 @@ elif page_selection == "Alerts":
     filter_col1, filter_col2, filter_col3 = st.columns([2, 1, 1])
     
     with filter_col1:
-        alert_search = st.text_input("🔍 Search alerts...", placeholder="Enter transaction hash or details")
+        alert_search = st.text_input("Search alerts...", placeholder="Enter transaction hash or details")
     
     with filter_col2:
         severity_filter = st.selectbox("Severity", ["All", "Critical", "High", "Medium", "Low"])
     
     with filter_col3:
-        if st.button("🔄 Refresh Alerts", use_container_width=True):
+        if st.button("Refresh Alerts", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
     
@@ -836,52 +1043,65 @@ elif page_selection == "Alerts":
             description = "Unusual transaction pattern detected"
             
             if alert['Smurfing_Rule']:
-                description = "🔍 Smurfing pattern detected: Multiple small outputs"
+                description = "Smurfing pattern detected: Multiple small outputs"
             elif alert['ML_Score'] >= 0.9:
-                description = "🤖 High ML fraud score detected"
+                description = "High ML fraud score detected"
             elif alert['ML_Score'] >= 0.7:
-                description = "⚠️ Elevated fraud risk identified"
+                description = "Elevated fraud risk identified"
             
-            st.markdown(f"""
-            <div class="alert-card {risk_level.lower()}">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">
-                            {create_risk_badge(risk_level)} Alert #{alert['Hash'][:8]}...
+            col1, col2 = st.columns([4, 1])
+            
+            with col1:
+                st.markdown(f"""
+                <div class="alert-card {risk_level.lower()}">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; font-family: 'Montserrat', sans-serif;">
+                                {create_risk_badge(risk_level)} Alert {alert['Hash'][:8]}...
+                            </div>
+                            <div style="color: #e2e8f0; margin-bottom: 0.75rem; font-family: 'Montserrat', sans-serif;">
+                                {description}
+                            </div>
+                            <div style="color: #a0aec0; font-size: 0.9rem; font-family: 'Montserrat', sans-serif;">
+                                <strong>Transaction:</strong> {alert['Hash'][:16]}...<br>
+                                <strong>Amount:</strong> {alert['TotalOutputValue']/1e8:.4f} BTC<br>
+                                <strong>Time:</strong> {alert['Timestamp'].strftime('%Y-%m-%d %H:%M:%S')}
+                            </div>
                         </div>
-                        <div style="color: #e2e8f0; margin-bottom: 0.75rem;">
-                            {description}
-                        </div>
-                        <div style="color: #a0aec0; font-size: 0.9rem;">
-                            <strong>Transaction:</strong> {alert['Hash'][:16]}...<br>
-                            <strong>Amount:</strong> {alert['TotalOutputValue']/1e8:.4f} BTC<br>
-                            <strong>Time:</strong> {alert['Timestamp'].strftime('%Y-%m-%d %H:%M:%S')}
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <button style="background: linear-gradient(135deg, #4299e1, #3182ce); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
-                            🔍 Investigate
-                        </button>
-                        <br>
-                        <button style="background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
-                            📋 Generate SAR
-                        </button>
                     </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                alert_data = {
+                    'hash': alert['Hash'],
+                    'amount_btc': alert['TotalOutputValue'] / 1e8,
+                    'amount_usd': (alert['TotalOutputValue'] / 1e8) * BTC_USD_RATE,
+                    'risk_score': alert['ML_Score'],
+                    'timestamp': alert['Timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
+                    'inputs': random.randint(1, 5),
+                    'outputs': random.randint(1, 5),
+                    'smurfing': alert['Smurfing_Rule']
+                }
+                
+                if st.button("Generate SAR", key=f"sar_{alert['Hash'][:8]}", use_container_width=True):
+                    st.session_state.selected_transaction = alert_data
+                    with st.spinner("Generating SAR with AI..."):
+                        sar_response = generate_sar_with_gemini(alert_data, "Generate a comprehensive SAR report for this suspicious transaction")
+                    st.session_state.chat_history.append(("assistant", f"SAR Report for {alert['Hash'][:12]}...\n\n{sar_response}"))
+                    st.success("SAR generated! Check AI Assistant.")
     else:
         st.info("No alerts found matching your criteria.")
 
 elif page_selection == "Analytics":
-    st.markdown("# 📊 Fraud Analytics")
-    st.markdown("### Deep dive into fraud trends and patterns")
+    st.markdown('<h1 class="professional-heading">FRAUD ANALYTICS</h1>', unsafe_allow_html=True)
+    st.markdown('<h3 class="professional-subheading">Deep dive into fraud trends and patterns</h3>', unsafe_allow_html=True)
     
     # Create comprehensive analytics
     fig_risk, fig_volume, fig_pie = create_advanced_charts()
     
     # Advanced charts
-    chart_tabs = st.tabs(["📈 Risk Trends", "📊 Transaction Volume", "🎯 Alert Distribution", "🔍 Pattern Analysis"])
+    chart_tabs = st.tabs(["Risk Trends", "Transaction Volume", "Alert Distribution", "Pattern Analysis"])
     
     with chart_tabs[0]:
         st.plotly_chart(fig_risk, use_container_width=True)
@@ -890,7 +1110,7 @@ elif page_selection == "Analytics":
         risk_col1, risk_col2 = st.columns(2)
         
         with risk_col1:
-            st.markdown("### Risk Score Statistics")
+            st.markdown('<h3 class="professional-subheading">Risk Score Statistics</h3>', unsafe_allow_html=True)
             data = generate_analytics_data()
             avg_risk = np.mean(data['risk_scores'])
             max_risk = np.max(data['risk_scores'])
@@ -898,15 +1118,15 @@ elif page_selection == "Analytics":
             
             st.markdown(f"""
             <div class="chart-container">
-                <p><strong>Average Risk Score:</strong> {avg_risk:.1f}%</p>
-                <p><strong>Peak Risk Score:</strong> {max_risk:.1f}%</p>
-                <p><strong>Lowest Risk Score:</strong> {min_risk:.1f}%</p>
-                <p><strong>Risk Volatility:</strong> {np.std(data['risk_scores']):.1f}%</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Average Risk Score:</strong> {avg_risk:.1f}%</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Peak Risk Score:</strong> {max_risk:.1f}%</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Lowest Risk Score:</strong> {min_risk:.1f}%</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Risk Volatility:</strong> {np.std(data['risk_scores']):.1f}%</p>
             </div>
             """, unsafe_allow_html=True)
         
         with risk_col2:
-            st.markdown("### Risk Level Distribution")
+            st.markdown('<h3 class="professional-subheading">Risk Level Distribution</h3>', unsafe_allow_html=True)
             alerts = generate_dummy_alerts(100)
             risk_dist = alerts['Risk_Level'].value_counts()
             
@@ -923,7 +1143,7 @@ elif page_selection == "Analytics":
         st.plotly_chart(fig_volume, use_container_width=True)
         
         # Transaction insights
-        st.markdown("### Transaction Insights")
+        st.markdown('<h3 class="professional-subheading">Transaction Insights</h3>', unsafe_allow_html=True)
         data = generate_analytics_data()
         total_tx = sum(data['transaction_counts'])
         avg_tx = np.mean(data['transaction_counts'])
@@ -941,39 +1161,39 @@ elif page_selection == "Analytics":
         st.plotly_chart(fig_pie, use_container_width=True)
         
         # Alert analysis
-        st.markdown("### Alert Analysis")
+        st.markdown('<h3 class="professional-subheading">Alert Analysis</h3>', unsafe_allow_html=True)
         alerts = generate_dummy_alerts(100)
         
         analysis_col1, analysis_col2 = st.columns(2)
         
         with analysis_col1:
-            st.markdown("#### Alert Triggers")
+            st.markdown('<h4 class="professional-subheading">Alert Triggers</h4>', unsafe_allow_html=True)
             smurfing_alerts = len(alerts[alerts['Smurfing_Rule'] == True])
             ml_alerts = len(alerts[alerts['ML_Score'] >= 0.9])
             
             st.markdown(f"""
             <div class="chart-container">
-                <p><strong>Smurfing Rule Triggers:</strong> {smurfing_alerts}</p>
-                <p><strong>High ML Score Alerts:</strong> {ml_alerts}</p>
-                <p><strong>Combined Triggers:</strong> {len(alerts[(alerts['Smurfing_Rule'] == True) & (alerts['ML_Score'] >= 0.9)])}</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Smurfing Rule Triggers:</strong> {smurfing_alerts}</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>High ML Score Alerts:</strong> {ml_alerts}</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Combined Triggers:</strong> {len(alerts[(alerts['Smurfing_Rule'] == True) & (alerts['ML_Score'] >= 0.9)])}</p>
             </div>
             """, unsafe_allow_html=True)
         
         with analysis_col2:
-            st.markdown("#### Alert Timing")
+            st.markdown('<h4 class="professional-subheading">Alert Timing</h4>', unsafe_allow_html=True)
             hourly_alerts = alerts.groupby(alerts['Timestamp'].dt.hour).size()
             peak_alert_hour = hourly_alerts.idxmax()
             
             st.markdown(f"""
             <div class="chart-container">
-                <p><strong>Peak Alert Hour:</strong> {peak_alert_hour:02d}:00</p>
-                <p><strong>Alerts at Peak:</strong> {hourly_alerts.max()}</p>
-                <p><strong>Quietest Hour:</strong> {hourly_alerts.idxmin():02d}:00</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Peak Alert Hour:</strong> {peak_alert_hour:02d}:00</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Alerts at Peak:</strong> {hourly_alerts.max()}</p>
+                <p style="font-family: 'Montserrat', sans-serif;"><strong>Quietest Hour:</strong> {hourly_alerts.idxmin():02d}:00</p>
             </div>
             """, unsafe_allow_html=True)
     
     with chart_tabs[3]:
-        st.markdown("### Pattern Analysis")
+        st.markdown('<h3 class="professional-subheading">Pattern Analysis</h3>', unsafe_allow_html=True)
         
         # Create pattern analysis charts
         transactions = generate_dummy_transactions(100)
@@ -986,7 +1206,7 @@ elif page_selection == "Analytics":
             title='ML Score Distribution',
             color_discrete_sequence=['#4299e1']
         )
-        fig_ml.update_layout(template='plotly_dark')
+        fig_ml.update_layout(template='plotly_dark', font=dict(family="Montserrat, sans-serif"))
         st.plotly_chart(fig_ml, use_container_width=True)
         
         # Transaction size vs risk
@@ -1004,68 +1224,68 @@ elif page_selection == "Analytics":
                 'Low': '#48bb78'
             }
         )
-        fig_scatter.update_layout(template='plotly_dark')
+        fig_scatter.update_layout(template='plotly_dark', font=dict(family="Montserrat, sans-serif"))
         st.plotly_chart(fig_scatter, use_container_width=True)
 
 elif page_selection == "Settings":
-    st.markdown("# ⚙️ Settings")
-    st.markdown("### Configure system parameters and preferences")
+    st.markdown('<h1 class="professional-heading">SETTINGS</h1>', unsafe_allow_html=True)
+    st.markdown('<h3 class="professional-subheading">Configure system parameters and preferences</h3>', unsafe_allow_html=True)
     
     # Settings tabs
-    settings_tabs = st.tabs(["🔧 General", "🔒 Security", "📊 Monitoring", "🔗 Integrations"])
+    settings_tabs = st.tabs(["General", "Security", "Monitoring", "Integrations"])
     
     with settings_tabs[0]:
-        st.markdown("## General Settings")
+        st.markdown('<h2 class="professional-subheading">General Settings</h2>', unsafe_allow_html=True)
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("### Display Preferences")
+            st.markdown('<h3 class="professional-subheading">Display Preferences</h3>', unsafe_allow_html=True)
             st.selectbox("Theme", ["Dark", "Light", "Auto"])
             st.slider("Refresh Rate (seconds)", 1, 60, 5)
             st.checkbox("Show animations", value=True)
             st.checkbox("Enable notifications", value=True)
         
         with col2:
-            st.markdown("### Data Settings")
+            st.markdown('<h3 class="professional-subheading">Data Settings</h3>', unsafe_allow_html=True)
             st.selectbox("Data Source", ["Demo Data", "Live Feed", "Historical"])
             st.slider("Transaction Limit", 10, 1000, 100)
             st.slider("Alert History (days)", 1, 30, 7)
     
     with settings_tabs[1]:
-        st.markdown("## Security Settings")
+        st.markdown('<h2 class="professional-subheading">Security Settings</h2>', unsafe_allow_html=True)
         
-        st.markdown("### API Configuration")
+        st.markdown('<h3 class="professional-subheading">API Configuration</h3>', unsafe_allow_html=True)
         st.text_input("Gemini API Key", type="password", value="••••••••••••••••")
         st.text_input("Neo4j Connection", value="bolt://neo4j:7687")
         
-        st.markdown("### Access Control")
+        st.markdown('<h3 class="professional-subheading">Access Control</h3>', unsafe_allow_html=True)
         st.checkbox("Enable audit logging", value=True)
         st.checkbox("Require 2FA", value=False)
         st.selectbox("Session timeout", ["15 min", "30 min", "1 hour", "4 hours"])
     
     with settings_tabs[2]:
-        st.markdown("## Monitoring Settings")
+        st.markdown('<h2 class="professional-subheading">Monitoring Settings</h2>', unsafe_allow_html=True)
         
-        st.markdown("### Alert Thresholds")
+        st.markdown('<h3 class="professional-subheading">Alert Thresholds</h3>', unsafe_allow_html=True)
         st.slider("Critical Risk Threshold", 0.0, 1.0, 0.9)
         st.slider("High Risk Threshold", 0.0, 1.0, 0.7)
         st.slider("Medium Risk Threshold", 0.0, 1.0, 0.4)
         
-        st.markdown("### Notification Settings")
+        st.markdown('<h3 class="professional-subheading">Notification Settings</h3>', unsafe_allow_html=True)
         st.checkbox("Email alerts for critical risks", value=True)
         st.checkbox("SMS alerts for system issues", value=False)
         st.text_input("Alert email", value="admin@example.com")
     
     with settings_tabs[3]:
-        st.markdown("## Integration Settings")
+        st.markdown('<h2 class="professional-subheading">Integration Settings</h2>', unsafe_allow_html=True)
         
-        st.markdown("### External Services")
+        st.markdown('<h3 class="professional-subheading">External Services</h3>', unsafe_allow_html=True)
         st.text_input("Webhook URL", placeholder="https://your-webhook.com/alerts")
         st.selectbox("Export Format", ["JSON", "CSV", "XML"])
         st.checkbox("Enable blockchain explorer links", value=True)
         
-        st.markdown("### Database Settings")
+        st.markdown('<h3 class="professional-subheading">Database Settings</h3>', unsafe_allow_html=True)
         st.text_input("Backup Location", value="/backups/")
         st.selectbox("Backup Frequency", ["Daily", "Weekly", "Monthly"])
 
@@ -1073,7 +1293,7 @@ elif page_selection == "Settings":
 st.markdown("---")
 st.markdown("""
 <div class="footer">
-    <p>🛡️ Synapse-Lite Fraud Detection System | Built with Streamlit & ❤️</p>
+    <p>SYNAPSE-LITE Fraud Detection System | Built with Advanced AI Technology</p>
     <p>Real-time Bitcoin transaction monitoring and AI-powered threat detection</p>
 </div>
 """, unsafe_allow_html=True)
