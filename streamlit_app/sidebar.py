@@ -1,7 +1,6 @@
 # Sidebar component for Streamlit app
 
 import streamlit as st
-import random
 import sys
 import os
 
@@ -9,21 +8,21 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import PAGES
-from utils import create_status_indicator
 
 def render_sidebar():
     """Render the enterprise-style sidebar navigation and return selected page"""
     with st.sidebar:
+        st.image("logo.png", width=64)
         st.markdown(
-            '''<div style="padding:1.5rem 0 1.5rem 0;">
-                <span style="font-weight:700;font-size:1.25rem;color:#222;letter-spacing:-0.01em;">Synapse-Lite</span>
-            </div>''',
+            '<div style="text-align:center; margin-bottom:1.5rem; margin-top:0.5rem;">'
+            '<span style="font-weight:700;font-size:1.25rem;color:#222;letter-spacing:-0.01em;">Synapse-Lite</span>'
+            '</div>',
             unsafe_allow_html=True
         )
         selected_page = st.radio(
             "",
             list(PAGES.keys()),
-            format_func=lambda x: f"{PAGES[x]}",
+            format_func=lambda x: f"{PAGES[x]}  {x}",
             label_visibility="collapsed",
             index=0,
             key="main_nav"
