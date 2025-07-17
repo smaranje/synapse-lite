@@ -21,9 +21,6 @@ def render_sidebar():
             <h1 style="color: #0052ff; font-size: 1.5rem; margin: 0; font-weight: 600;">
                 🔷 Synapse-Lite
             </h1>
-            <p style="color: #6b7280; font-size: 0.875rem; margin: 0.5rem 0 0 0;">
-                Fraud Detection System
-            </p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -51,24 +48,5 @@ def render_sidebar():
         st.markdown(create_status_indicator(ai_status, "AI Service"), unsafe_allow_html=True)
         
         st.markdown("---")
-        
-        # Quick stats
-        st.markdown("### Quick Stats")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.metric("Active Alerts", "23", "+5")
-            st.metric("Transactions/hr", "1.2K", "+12%")
-            
-        with col2:
-            st.metric("Risk Score", "68%", "-3%")
-            st.metric("False Positives", "4%", "-1%")
-            
-        st.markdown("---")
-        
-        # Settings
-        st.markdown("### Quick Settings")
-        st.selectbox("Alert Threshold", ["Low", "Medium", "High"], index=1)
-        st.checkbox("Auto-refresh", value=True)
         
     return selected_page
