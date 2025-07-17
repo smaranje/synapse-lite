@@ -291,3 +291,18 @@ class TransactionsPage:
         )
         
         st.plotly_chart(fig, use_container_width=True)
+
+
+def render_transactions():
+    """Module-level function to render transactions page"""
+    # Get or create app_state if it doesn't exist
+    from core.app_state import AppState
+    
+    if 'app_state' not in st.session_state:
+        st.session_state.app_state = AppState()
+    
+    app_state = st.session_state.app_state
+    
+    # Create and render the transactions page
+    transactions_page = TransactionsPage(app_state)
+    transactions_page.render()
