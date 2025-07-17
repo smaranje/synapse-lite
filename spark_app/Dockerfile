@@ -1,17 +1,22 @@
-# spark_app/Dockerfile
-FROM bitnami/spark:3.5.6
+# ──────────────────────────────────────────────────────────────
+# Spark client image that streams from Kafka and scores with
+# Google Gemini-Pro – no local .pkl model needed.
+# ──────────────────────────────────────────────────────────────
+FROM bitnami/spark:3.5.6-debian-12-r0
 
 WORKDIR /app
 
-# Copy your Python application files
-COPY streaming_app.py .
-COPY model.py .
-COPY fraud_rules.py .
-COPY bitcoin_fraud_model.pkl .
+# Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Neo4j Spark Connector JAR
-# Ensure this JAR is compatible with Spark 3.5.6 and Scala 2.12
+# Application code
+COPY streaming_app.py .
+COPY fraud_rules.py .
 COPY neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar .
 
-# Install Python dependencies
-RUN pip install pyspark pandas scikit-learn numpy requests neo4j
+CMD ["spark-submit",
+     "--master", "spark://spark-master:7077",
+     "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6",
+     "--jars", "neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar",
+     "streaming_app.py"]
