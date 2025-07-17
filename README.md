@@ -140,4 +140,3 @@ MIT License (or specify your license here)
 - [Neo4j](https://neo4j.com/)
 - [Google Gemini LLM](https://ai.google.dev/)
 - [Kafka](https://kafka.apache.org/)
-
