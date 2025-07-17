@@ -51,14 +51,15 @@ def apply_custom_css():
             padding-top: 2rem !important;
         }
         
+        /* Let Streamlit handle the actual colours so we are compatible with both light and dark themes */
         .stApp {
-            background-color: var(--cb-gray-50) !important;
+            background-color: var(--background-color) !important;
         }
-        
+
         body, .stApp, .main, [data-testid="stAppViewContainer"] {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-            background-color: var(--cb-gray-50) !important;
-            color: var(--cb-gray-900) !important;
+            background-color: var(--background-color) !important;
+            color: var(--text-color) !important;
             line-height: 1.5 !important;
         }
 
@@ -371,6 +372,18 @@ def apply_custom_css():
             font-size: var(--cb-font-size-2xl) !important;
             font-weight: 700 !important;
             color: var(--cb-gray-900) !important;
+        }
+
+        /* Make sure our custom cards pick up the secondary background so text remains visible in both modes */
+        .cb-card,
+        .cb-metric-card,
+        .cb-quick-actions,
+        .cb-chart-container,
+        .cb-table,
+        .cb-dashboard-header,
+        .cb-action-btn,
+        .cb-btn-secondary {
+            background: var(--secondary-background-color) !important;
         }
 
         /* Responsive */
