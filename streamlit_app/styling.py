@@ -3,14 +3,7 @@
 import streamlit as st
 from config import APP_TITLE, APP_ICON
 
-def apply_page_config():
-    """Apply Streamlit page configuration"""
-    st.set_page_config(
-        layout="wide", 
-        page_title=APP_TITLE,
-        page_icon=APP_ICON,
-        initial_sidebar_state="expanded"
-    )
+# Removed apply_page_config since st.set_page_config is now called at the top of streamlit_app.py
 
 def apply_custom_css():
     """Apply the Coinbase-inspired CSS styling"""
@@ -269,5 +262,5 @@ def create_risk_badge(risk_level):
 
 def apply_styling():
     """Apply all styling configurations"""
-    apply_page_config()
+    # apply_page_config()  # No longer needed
     apply_custom_css()

@@ -7,6 +7,15 @@ and AI-powered fraud detection capabilities.
 """
 
 import streamlit as st
+from config import APP_TITLE, APP_ICON
+
+st.set_page_config(
+    layout="wide",
+    page_title=APP_TITLE,
+    page_icon=APP_ICON,
+    initial_sidebar_state="expanded"
+)
+
 import sys
 import os
 
@@ -38,7 +47,7 @@ def render_footer():
 def main():
     """Main application function with routing"""
     # Configure page settings
-    configure_page()
+    # configure_page()  # No longer needed, handled by st.set_page_config
     
     # Apply styling
     apply_styling()
