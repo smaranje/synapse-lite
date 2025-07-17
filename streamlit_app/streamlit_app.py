@@ -21,97 +21,98 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Enhanced Custom CSS with professional enterprise design
+# Coinbase-inspired CSS with professional fintech design
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     
     .main {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        color: #2d3748;
-        font-family: 'Montserrat', sans-serif;
+        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+        color: #1a1a1a;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     
     .stApp {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
     }
     
     /* Header styling */
     h1 {
-        color: #1a202c;
-        font-weight: 700;
-        font-size: 2.5rem;
+        color: #0a0b0d;
+        font-weight: 600;
+        font-size: 2.25rem;
         text-align: center;
         margin-bottom: 0.5rem;
-        letter-spacing: -0.5px;
+        letter-spacing: -0.02em;
     }
     
     h2, h3 {
-        color: #2d3748;
-        font-weight: 600;
-        margin-top: 2rem;
+        color: #1a1a1a;
+        font-weight: 500;
+        margin-top: 1.5rem;
         margin-bottom: 1rem;
-        letter-spacing: -0.25px;
+        letter-spacing: -0.01em;
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
-        border-right: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+        border-right: 1px solid #f0f3f7;
     }
     
     .css-1d391kg .css-1v0mbdj {
-        color: #2d3748;
+        color: #1a1a1a;
     }
     
     /* Custom metric cards */
     .metric-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+        background: #ffffff;
         padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        border: 1px solid #f0f3f7;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         margin-bottom: 1rem;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
     
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-        border-color: #3182ce;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(0, 82, 255, 0.08);
+        border-color: #0052ff;
     }
     
     .metric-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2b6cb0;
+        font-size: 2.25rem;
+        font-weight: 600;
+        color: #0052ff;
         margin: 0.5rem 0;
+        letter-spacing: -0.02em;
     }
     
     .metric-label {
-        font-size: 0.9rem;
-        color: #4a5568;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-size: 0.875rem;
+        color: #5b616e;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
     }
     
     .metric-delta {
-        font-size: 0.8rem;
-        font-weight: 600;
+        font-size: 0.75rem;
+        font-weight: 500;
         margin-top: 0.5rem;
     }
     
     .metric-delta.positive {
-        color: #48bb78;
+        color: #05d168;
     }
     
     .metric-delta.negative {
-        color: #f56565;
+        color: #ff4747;
     }
     
     .metric-delta.neutral {
-        color: #ed8936;
+        color: #f4c430;
     }
     
     /* Status indicators */
@@ -119,26 +120,26 @@ st.markdown("""
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        padding: 0.375rem 0.875rem;
+        border-radius: 24px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
     }
     
     .status-live {
-        background: #38a169;
+        background: #05d168;
         color: white;
     }
     
     .status-warning {
-        background: #dd6b20;
-        color: white;
+        background: #f4c430;
+        color: #0a0b0d;
     }
     
     .status-critical {
-        background: #e53e3e;
+        background: #ff4747;
         color: white;
     }
     
@@ -149,50 +150,138 @@ st.markdown("""
     
     /* Enhanced alert cards */
     .alert-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+        background: #ffffff;
         padding: 1.5rem;
-        border-radius: 8px;
-        border-left: 4px solid #3182ce;
+        border-radius: 12px;
+        border-left: 3px solid #0052ff;
         margin-bottom: 1rem;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
     }
     
     .alert-card:hover {
-        transform: translateX(3px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        transform: translateX(2px);
+        box-shadow: 0 4px 16px rgba(0, 82, 255, 0.08);
     }
     
     .alert-card.critical {
-        border-left-color: #e53e3e;
-        background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+        border-left-color: #ff4747;
+        background: #ffffff;
     }
     
     .alert-card.high {
-        border-left-color: #dd6b20;
-        background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%);
+        border-left-color: #f4c430;
+        background: #ffffff;
     }
     
     .alert-card.medium {
-        border-left-color: #3182ce;
-        background: linear-gradient(135deg, #f7fafc 0%, #e6fffa 100%);
+        border-left-color: #0052ff;
+        background: #ffffff;
     }
     
     .alert-card.low {
-        border-left-color: #38a169;
-        background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+        border-left-color: #05d168;
+        background: #ffffff;
     }
     
     /* Transaction cards */
     .transaction-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+        background: #ffffff;
         padding: 1.25rem;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        border: 1px solid #f0f3f7;
         margin-bottom: 0.75rem;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         position: relative;
         overflow: hidden;
+    }
+    
+    .transaction-card:hover {
+        border-color: #0052ff;
+        box-shadow: 0 4px 16px rgba(0, 82, 255, 0.08);
+    }
+    
+    /* Coinbase-style inputs and buttons */
+    .stTextInput > div > div > input {
+        border-radius: 8px !important;
+        border: 1px solid #f0f3f7 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.875rem !important;
+        padding: 0.75rem !important;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        border-color: #0052ff !important;
+        box-shadow: 0 0 0 2px rgba(0, 82, 255, 0.1) !important;
+    }
+    
+    .stSelectbox > div > div > div {
+        border-radius: 8px !important;
+        border: 1px solid #f0f3f7 !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    .stButton > button {
+        background: #0052ff !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 500 !important;
+        font-size: 0.875rem !important;
+        padding: 0.625rem 1rem !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .stButton > button:hover {
+        background: #0046cc !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    /* Coinbase-style tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: transparent !important;
+        border: 1px solid #f0f3f7 !important;
+        border-radius: 8px !important;
+        color: #5b616e !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        padding: 0.625rem 1rem !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: #0052ff !important;
+        color: white !important;
+        border-color: #0052ff !important;
+    }
+    
+    /* Radio buttons styling */
+    .stRadio > div {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .stRadio label {
+        background: #ffffff !important;
+        border: 1px solid #f0f3f7 !important;
+        border-radius: 8px !important;
+        padding: 0.75rem 1rem !important;
+        margin: 0.25rem 0 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        color: #1a1a1a !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .stRadio label:hover {
+        border-color: #0052ff !important;
+        background: #f8faff !important;
     }
     
     .transaction-card::before {
@@ -553,8 +642,8 @@ def create_advanced_charts():
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0;">
-                        <h1 style="font-size: 1.5rem; margin: 0; color: #3182ce; font-weight: 700;">Synapse-Lite</h1>
-        <p style="color: #4a5568; font-size: 0.9rem; margin: 0.5rem 0; font-weight: 500;">Fraud Detection System</p>
+                                                 <h1 style="font-size: 1.5rem; margin: 0; color: #0052ff; font-weight: 600; letter-spacing: -0.02em;">Synapse-Lite</h1>
+        <p style="color: #5b616e; font-size: 0.875rem; margin: 0.5rem 0; font-weight: 400;">Fraud Detection System</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -857,11 +946,11 @@ elif page_selection == "Alerts":
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <button style="background: linear-gradient(135deg, #4299e1, #3182ce); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; font-weight: 500;">
+                        <button style="background: #0052ff; color: white; border: none; border-radius: 8px; padding: 0.625rem 1rem; font-size: 0.875rem; cursor: pointer; font-weight: 500; margin-bottom: 0.5rem;">
                             Investigate
                         </button>
                         <br>
-                        <button style="background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; font-weight: 500;">
+                        <button style="background: #05d168; color: white; border: none; border-radius: 8px; padding: 0.625rem 1rem; font-size: 0.875rem; cursor: pointer; font-weight: 500;">
                             Generate SAR
                         </button>
                     </div>
