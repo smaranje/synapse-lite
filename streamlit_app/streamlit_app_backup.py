@@ -22,16 +22,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Coinbase-inspired CSS with enterprise-grade polish
+# Coinbase-inspired CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
     :root {
         --primary-blue: #1652F0;
-        --secondary-blue: #4299e1;
-        --background: #F7FAFC;
-        --card-bg: #FFFFFF;
+        --secondary-blue: #4299E1;
+        --background: #FFFFFF;
+        --card-bg: #F7FAFC;
         --text-primary: #0A0B0D;
         --text-secondary: #5B616E;
         --border: #E2E8F0;
@@ -48,35 +48,6 @@ st.markdown("""
         line-height: 1.5;
     }
 
-    /* Top Navigation */
-    .top-nav {
-        background: var(--card-bg);
-        border-bottom: 1px solid var(--border);
-        padding: 0.75rem 1rem;
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .top-nav a {
-        color: var(--text-secondary);
-        font-weight: 500;
-        font-size: 0.9rem;
-        text-decoration: none;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        transition: all 0.2s ease;
-    }
-
-    .top-nav a:hover, .top-nav a.active {
-        background: var(--primary-blue);
-        color: white;
-    }
-
     /* Sidebar */
     .css-1d391kg {
         background: var(--card-bg);
@@ -84,17 +55,135 @@ st.markdown("""
         padding: 1rem;
     }
 
-    .sidebar-logo {
+    .sidebar-item {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        margin-bottom: 1.5rem;
+        padding: 0.75rem 1rem;
+        margin: 0.25rem 0;
+        border-radius: 8px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
     }
 
-    /* Headings */
-    h1 { font-size: 2rem; font-weight: 600; color: var(--text-primary); }
-    h2 { font-size: 1.5rem; font-weight: 500; color: var(--text-primary); margin: 1rem 0; }
-    h3 { font-size: 1.25rem; font-weight: 500; color: var(--text-primary); margin: 0.75rem 0; }
+    .sidebar-item:hover, .sidebar-item.active {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    /* Header */
+    .header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .header-balance {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .header-change {
+        font-size: 1rem;
+        color: var(--success);
+        margin-left: 0.5rem;
+    }
+
+    /* Chart Controls */
+    .chart-controls {
+        display: flex;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+    }
+
+    .chart-controls button {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .chart-controls button:hover, .chart-controls button.active {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        padding: 1rem;
+        border-left: 1px solid var(--border);
+        min-width: 200px;
+    }
+
+    .quick-action-btn {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--primary-blue);
+        font-size: 1.2rem;
+    }
+
+    .quick-action-btn:hover {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    /* For You Cards */
+    .for-you-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.2s ease;
+    }
+
+    .for-you-card:hover {
+        box-shadow: 0 4px 12px rgba(22, 82, 240, 0.1);
+    }
+
+    .for-you-icon {
+        background: var(--primary-blue);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+
+    .for-you-close {
+        cursor: pointer;
+        color: var(--text-secondary);
+    }
 
     /* Metric Cards */
     .metric-card {
@@ -150,8 +239,8 @@ st.markdown("""
     .status-warning { background: var(--warning); color: var(--text-primary); }
     .status-critical { background: var(--critical); color: white; }
 
-    /* Alert Cards */
-    .alert-card {
+    /* Alert and Transaction Cards */
+    .alert-card, .transaction-card {
         background: var(--card-bg);
         padding: 1.25rem;
         border-radius: 12px;
@@ -161,7 +250,7 @@ st.markdown("""
         transition: all 0.2s ease;
     }
 
-    .alert-card:hover {
+    .alert-card:hover, .transaction-card:hover {
         transform: translateX(2px);
         box-shadow: 0 4px 16px rgba(22, 82, 240, 0.1);
     }
@@ -170,22 +259,6 @@ st.markdown("""
     .alert-card.high { border-left-color: var(--warning); }
     .alert-card.medium { border-left-color: var(--primary-blue); }
     .alert-card.low { border-left-color: var(--success); }
-
-    /* Transaction Cards */
-    .transaction-card {
-        background: var(--card-bg);
-        padding: 1.25rem;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        margin-bottom: 0.75rem;
-        transition: all 0.2s ease;
-    }
-
-    .transaction-card:hover {
-        border-color: var(--primary-blue);
-        box-shadow: 0 4px 16px rgba(22, 82, 240, 0.1);
-        transform: translateY(-2px);
-    }
 
     /* Inputs and Buttons */
     .stTextInput > div > div > input {
@@ -219,7 +292,7 @@ st.markdown("""
     }
 
     .stButton > button:hover {
-        background: #0046cc;
+        background: #0046CC;
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(22, 82, 240, 0.2);
     }
@@ -332,18 +405,11 @@ st.markdown("""
         margin-top: 2rem;
     }
 
-    /* Accessibility */
-    button:focus, input:focus, select:focus {
-        outline: 2px solid var(--primary-blue);
-        outline-offset: 2px;
-    }
-
     /* Responsive Design */
     @media (max-width: 768px) {
-        .top-nav { flex-direction: column; align-items: flex-start; }
-        .metric-card, .alert-card, .transaction-card { padding: 1rem; }
-        h1 { font-size: 1.75rem; }
-        h2 { font-size: 1.25rem; }
+        .header { flex-direction: column; text-align: center; }
+        .quick-actions { display: none; }
+        .for-you-card { flex-direction: column; text-align: center; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -467,17 +533,30 @@ def create_advanced_charts():
     fig_risk.add_trace(go.Scatter(
         x=data['hours'],
         y=data['risk_scores'],
-        mode='lines+markers',
-        name='Risk Score',
+        mode='lines',
         line=dict(color='#1652F0', width=2),
-        marker=dict(size=6)
+        fill='tozeroy',
+        fillcolor='rgba(22, 82, 240, 0.1)'
     ))
     fig_risk.update_layout(
-        title='Risk Score Trend (24h)',
-        xaxis_title='Time',
-        yaxis_title='Risk Score',
+        title='',
+        xaxis=dict(
+            rangeslider=dict(visible=False),
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1, label="1H", step="hour", stepmode="backward"),
+                    dict(count=1, label="1D", step="day", stepmode="backward"),
+                    dict(count=1, label="1W", step="week", stepmode="backward"),
+                    dict(count=1, label="1M", step="month", stepmode="backward"),
+                    dict(count=1, label="1Y", step="year", stepmode="backward"),
+                    dict(step="all", label="All")
+                ])
+            )
+        ),
+        yaxis_title='Risk Score (%)',
         template='plotly_white',
-        height=350,
+        height=300,
+        margin=dict(t=20, b=20, l=50, r=50),
         font=dict(family='Montserrat', size=12)
     )
     
@@ -485,7 +564,6 @@ def create_advanced_charts():
     fig_volume.add_trace(go.Bar(
         x=data['hours'],
         y=data['transaction_counts'],
-        name='Transactions',
         marker=dict(color='#1652F0', opacity=0.8)
     ))
     fig_volume.update_layout(
@@ -493,7 +571,7 @@ def create_advanced_charts():
         xaxis_title='Time',
         yaxis_title='Transaction Count',
         template='plotly_white',
-        height=350,
+        height=300,
         font=dict(family='Montserrat', size=12)
     )
     
@@ -508,46 +586,30 @@ def create_advanced_charts():
     fig_pie.update_layout(
         title='Alert Distribution by Risk Level',
         template='plotly_white',
-        height=350,
+        height=300,
         font=dict(family='Montserrat', size=12)
     )
     
     return fig_risk, fig_volume, fig_pie
 
-# Pagination Helper
 def paginate_dataframe(df, page_size, page_number):
     start = (page_number - 1) * page_size
     end = start + page_size
     return df.iloc[start:end], len(df)
 
-# Top Navigation
-st.markdown("""
-<div class="top-nav">
-    <a href="#" class="active">Dashboard</a>
-    <a href="#">Transactions</a>
-    <a href="#">Alerts</a>
-    <a href="#">Analytics</a>
-    <a href="#">Settings</a>
-</div>
-""", unsafe_allow_html=True)
-
 # Sidebar
 with st.sidebar:
-    st.markdown("""
-    <div class="sidebar-logo">
-        <span style="font-size: 1.5rem; color: var(--primary-blue); font-weight: 600;">🔷 Synapse-Lite</span>
-    </div>
-    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem;">Fraud Detection System</p>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-logo"><span style="font-size: 1.5rem; color: var(--primary-blue); font-weight: 600;">🔷 Synapse-Lite</span></div>', unsafe_allow_html=True)
+    st.markdown('<p style="color: var(--text-secondary); font-size: 0.85rem;">Fraud Detection System</p>', unsafe_allow_html=True)
     
     pages = {
-        "Dashboard": "Dashboard",
-        "Transactions": "Transactions",
-        "Alerts": "Alerts",
-        "Analytics": "Analytics",
-        "Settings": "Settings"
+        "🏠 Dashboard": "Dashboard",
+        "💰 Transactions": "Transactions",
+        "🚨 Alerts": "Alerts",
+        "📊 Analytics": "Analytics",
+        "⚙️ Settings": "Settings"
     }
-    selected_page = st.radio("", list(pages.keys()), index=0, label_visibility="collapsed")
+    selected_page = st.radio("", list(pages.keys()), index=0, format_func=lambda x: x, label_visibility="collapsed")
     page_selection = pages[selected_page]
     
     st.markdown("---")
@@ -555,32 +617,32 @@ with st.sidebar:
     st.markdown(create_status_indicator("live", "Monitoring Active"), unsafe_allow_html=True)
     st.markdown(create_status_indicator("warning", "5 Alerts Pending"), unsafe_allow_html=True)
     st.markdown(create_status_indicator("live", "API Connected"), unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.markdown("### Quick Stats")
-    metrics = {
-        "transactions_today": random.randint(1000, 5000),
-        "alerts_today": random.randint(10, 50),
-        "risk_score": random.uniform(50, 80)
-    }
-    st.markdown(f"""
-    <div style="font-size: 0.85rem; color: var(--text-secondary);">
-        <p>Transactions Today: <strong style="color: var(--primary-blue);">{metrics['transactions_today']}</strong></p>
-        <p>Alerts Today: <strong style="color: var(--warning);">{metrics['alerts_today']}</strong></p>
-        <p>Avg Risk Score: <strong style="color: var(--success);">{metrics['risk_score']:.1f}%</strong></p>
-    </div>
-    """, unsafe_allow_html=True)
 
 # Main Content
+st.markdown('<div class="header"><div class="header-title">Fraud Detection Overview</div></div>', unsafe_allow_html=True)
+
 if page_selection == "Dashboard":
-    st.markdown("""
-    <h1>Fraud Detection Dashboard</h1>
-    <p style="color: var(--text-secondary); font-size: 0.9rem;">Real-time Bitcoin transaction monitoring and threat analysis</p>
+    # Header Balance and Chart
+    total_value = random.uniform(10000, 50000)
+    change = random.uniform(-5, 5)
+    st.markdown(f"""
+    <div style="padding: 1rem;">
+        <div class="header-balance">${total_value:,.2f}</div>
+        <div class="header-change">↑ ${abs(change):.2f} ({change:+.2f}%)</div>
+    </div>
     """, unsafe_allow_html=True)
     
-    st.markdown(create_status_indicator("live", "Live Monitoring Active"), unsafe_allow_html=True)
-    st.markdown("---")
+    fig_risk, _, _ = create_advanced_charts()
+    st.plotly_chart(fig_risk, use_container_width=True)
+    st.markdown('<div class="chart-controls"><button class="active">1H</button><button>1D</button><button>1W</button><button>1M</button><button>1Y</button><button>All</button></div>', unsafe_allow_html=True)
     
+    # Quick Actions
+    st.markdown('<div class="quick-actions"><h3>Quick Actions</h3>', unsafe_allow_html=True)
+    st.markdown('<div class="quick-action-btn">🔍</div><span>Investigate Alert</span>', unsafe_allow_html=True)
+    st.markdown('<div class="quick-action-btn">📊</div><span>Generate SAR</span>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(create_metric_card("Total Transactions", "2,847", "+12% from yesterday", "positive"), unsafe_allow_html=True)
@@ -591,66 +653,23 @@ if page_selection == "Dashboard":
     with col4:
         st.markdown(create_metric_card("Detection Rate", "94.2%", "Above target", "positive"), unsafe_allow_html=True)
     
-    st.markdown("---")
-    st.markdown("## Real-time Analytics")
-    
-    chart_col1, chart_col2 = st.columns(2)
-    fig_risk, fig_volume, fig_pie = create_advanced_charts()
-    with chart_col1:
-        st.plotly_chart(fig_risk, use_container_width=True)
-    with chart_col2:
-        st.plotly_chart(fig_volume, use_container_width=True)
-    
-    st.plotly_chart(fig_pie, use_container_width=True)
-    
-    st.markdown("---")
-    recent_col1, recent_col2 = st.columns(2)
-    
-    with recent_col1:
-        st.markdown("## Recent Transactions")
-        transactions = generate_dummy_transactions(5)
-        for _, tx in transactions.iterrows():
-            risk_level = get_risk_level(tx['ML_Score'], tx['Smurfing_Rule'])
-            st.markdown(f"""
-            <div class="transaction-card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>{tx['Hash'][:12]}...</strong>
-                        <br>
-                        <small style="color: var(--text-secondary);">{tx['TotalOutputValueBTC']:.4f} BTC</small>
-                    </div>
-                    <div>
-                        {create_risk_badge(risk_level, tx['ML_Score'])}
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with recent_col2:
-        st.markdown("## Recent Alerts")
-        alerts = generate_dummy_alerts(5)
-        for _, alert in alerts.iterrows():
-            risk_level = alert['Risk_Level']
-            st.markdown(f"""
-            <div class="alert-card {risk_level.lower()}">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>{alert['Hash'][:12]}...</strong>
-                        <br>
-                        <small style="color: var(--text-secondary);">{alert['Timestamp'].strftime('%H:%M:%S')}</small>
-                    </div>
-                    <div>
-                        {create_risk_badge(risk_level, alert['ML_Score'])}
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+    # For You Section
+    st.markdown('<h2>For You</h2>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="for-you-card">
+        <div class="for-you-icon">🚨</div>
+        <div><strong>Risk Alerts</strong><br>5 critical alerts pending review</div>
+        <div class="for-you-close">×</div>
+    </div>
+    <div class="for-you-card">
+        <div class="for-you-icon">💸</div>
+        <div><strong>Transaction Summary</strong><br>Review today’s activity</div>
+        <div class="for-you-close">×</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 elif page_selection == "Transactions":
-    st.markdown("""
-    <h1>Transaction Monitor</h1>
-    <p style="color: var(--text-secondary); font-size: 0.9rem;">Real-time Bitcoin transaction analysis</p>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="header"><div class="header-title">Transaction Monitor</div></div>', unsafe_allow_html=True)
     
     control_col1, control_col2, control_col3 = st.columns([2, 1, 1])
     with control_col1:
@@ -662,15 +681,11 @@ elif page_selection == "Transactions":
             st.cache_data.clear()
             st.rerun()
     
-    st.markdown("---")
     transactions = generate_dummy_transactions(100)
-    
-    # Pagination
     page_size = 10
     page_number = st.number_input("Page", min_value=1, value=1, step=1)
     paginated_transactions, total_rows = paginate_dataframe(transactions, page_size, page_number)
     
-    # Export Button
     if not paginated_transactions.empty:
         csv = paginated_transactions.to_csv(index=False)
         st.download_button(
@@ -681,55 +696,43 @@ elif page_selection == "Transactions":
             use_container_width=True
         )
     
-    st.markdown("---")
-    if not paginated_transactions.empty:
-        if risk_filter != "All":
-            paginated_transactions = paginated_transactions[paginated_transactions['Risk_Level'] == risk_filter]
-        if search_term:
-            paginated_transactions = paginated_transactions[
-                paginated_transactions['Hash'].str.contains(search_term, case=False, na=False)
-            ]
-        
-        for _, tx in paginated_transactions.iterrows():
-            risk_level = get_risk_level(tx['ML_Score'], tx['Smurfing_Rule'])
-            st.markdown(f"""
-            <div class="transaction-card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; font-size: 1.1rem;">{tx['Hash'][:16]}...</div>
-                        <div style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.25rem 0;">
-                            {tx['NumInputs']} inputs → {tx['NumOutputs']} outputs
-                        </div>
-                        <div style="color: var(--primary-blue); font-weight: 500;">
-                            {tx['TotalOutputValueBTC']:.4f} BTC (${tx['TotalOutputValueBTC'] * BTC_USD_RATE:,.2f})
-                        </div>
+    for _, tx in paginated_transactions.iterrows():
+        risk_level = get_risk_level(tx['ML_Score'], tx['Smurfing_Rule'])
+        st.markdown(f"""
+        <div class="transaction-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 1.1rem;">{tx['Hash'][:16]}...</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.25rem 0;">
+                        {tx['NumInputs']} inputs → {tx['NumOutputs']} outputs
                     </div>
-                    <div style="text-align: right;">
-                        {create_risk_badge(risk_level, tx['ML_Score'])}
-                        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
-                            {tx['Timestamp'].strftime('%H:%M:%S')}
-                        </div>
+                    <div style="color: var(--primary-blue); font-weight: 500;">
+                        {tx['TotalOutputValueBTC']:.4f} BTC (${tx['TotalOutputValueBTC'] * BTC_USD_RATE:,.2f})
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    {create_risk_badge(risk_level, tx['ML_Score'])}
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
+                        {tx['Timestamp'].strftime('%H:%M:%S')}
                     </div>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
-        
-        total_pages = (total_rows + page_size - 1) // page_size
-        st.markdown(f"""
-        <div class="pagination">
-            <button {'disabled' if page_number <= 1 else ''} onclick="window.location.href='?page={page_number-1}'">Previous</button>
-            <span>Page {page_number} of {total_pages}</span>
-            <button {'disabled' if page_number >= total_pages else ''} onclick="window.location.href='?page={page_number+1}'">Next</button>
         </div>
         """, unsafe_allow_html=True)
-    else:
+    
+    total_pages = (total_rows + page_size - 1) // page_size
+    st.markdown(f"""
+    <div class="pagination">
+        <button {'disabled' if page_number <= 1 else ''} onclick="window.location.href='?page={page_number-1}'">Previous</button>
+        <span>Page {page_number} of {total_pages}</span>
+        <button {'disabled' if page_number >= total_pages else ''} onclick="window.location.href='?page={page_number+1}'">Next</button>
+    </div>
+    """, unsafe_allow_html=True)
+    if paginated_transactions.empty:
         st.info("No transactions found matching your criteria.")
 
 elif page_selection == "Alerts":
-    st.markdown("""
-    <h1>Security Alerts</h1>
-    <p style="color: var(--text-secondary); font-size: 0.9rem;">Monitor and investigate suspicious activity</p>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="header"><div class="header-title">Security Alerts</div></div>', unsafe_allow_html=True)
     
     alerts = generate_dummy_alerts(50)
     critical_count = len(alerts[alerts['Risk_Level'] == 'Critical'])
@@ -747,7 +750,6 @@ elif page_selection == "Alerts":
     with alert_col4:
         st.markdown(create_metric_card("Low", str(low_count), "Standard review", "positive"), unsafe_allow_html=True)
     
-    st.markdown("---")
     filter_col1, filter_col2, filter_col3 = st.columns([2, 1, 1])
     with filter_col1:
         alert_search = st.text_input("Search alerts", placeholder="Enter transaction hash or details")
@@ -758,7 +760,6 @@ elif page_selection == "Alerts":
             st.cache_data.clear()
             st.rerun()
     
-    # Export Button
     if not alerts.empty:
         csv = alerts.to_csv(index=False)
         st.download_button(
@@ -769,7 +770,6 @@ elif page_selection == "Alerts":
             use_container_width=True
         )
     
-    st.markdown("---")
     page_size = 10
     page_number = st.number_input("Page", min_value=1, value=1, step=1, key="alerts_page")
     paginated_alerts, total_rows = paginate_dataframe(alerts, page_size, page_number)
@@ -833,17 +833,13 @@ elif page_selection == "Alerts":
         st.info("No alerts found matching your criteria.")
 
 elif page_selection == "Analytics":
-    st.markdown("""
-    <h1>Fraud Analytics</h1>
-    <p style="color: var(--text-secondary); font-size: 0.9rem;">Deep dive into fraud trends and patterns</p>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="header"><div class="header-title">Fraud Analytics</div></div>', unsafe_allow_html=True)
     
     chart_tabs = st.tabs(["Risk Trends", "Transaction Volume", "Alert Distribution", "Pattern Analysis"])
+    fig_risk, fig_volume, fig_pie = create_advanced_charts()
     
     with chart_tabs[0]:
-        fig_risk, fig_volume, fig_pie = create_advanced_charts()
         st.plotly_chart(fig_risk, use_container_width=True)
-        
         risk_col1, risk_col2 = st.columns(2)
         with risk_col1:
             st.markdown("### Risk Score Statistics")
@@ -859,7 +855,6 @@ elif page_selection == "Analytics":
                 <p><strong>Risk Volatility:</strong> {np.std(data['risk_scores']):.1f}%</p>
             </div>
             """, unsafe_allow_html=True)
-        
         with risk_col2:
             st.markdown("### Risk Level Distribution")
             alerts = generate_dummy_alerts(100)
@@ -879,7 +874,6 @@ elif page_selection == "Analytics":
         data = generate_analytics_data()
         total_tx = sum(data['transaction_counts'])
         avg_tx = np.mean(data['transaction_counts'])
-        
         insight_col1, insight_col2 = st.columns(2)
         with insight_col1:
             st.markdown(create_metric_card("Total Transactions (24h)", f"{total_tx:,}", f"Avg: {avg_tx:.0f}/hour", "positive"), unsafe_allow_html=True)
@@ -891,10 +885,9 @@ elif page_selection == "Analytics":
         st.plotly_chart(fig_pie, use_container_width=True)
         st.markdown("### Alert Analysis")
         alerts = generate_dummy_alerts(100)
-        
         analysis_col1, analysis_col2 = st.columns(2)
         with analysis_col1:
-            st.markdown("#### Alert Triggers Theodiggers")
+            st.markdown("#### Alert Triggers")
             smurfing_alerts = len(alerts[alerts['Smurfing_Rule'] == True])
             ml_alerts = len(alerts[alerts['ML_Score'] >= 0.9])
             st.markdown(f"""
@@ -904,7 +897,6 @@ elif page_selection == "Analytics":
                 <p><strong>Combined Triggers:</strong> {len(alerts[(alerts['Smurfing_Rule'] == True) & (alerts['ML_Score'] >= 0.9)])}</p>
             </div>
             """, unsafe_allow_html=True)
-        
         with analysis_col2:
             st.markdown("#### Alert Timing")
             hourly_alerts = alerts.groupby(alerts['Timestamp'].dt.hour).size()
@@ -943,13 +935,9 @@ elif page_selection == "Analytics":
         st.plotly_chart(fig_scatter, use_container_width=True)
 
 elif page_selection == "Settings":
-    st.markdown("""
-    <h1>Settings</h1>
-    <p style="color: var(--text-secondary); font-size: 0.9rem;">Configure system parameters and preferences</p>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="header"><div class="header-title">Settings</div></div>', unsafe_allow_html=True)
     
     settings_tabs = st.tabs(["General", "Security", "Monitoring", "Integrations"])
-    
     with settings_tabs[0]:
         st.markdown("## General Settings")
         col1, col2 = st.columns(2)
