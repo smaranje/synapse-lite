@@ -14,12 +14,15 @@ from utils import create_status_indicator
 def render_sidebar():
     """Render the enterprise-style sidebar navigation and return selected page"""
     with st.sidebar:
+        # Logo at the top, centered
         st.markdown(
-            '''<div style="padding:1.5rem 0 1.5rem 0;">
+            '''<div style="display: flex; flex-direction: column; align-items: center; padding: 2.5rem 0 1.5rem 0;">
+                <img src="app/logo.png" width="64" height="64" style="border-radius: 50%; box-shadow: 0 2px 8px rgba(0,82,255,0.10); margin-bottom: 0.75rem;" alt="Logo" />
                 <span style="font-weight:700;font-size:1.25rem;color:#222;letter-spacing:-0.01em;">Synapse-Lite</span>
             </div>''',
             unsafe_allow_html=True
         )
+        # Navigation radio with more spacing
         selected_page = st.radio(
             "",
             list(PAGES.keys()),
@@ -28,6 +31,7 @@ def render_sidebar():
             index=0,
             key="main_nav"
         )
+        # Sidebar CSS for white background, spacing, and hover
         st.markdown(
             '''<style>
             [data-testid="stSidebar"] {
@@ -37,14 +41,14 @@ def render_sidebar():
                 max-width: 260px;
                 padding-top: 0 !important;
             }
-            [data-testid="stSidebar"] .stRadio > div { gap: 0.5rem; }
+            [data-testid="stSidebar"] .stRadio > div { gap: 0.75rem; }
             [data-testid="stSidebar"] label {
                 font-size: 1.08rem;
                 font-weight: 500;
                 color: #222 !important;
-                padding: 0.5rem 0.75rem;
+                padding: 0.75rem 1rem;
                 border-radius: 8px;
-                margin-bottom: 0.25rem;
+                margin-bottom: 0.5rem;
                 transition: background 0.15s;
             }
             [data-testid="stSidebar"] label[data-selected="true"] {
