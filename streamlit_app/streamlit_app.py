@@ -16,82 +16,82 @@ USE_DUMMY_DATA = True
 BTC_USD_RATE = 65000
 st.set_page_config(
     layout="wide", 
-    page_title="🛡️ Synapse-Lite Fraud Detector",
-    page_icon="🛡️",
+    page_title="Synapse-Lite Fraud Detector",
+    page_icon="🔷",
     initial_sidebar_state="expanded"
 )
 
-# Enhanced Custom CSS with modern design
+# Enhanced Custom CSS with professional enterprise design
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
     
     .main {
-        background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
-        color: #e0e0e0;
-        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        color: #2d3748;
+        font-family: 'Montserrat', sans-serif;
     }
     
     .stApp {
-        background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     }
     
     /* Header styling */
     h1 {
-        color: #ffffff;
+        color: #1a202c;
         font-weight: 700;
         font-size: 2.5rem;
         text-align: center;
         margin-bottom: 0.5rem;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        letter-spacing: -0.5px;
     }
     
     h2, h3 {
-        color: #f0f0f0;
+        color: #2d3748;
         font-weight: 600;
         margin-top: 2rem;
         margin-bottom: 1rem;
+        letter-spacing: -0.25px;
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
-        border-right: 1px solid #2d3748;
+        background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+        border-right: 1px solid #e2e8f0;
     }
     
     .css-1d391kg .css-1v0mbdj {
-        color: #e2e8f0;
+        color: #2d3748;
     }
     
     /* Custom metric cards */
     .metric-card {
-        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
         padding: 1.5rem;
-        border-radius: 15px;
-        border: 1px solid #4a5568;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(10px);
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         margin-bottom: 1rem;
         transition: all 0.3s ease;
     }
     
     .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-        border-color: #63b3ed;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        border-color: #3182ce;
     }
     
     .metric-value {
         font-size: 2.5rem;
         font-weight: 700;
-        color: #63b3ed;
+        color: #2b6cb0;
         margin: 0.5rem 0;
     }
     
     .metric-label {
         font-size: 0.9rem;
-        color: #a0aec0;
-        font-weight: 500;
+        color: #4a5568;
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
@@ -128,20 +128,18 @@ st.markdown("""
     }
     
     .status-live {
-        background: linear-gradient(135deg, #48bb78, #38a169);
+        background: #38a169;
         color: white;
-        animation: pulse 2s infinite;
     }
     
     .status-warning {
-        background: linear-gradient(135deg, #ed8936, #dd6b20);
+        background: #dd6b20;
         color: white;
     }
     
     .status-critical {
-        background: linear-gradient(135deg, #f56565, #e53e3e);
+        background: #e53e3e;
         color: white;
-        animation: pulse 2s infinite;
     }
     
     @keyframes pulse {
@@ -151,46 +149,46 @@ st.markdown("""
     
     /* Enhanced alert cards */
     .alert-card {
-        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
         padding: 1.5rem;
-        border-radius: 15px;
-        border-left: 4px solid #63b3ed;
+        border-radius: 8px;
+        border-left: 4px solid #3182ce;
         margin-bottom: 1rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         transition: all 0.3s ease;
     }
     
     .alert-card:hover {
-        transform: translateX(5px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        transform: translateX(3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
     }
     
     .alert-card.critical {
-        border-left-color: #f56565;
-        background: linear-gradient(135deg, #2d1b1b 0%, #1a1010 100%);
+        border-left-color: #e53e3e;
+        background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
     }
     
     .alert-card.high {
-        border-left-color: #ed8936;
-        background: linear-gradient(135deg, #2d2318 0%, #1a1710 100%);
+        border-left-color: #dd6b20;
+        background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%);
     }
     
     .alert-card.medium {
-        border-left-color: #4299e1;
-        background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%);
+        border-left-color: #3182ce;
+        background: linear-gradient(135deg, #f7fafc 0%, #e6fffa 100%);
     }
     
     .alert-card.low {
-        border-left-color: #48bb78;
-        background: linear-gradient(135deg, #1a2e1a 0%, #0f1a0f 100%);
+        border-left-color: #38a169;
+        background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
     }
     
     /* Transaction cards */
     .transaction-card {
-        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
         padding: 1.25rem;
-        border-radius: 12px;
-        border: 1px solid #4a5568;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
         margin-bottom: 0.75rem;
         transition: all 0.3s ease;
         position: relative;
@@ -555,20 +553,20 @@ def create_advanced_charts():
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0;">
-        <h1 style="font-size: 1.5rem; margin: 0; color: #63b3ed;">🛡️ Synapse-Lite</h1>
-        <p style="color: #a0aec0; font-size: 0.9rem; margin: 0.5rem 0;">Fraud Detection System</p>
+                        <h1 style="font-size: 1.5rem; margin: 0; color: #3182ce; font-weight: 700;">Synapse-Lite</h1>
+        <p style="color: #4a5568; font-size: 0.9rem; margin: 0.5rem 0; font-weight: 500;">Fraud Detection System</p>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # Navigation with icons
+    # Navigation menu
     pages = {
-        "🏠 Dashboard": "Dashboard",
-        "💳 Transactions": "Transactions", 
-        "🚨 Alerts": "Alerts",
-        "📊 Analytics": "Analytics",
-        "⚙️ Settings": "Settings"
+        "Dashboard": "Dashboard",
+        "Transactions": "Transactions", 
+        "Alerts": "Alerts",
+        "Analytics": "Analytics",
+        "Settings": "Settings"
     }
     
     selected_page = st.radio("", list(pages.keys()), index=0)
@@ -609,7 +607,7 @@ with st.sidebar:
 
 # Main Content
 if page_selection == "Dashboard":
-    st.markdown("# 🛡️ Fraud Detection Dashboard")
+    st.markdown("# Fraud Detection Dashboard")
     st.markdown("### Real-time Bitcoin transaction monitoring and threat analysis")
     
     # Status indicator
@@ -654,7 +652,7 @@ if page_selection == "Dashboard":
     st.markdown("---")
     
     # Charts section
-    st.markdown("## 📈 Real-time Analytics")
+    st.markdown("## Real-time Analytics")
     
     chart_col1, chart_col2 = st.columns(2)
     
@@ -674,7 +672,7 @@ if page_selection == "Dashboard":
     recent_col1, recent_col2 = st.columns(2)
     
     with recent_col1:
-        st.markdown("## 💳 Recent Transactions")
+        st.markdown("## Recent Transactions")
         transactions = generate_dummy_transactions(5)
         
         for _, tx in transactions.iterrows():
@@ -695,7 +693,7 @@ if page_selection == "Dashboard":
             """, unsafe_allow_html=True)
     
     with recent_col2:
-        st.markdown("## 🚨 Recent Alerts")
+        st.markdown("## Recent Alerts")
         alerts = generate_dummy_alerts(5)
         
         for _, alert in alerts.iterrows():
@@ -716,20 +714,20 @@ if page_selection == "Dashboard":
             """, unsafe_allow_html=True)
 
 elif page_selection == "Transactions":
-    st.markdown("# 💳 Transaction Monitor")
+    st.markdown("# Transaction Monitor")
     st.markdown("### Real-time Bitcoin transaction analysis")
     
     # Controls
     control_col1, control_col2, control_col3 = st.columns([2, 1, 1])
     
     with control_col1:
-        search_term = st.text_input("🔍 Search transactions...", placeholder="Enter hash, address, or amount")
+        search_term = st.text_input("Search transactions", placeholder="Enter hash, address, or amount")
     
     with control_col2:
         risk_filter = st.selectbox("Risk Level", ["All", "Critical", "High", "Medium", "Low"])
     
     with control_col3:
-        if st.button("🔄 Refresh", use_container_width=True):
+        if st.button("Refresh", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
     
@@ -777,7 +775,7 @@ elif page_selection == "Transactions":
         st.info("No transactions found matching your criteria.")
 
 elif page_selection == "Alerts":
-    st.markdown("# 🚨 Security Alerts")
+    st.markdown("# Security Alerts")
     st.markdown("### Monitor and investigate suspicious activity")
     
     # Alert summary metrics
@@ -807,13 +805,13 @@ elif page_selection == "Alerts":
     filter_col1, filter_col2, filter_col3 = st.columns([2, 1, 1])
     
     with filter_col1:
-        alert_search = st.text_input("🔍 Search alerts...", placeholder="Enter transaction hash or details")
+        alert_search = st.text_input("Search alerts", placeholder="Enter transaction hash or details")
     
     with filter_col2:
         severity_filter = st.selectbox("Severity", ["All", "Critical", "High", "Medium", "Low"])
     
     with filter_col3:
-        if st.button("🔄 Refresh Alerts", use_container_width=True):
+        if st.button("Refresh Alerts", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
     
@@ -836,11 +834,11 @@ elif page_selection == "Alerts":
             description = "Unusual transaction pattern detected"
             
             if alert['Smurfing_Rule']:
-                description = "🔍 Smurfing pattern detected: Multiple small outputs"
+                description = "Smurfing pattern detected: Multiple small outputs"
             elif alert['ML_Score'] >= 0.9:
-                description = "🤖 High ML fraud score detected"
+                description = "High ML fraud score detected"
             elif alert['ML_Score'] >= 0.7:
-                description = "⚠️ Elevated fraud risk identified"
+                description = "Elevated fraud risk identified"
             
             st.markdown(f"""
             <div class="alert-card {risk_level.lower()}">
@@ -859,12 +857,12 @@ elif page_selection == "Alerts":
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <button style="background: linear-gradient(135deg, #4299e1, #3182ce); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
-                            🔍 Investigate
+                        <button style="background: linear-gradient(135deg, #4299e1, #3182ce); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; font-weight: 500;">
+                            Investigate
                         </button>
                         <br>
-                        <button style="background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
-                            📋 Generate SAR
+                        <button style="background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; font-weight: 500;">
+                            Generate SAR
                         </button>
                     </div>
                 </div>
@@ -874,14 +872,14 @@ elif page_selection == "Alerts":
         st.info("No alerts found matching your criteria.")
 
 elif page_selection == "Analytics":
-    st.markdown("# 📊 Fraud Analytics")
+    st.markdown("# Fraud Analytics")
     st.markdown("### Deep dive into fraud trends and patterns")
     
     # Create comprehensive analytics
     fig_risk, fig_volume, fig_pie = create_advanced_charts()
     
     # Advanced charts
-    chart_tabs = st.tabs(["📈 Risk Trends", "📊 Transaction Volume", "🎯 Alert Distribution", "🔍 Pattern Analysis"])
+    chart_tabs = st.tabs(["Risk Trends", "Transaction Volume", "Alert Distribution", "Pattern Analysis"])
     
     with chart_tabs[0]:
         st.plotly_chart(fig_risk, use_container_width=True)
@@ -1008,11 +1006,11 @@ elif page_selection == "Analytics":
         st.plotly_chart(fig_scatter, use_container_width=True)
 
 elif page_selection == "Settings":
-    st.markdown("# ⚙️ Settings")
+    st.markdown("# Settings")
     st.markdown("### Configure system parameters and preferences")
     
     # Settings tabs
-    settings_tabs = st.tabs(["🔧 General", "🔒 Security", "📊 Monitoring", "🔗 Integrations"])
+    settings_tabs = st.tabs(["General", "Security", "Monitoring", "Integrations"])
     
     with settings_tabs[0]:
         st.markdown("## General Settings")
@@ -1073,7 +1071,7 @@ elif page_selection == "Settings":
 st.markdown("---")
 st.markdown("""
 <div class="footer">
-    <p>🛡️ Synapse-Lite Fraud Detection System | Built with Streamlit & ❤️</p>
+    <p>Synapse-Lite Fraud Detection System | Built with Streamlit</p>
     <p>Real-time Bitcoin transaction monitoring and AI-powered threat detection</p>
 </div>
 """, unsafe_allow_html=True)
