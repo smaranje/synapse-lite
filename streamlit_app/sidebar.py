@@ -1,6 +1,7 @@
 # Sidebar component for Streamlit app
 
 import streamlit as st
+import random
 import sys
 import os
 
@@ -8,28 +9,25 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import PAGES
+from utils import create_status_indicator
 
 def render_sidebar():
     """Render the enterprise-style sidebar navigation and return selected page"""
     with st.sidebar:
-        # Logo at the top, centered using st.image
-        st.image("logo.png", width=64)
         st.markdown(
-            '<div style="text-align:center; margin-bottom:2rem; margin-top:0.5rem;">
+            '''<div style="padding:1.5rem 0 1.5rem 0;">
                 <span style="font-weight:700;font-size:1.25rem;color:#222;letter-spacing:-0.01em;">Synapse-Lite</span>
-            </div>',
+            </div>''',
             unsafe_allow_html=True
         )
-        # Navigation radio with more spacing and no emojis
-        nav_labels = list(PAGES.keys())
         selected_page = st.radio(
             "",
-            nav_labels,
+            list(PAGES.keys()),
+            format_func=lambda x: f"{PAGES[x]}",
             label_visibility="collapsed",
             index=0,
             key="main_nav"
         )
-        # Sidebar CSS for white background, spacing, and improved typography
         st.markdown(
             '''<style>
             [data-testid="stSidebar"] {
@@ -39,16 +37,15 @@ def render_sidebar():
                 max-width: 260px;
                 padding-top: 0 !important;
             }
-            [data-testid="stSidebar"] .stRadio > div { gap: 1rem; }
+            [data-testid="stSidebar"] .stRadio > div { gap: 0.5rem; }
             [data-testid="stSidebar"] label {
-                font-size: 1.12rem;
+                font-size: 1.08rem;
                 font-weight: 500;
                 color: #222 !important;
-                padding: 1rem 1.25rem;
+                padding: 0.5rem 0.75rem;
                 border-radius: 8px;
-                margin-bottom: 0.75rem;
+                margin-bottom: 0.25rem;
                 transition: background 0.15s;
-                letter-spacing: 0.01em;
             }
             [data-testid="stSidebar"] label[data-selected="true"] {
                 background: #eaf1ff !important;
