@@ -16,17 +16,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom header for branding
-st.markdown(
-    """
-    <div style="position: fixed; top: 0; right: 0; width: 100%; z-index: 9999; background: white; border-bottom: 1px solid #f0f3f7; display: flex; justify-content: flex-end; align-items: center; height: 48px;">
-        <span style="font-size: 1.1rem; font-weight: 700; color: #0052ff; margin-right: 2rem; letter-spacing: 2px;">SMARAN TECHNOLOGIES</span>
-    </div>
-    <div style="height: 48px;"></div>
-    """,
-    unsafe_allow_html=True
-)
-
 import sys
 import os
 

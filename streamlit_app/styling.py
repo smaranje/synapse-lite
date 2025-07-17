@@ -1,204 +1,488 @@
-# Styling and design system for Streamlit app
+# Styling and design system for Streamlit app - Coinbase Business Theme
 
 import streamlit as st
 from config import APP_TITLE, APP_ICON
 
-# Removed apply_page_config since st.set_page_config is now called at the top of streamlit_app.py
-
 def apply_custom_css():
-    """Apply the Coinbase-inspired CSS styling and hide default Streamlit sidebar nav header. Update sidebar and main background colors for Coinbase palette and high contrast. Ensure all text is visible in both light and dark mode."""
+    """Apply Coinbase Business dashboard styling with clean, modern design"""
     st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
         :root {
-            --brand-blue: #0052ff;
-            --brand-blue-dark: #003399;
-            --brand-accent: #0a7cff;
-            --brand-bg-light: #f7fafc;
-            --brand-bg-dark: #181c24;
-            --brand-card-light: #fff;
-            --brand-card-dark: #232b3b;
-            --brand-shadow: 0 4px 24px rgba(0, 82, 255, 0.08);
-            --brand-radius: 16px;
-            --brand-text-light: #1a1a1a;
-            --brand-text-dark: #fff;
-            --brand-secondary-light: #6b7280;
-            --brand-secondary-dark: #b0b8c1;
+            /* Coinbase Brand Colors */
+            --cb-blue: #0052ff;
+            --cb-blue-hover: #0046e6;
+            --cb-blue-light: #1652f0;
+            --cb-green: #00d924;
+            --cb-red: #f5455c;
+            --cb-orange: #ff9500;
+            --cb-gray-50: #fafbfc;
+            --cb-gray-100: #f4f6f8;
+            --cb-gray-200: #e6ebf1;
+            --cb-gray-300: #d4dbe3;
+            --cb-gray-400: #9aa5b1;
+            --cb-gray-500: #708797;
+            --cb-gray-600: #5b6975;
+            --cb-gray-700: #434d5a;
+            --cb-gray-800: #1a1d29;
+            --cb-gray-900: #0f1419;
+            
+            /* Layout */
+            --cb-border-radius: 8px;
+            --cb-border-radius-lg: 12px;
+            --cb-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --cb-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --cb-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            
+            /* Typography */
+            --cb-font-size-xs: 0.75rem;
+            --cb-font-size-sm: 0.875rem;
+            --cb-font-size-base: 1rem;
+            --cb-font-size-lg: 1.125rem;
+            --cb-font-size-xl: 1.25rem;
+            --cb-font-size-2xl: 1.5rem;
+            --cb-font-size-3xl: 1.875rem;
+            --cb-font-size-4xl: 2.25rem;
         }
+
+        /* Reset and Base Styles */
+        .main > div {
+            padding-top: 2rem !important;
+        }
+        
+        .stApp {
+            background-color: var(--cb-gray-50) !important;
+        }
+        
         body, .stApp, .main, [data-testid="stAppViewContainer"] {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-            background: var(--brand-bg-light) !important;
-            color: var(--brand-text-light) !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+            background-color: var(--cb-gray-50) !important;
+            color: var(--cb-gray-900) !important;
+            line-height: 1.5 !important;
         }
-        @media (prefers-color-scheme: dark) {
-            body, .stApp, .main, [data-testid="stAppViewContainer"] {
-                background: var(--brand-bg-dark) !important;
-                color: var(--brand-text-dark) !important;
-            }
+
+        /* Remove Streamlit branding and menu */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        .stDeployButton {display:none;}
+
+        /* Sidebar Styling */
+        .css-1d391kg, [data-testid="stSidebar"] {
+            background-color: white !important;
+            border-right: 1px solid var(--cb-gray-200) !important;
+            box-shadow: var(--cb-shadow-sm) !important;
         }
-        /* Header */
-        .brand-header {
-            width: 100%;
-            padding: 2rem 0 1rem 0;
-            text-align: right;
-            font-size: 2.2rem;
+        
+        .css-1d391kg .element-container, [data-testid="stSidebar"] .element-container {
+            padding: 0 !important;
+        }
+
+        /* Custom Header */
+        .cb-dashboard-header {
+            background: white;
+            padding: 1.5rem 2rem;
+            margin: -2rem -2rem 2rem -2rem;
+            border-bottom: 1px solid var(--cb-gray-200);
+            box-shadow: var(--cb-shadow-sm);
+        }
+        
+        .cb-balance-display {
+            font-size: var(--cb-font-size-4xl);
             font-weight: 700;
-            color: var(--brand-blue);
-            letter-spacing: -0.02em;
-            background: transparent;
+            color: var(--cb-gray-900);
+            margin: 0;
+            line-height: 1.1;
         }
-        @media (prefers-color-scheme: dark) {
-            .brand-header {
-                color: var(--brand-accent);
-            }
+        
+        .cb-balance-change {
+            font-size: var(--cb-font-size-base);
+            color: var(--cb-green);
+            font-weight: 500;
+            margin-top: 0.25rem;
         }
-        /* Sidebar */
-        section[data-testid="stSidebar"] {
-            background: var(--brand-blue) !important;
-            color: #fff !important;
-            border-top-right-radius: var(--brand-radius);
-            border-bottom-right-radius: var(--brand-radius);
+
+        /* Card Styling */
+        .cb-card {
+            background: white;
+            border: 1px solid var(--cb-gray-200);
+            border-radius: var(--cb-border-radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--cb-shadow-sm);
+            transition: all 0.2s ease;
         }
-        section[data-testid="stSidebar"] * {
-            color: #fff !important;
+        
+        .cb-card:hover {
+            box-shadow: var(--cb-shadow);
+            border-color: var(--cb-gray-300);
         }
-        [data-testid="stSidebarNav"] { display: none; }
-        /* Cards */
-        .modern-card {
-            background: var(--brand-card-light);
-            border-radius: var(--brand-radius);
-            box-shadow: var(--brand-shadow);
-            padding: 2rem 1.5rem 1.5rem 1.5rem;
-            margin: 1rem 0;
-            border: none;
-            transition: box-shadow 0.2s;
-        }
-        .modern-card:hover {
-            box-shadow: 0 8px 32px rgba(0, 82, 255, 0.16);
-        }
-        .modern-card .card-title {
-            font-size: 1.1rem;
-            color: var(--brand-secondary-light);
-            margin-bottom: 0.5rem;
+
+        .cb-card-title {
+            font-size: var(--cb-font-size-lg);
             font-weight: 600;
+            color: var(--cb-gray-900);
+            margin: 0 0 1rem 0;
         }
-        .modern-card .card-value {
-            font-size: 2.5rem;
+
+        /* Metric Cards */
+        .cb-metric-card {
+            background: white;
+            border: 1px solid var(--cb-gray-200);
+            border-radius: var(--cb-border-radius);
+            padding: 1.25rem;
+            text-align: left;
+            height: 100%;
+            transition: all 0.2s ease;
+        }
+        
+        .cb-metric-card:hover {
+            box-shadow: var(--cb-shadow);
+        }
+
+        .cb-metric-label {
+            font-size: var(--cb-font-size-sm);
+            color: var(--cb-gray-600);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-transform: none;
+        }
+
+        .cb-metric-value {
+            font-size: var(--cb-font-size-2xl);
             font-weight: 700;
-            color: var(--brand-text-light);
+            color: var(--cb-gray-900);
             margin-bottom: 0.25rem;
         }
-        .modern-card .card-delta {
-            font-size: 1rem;
-            color: var(--brand-secondary-light);
+
+        .cb-metric-change {
+            font-size: var(--cb-font-size-sm);
+            font-weight: 500;
         }
-        @media (prefers-color-scheme: dark) {
-            .modern-card {
-                background: var(--brand-card-dark) !important;
-                color: var(--brand-text-dark) !important;
-            }
-            .modern-card .card-title {
-                color: var(--brand-secondary-dark) !important;
-            }
-            .modern-card .card-value {
-                color: var(--brand-text-dark) !important;
-            }
-            .modern-card .card-delta {
-                color: var(--brand-secondary-dark) !important;
-            }
+
+        .cb-metric-change.positive {
+            color: var(--cb-green);
         }
-        /* Status & Alert Cards */
-        .status-card {
-            background: var(--brand-card-light);
-            border-radius: var(--brand-radius);
-            box-shadow: var(--brand-shadow);
-            padding: 1.5rem 1.25rem;
-            margin: 1rem 0;
+
+        .cb-metric-change.negative {
+            color: var(--cb-red);
+        }
+
+        /* Buttons */
+        .cb-btn {
+            background: var(--cb-blue);
+            color: white;
             border: none;
-            min-height: 120px;
+            border-radius: var(--cb-border-radius);
+            padding: 0.75rem 1.5rem;
+            font-size: var(--cb-font-size-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .cb-btn:hover {
+            background: var(--cb-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--cb-shadow);
+        }
+
+        .cb-btn-secondary {
+            background: white;
+            color: var(--cb-blue);
+            border: 1px solid var(--cb-gray-200);
+        }
+
+        .cb-btn-secondary:hover {
+            background: var(--cb-gray-50);
+            border-color: var(--cb-blue);
+        }
+
+        /* Quick Actions */
+        .cb-quick-actions {
+            background: white;
+            border: 1px solid var(--cb-gray-200);
+            border-radius: var(--cb-border-radius-lg);
+            padding: 1.5rem;
+        }
+
+        .cb-action-btn {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            border: 1px solid var(--cb-gray-200);
+            border-radius: var(--cb-border-radius);
+            background: white;
+            color: var(--cb-gray-900);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+
+        .cb-action-btn:hover {
+            background: var(--cb-gray-50);
+            border-color: var(--cb-blue);
+            color: var(--cb-blue);
+        }
+
+        .cb-action-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--cb-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
             justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
         }
-        @media (prefers-color-scheme: dark) {
-            .status-card {
-                background: var(--brand-card-dark) !important;
-                color: var(--brand-text-dark) !important;
-            }
+
+        /* Status Indicators */
+        .cb-status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: var(--cb-font-size-sm);
+            font-weight: 500;
         }
-        /* Footer */
-        .modern-footer {
-            text-align: center;
-            padding: 2rem 0 1rem 0;
-            color: var(--brand-secondary-light);
-            font-size: 1rem;
-            border-top: 1px solid #e5e7eb;
-            margin-top: 3rem;
+
+        .cb-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
         }
-        @media (prefers-color-scheme: dark) {
-            .modern-footer {
-                color: var(--brand-secondary-dark);
-                border-top: 1px solid #232b3b;
-            }
+
+        .cb-status-dot.online { background: var(--cb-green); }
+        .cb-status-dot.warning { background: var(--cb-orange); }
+        .cb-status-dot.error { background: var(--cb-red); }
+
+        /* Badges */
+        .cb-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: var(--cb-font-size-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
+
+        /* Risk badges */
+        .cb-badge.critical { 
+            background: #fef2f2; 
+            color: #dc2626; 
+            border: 1px solid #fecaca;
+        }
+        .cb-badge.high { 
+            background: #fff7ed; 
+            color: #ea580c; 
+            border: 1px solid #fed7aa;
+        }
+        .cb-badge.medium { 
+            background: #fefce8; 
+            color: #ca8a04; 
+            border: 1px solid #fef08a;
+        }
+        .cb-badge.low { 
+            background: #f0fdf4; 
+            color: #16a34a; 
+            border: 1px solid #bbf7d0;
+        }
+
+        /* Status badges */
+        .cb-badge.confirmed { 
+            background: #f0fdf4; 
+            color: #16a34a; 
+            border: 1px solid #bbf7d0;
+        }
+        .cb-badge.pending { 
+            background: #fefce8; 
+            color: #ca8a04; 
+            border: 1px solid #fef08a;
+        }
+        .cb-badge.flagged { 
+            background: #fef2f2; 
+            color: #dc2626; 
+            border: 1px solid #fecaca;
+        }
+
+        /* Charts */
+        .cb-chart-container {
+            background: white;
+            border: 1px solid var(--cb-gray-200);
+            border-radius: var(--cb-border-radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Tables */
+        .cb-table {
+            width: 100%;
+            background: white;
+            border: 1px solid var(--cb-gray-200);
+            border-radius: var(--cb-border-radius-lg);
+            overflow: hidden;
+        }
+
+        .cb-table th {
+            background: var(--cb-gray-50);
+            padding: 0.75rem 1rem;
+            font-size: var(--cb-font-size-sm);
+            font-weight: 600;
+            color: var(--cb-gray-700);
+            border-bottom: 1px solid var(--cb-gray-200);
+        }
+
+        .cb-table td {
+            padding: 0.75rem 1rem;
+            font-size: var(--cb-font-size-sm);
+            border-bottom: 1px solid var(--cb-gray-200);
+        }
+
+        /* Streamlit overrides */
+        .stMetric {
+            background: white !important;
+            padding: 1.25rem !important;
+            border-radius: var(--cb-border-radius) !important;
+            border: 1px solid var(--cb-gray-200) !important;
+            box-shadow: var(--cb-shadow-sm) !important;
+        }
+
+        .stMetric > div {
+            color: var(--cb-gray-900) !important;
+        }
+
+        .stMetric [data-testid="metric-container"] > div:first-child {
+            font-size: var(--cb-font-size-sm) !important;
+            color: var(--cb-gray-600) !important;
+            font-weight: 500 !important;
+        }
+
+        .stMetric [data-testid="metric-container"] > div:nth-child(2) {
+            font-size: var(--cb-font-size-2xl) !important;
+            font-weight: 700 !important;
+            color: var(--cb-gray-900) !important;
+        }
+
         /* Responsive */
-        @media (max-width: 900px) {
-            .brand-header { font-size: 1.5rem; }
-            .modern-card .card-value { font-size: 1.5rem; }
+        @media (max-width: 768px) {
+            .cb-balance-display {
+                font-size: var(--cb-font-size-3xl);
+            }
+            
+            .cb-metric-value {
+                font-size: var(--cb-font-size-xl);
+            }
         }
         </style>
         """, unsafe_allow_html=True)
 
 def create_metric_card(title, value, delta=None, delta_color="normal"):
-    """Create a modern, branded metric card"""
+    """Create a Coinbase-style metric card"""
+    delta_class = "positive" if delta_color == "normal" and delta and "+" in str(delta) else "negative" if delta and "-" in str(delta) else "positive"
+    
     delta_html = ""
     if delta:
-        delta_html = f'<div class="card-delta">{delta}</div>'
+        delta_html = f'<div class="cb-metric-change {delta_class}">{delta}</div>'
+    
     return f"""
-    <div class="modern-card">
-        <div class="card-title">{title}</div>
-        <div class="card-value">{value}</div>
+    <div class="cb-metric-card">
+        <div class="cb-metric-label">{title}</div>
+        <div class="cb-metric-value">{value}</div>
         {delta_html}
     </div>
     """
 
 def create_status_card(status, description, color="green"):
-    """Create a modern status card with color dot and description"""
-    color_map = {
-        "green": "#22c55e",
-        "orange": "#f59e42",
-        "red": "#ef4444",
-        "blue": "#0a7cff"
-    }
-    dot = f'<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:{color_map.get(color, '#22c55e')};margin-right:8px;vertical-align:middle;"></span>'
+    """Create a Coinbase-style status card"""
+    status_color = "online" if color == "green" else "warning" if color == "yellow" else "error"
+    
     return f"""
-    <div class="status-card">
-        <div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">{dot}<span style='vertical-align:middle;'>{status}</span></div>
-        <div style="color:var(--brand-secondary-light);font-size:1rem;">{description}</div>
+    <div class="cb-card">
+        <div class="cb-status-indicator">
+            <div class="cb-status-dot {status_color}"></div>
+            <strong>{status}</strong>
+        </div>
+        <div style="margin-top: 0.5rem; color: var(--cb-gray-600); font-size: var(--cb-font-size-sm);">
+            {description}
+        </div>
     </div>
     """
 
 def create_alert_card(title, description, level="info"):
-    """Create a modern alert card for warnings/errors/info"""
-    color_map = {
-        "info": "#0a7cff",
-        "warning": "#f59e42",
-        "error": "#ef4444",
-        "success": "#22c55e"
+    """Create a Coinbase-style alert card"""
+    level_colors = {
+        "info": "var(--cb-blue)",
+        "warning": "var(--cb-orange)", 
+        "error": "var(--cb-red)",
+        "success": "var(--cb-green)"
     }
-    border = color_map.get(level, "#0a7cff")
+    
+    color = level_colors.get(level, "var(--cb-blue)")
+    
     return f"""
-    <div class="modern-card" style="border-left:6px solid {border};">
-        <div class="card-title" style="color:{border};">{title}</div>
-        <div style="color:var(--brand-secondary-light);font-size:1rem;">{description}</div>
+    <div class="cb-card" style="border-left: 4px solid {color};">
+        <div class="cb-card-title">{title}</div>
+        <div style="color: var(--cb-gray-600); font-size: var(--cb-font-size-sm);">
+            {description}
+        </div>
     </div>
     """
 
 def create_risk_badge(risk_level):
-    """Create a risk level badge"""
-    return f'<span class="risk-badge {risk_level.lower()}">{risk_level}</span>'
+    """Create a Coinbase-style risk badge"""
+    return f'<span class="cb-badge {risk_level.lower()}">{risk_level}</span>'
+
+def create_status_badge(status):
+    """Create a Coinbase-style status badge"""
+    return f'<span class="cb-badge {status.lower()}">{status}</span>'
+
+def create_dashboard_header(balance, change):
+    """Create Coinbase-style dashboard header"""
+    return f"""
+    <div class="cb-dashboard-header">
+        <div class="cb-balance-display">${balance:,.2f}</div>
+        <div class="cb-balance-change">↗ {change}</div>
+    </div>
+    """
+
+def create_quick_actions():
+    """Create Coinbase-style quick actions panel"""
+    return """
+    <div class="cb-quick-actions">
+        <div class="cb-card-title">Quick actions</div>
+        <a href="#" class="cb-action-btn">
+            <div class="cb-action-icon">↑</div>
+            <span>Send crypto</span>
+        </a>
+        <a href="#" class="cb-action-btn">
+            <div class="cb-action-icon">↓</div>
+            <span>Receive crypto</span>
+        </a>
+        <a href="#" class="cb-action-btn">
+            <div class="cb-action-icon">⇄</div>
+            <span>Trade crypto</span>
+        </a>
+        <a href="#" class="cb-action-btn">
+            <div class="cb-action-icon">$</div>
+            <span>Deposit cash</span>
+        </a>
+        <a href="#" class="cb-action-btn">
+            <div class="cb-action-icon">←</div>
+            <span>Withdraw cash</span>
+        </a>
+    </div>
+    """
 
 def apply_styling():
-    """Apply all styling configurations"""
-    # apply_page_config()  # No longer needed
+    """Apply all Coinbase styling configurations"""
     apply_custom_css()
