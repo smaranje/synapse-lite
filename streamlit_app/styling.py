@@ -44,6 +44,18 @@ def apply_custom_css():
             --cb-font-size-2xl: 1.5rem;
             --cb-font-size-3xl: 1.875rem;
             --cb-font-size-4xl: 2.25rem;
+
+            /* Adapt grayscale palette to Streamlit theme so it works in both modes */
+            --cb-gray-900: var(--text-color);
+            --cb-gray-800: var(--text-color);
+            --cb-gray-700: var(--text-color);
+            --cb-gray-600: var(--text-color);
+            --cb-gray-500: var(--text-color);
+            --cb-gray-400: var(--text-color);
+            --cb-gray-300: var(--secondary-background-color);
+            --cb-gray-200: var(--secondary-background-color);
+            --cb-gray-100: var(--secondary-background-color);
+            --cb-gray-50: var(--secondary-background-color);
         }
 
         /* Reset and Base Styles */
@@ -51,14 +63,15 @@ def apply_custom_css():
             padding-top: 2rem !important;
         }
         
+        /* Let Streamlit handle the actual colours so we are compatible with both light and dark themes */
         .stApp {
-            background-color: var(--cb-gray-50) !important;
+            background-color: var(--background-color) !important;
         }
-        
+
         body, .stApp, .main, [data-testid="stAppViewContainer"] {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-            background-color: var(--cb-gray-50) !important;
-            color: var(--cb-gray-900) !important;
+            background-color: var(--background-color) !important;
+            color: var(--text-color) !important;
             line-height: 1.5 !important;
         }
 
@@ -371,6 +384,29 @@ def apply_custom_css():
             font-size: var(--cb-font-size-2xl) !important;
             font-weight: 700 !important;
             color: var(--cb-gray-900) !important;
+        }
+
+        /* Make sure our custom cards pick up the secondary background so text remains visible in both modes */
+        .cb-card,
+        .cb-metric-card,
+        .cb-quick-actions,
+        .cb-chart-container,
+        .cb-table,
+        .cb-dashboard-header,
+        .cb-action-btn,
+        .cb-btn-secondary {
+            background: var(--secondary-background-color) !important;
+        }
+
+        /* Universal text colour override for our components */
+        .cb-card-title,
+        .cb-metric-value,
+        .cb-metric-label,
+        .cb-balance-display,
+        .cb-balance-change,
+        .cb-status-indicator,
+        [data-testid="stSidebar"] .stRadio > div > label > div {
+            color: var(--text-color) !important;
         }
 
         /* Responsive */
