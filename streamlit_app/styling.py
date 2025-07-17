@@ -6,10 +6,14 @@ from config import APP_TITLE, APP_ICON
 # Removed apply_page_config since st.set_page_config is now called at the top of streamlit_app.py
 
 def apply_custom_css():
-    """Apply the Coinbase-inspired CSS styling"""
+    """Apply the Coinbase-inspired CSS styling and hide default Streamlit sidebar nav header"""
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        /* Hide the default Streamlit sidebar navigation header */
+        [data-testid="stSidebarNav"] {
+            display: none;
+        }
         
         .main {
             background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
