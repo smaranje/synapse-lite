@@ -12,41 +12,66 @@ from config import PAGES
 from utils import create_status_indicator
 
 def render_sidebar():
-    """Render the sidebar navigation and return selected page"""
-    
+    """Render the enterprise-style sidebar navigation and return selected page"""
+    page_icons = {
+        "Dashboard": "🏠",
+        "Analytics": "📊",
+        "Transactions": "💸",
+        "Alerts": "⚠️",
+        "Settings": "⚙️"
+    }
     with st.sidebar:
-        # Logo and title
-        st.markdown("""
-        <div style="text-align: center; padding: 1rem 0; border-bottom: 1px solid #f0f3f7; margin-bottom: 1rem;">
-            <h1 style="color: #0052ff; font-size: 1.5rem; margin: 0; font-weight: 600;">
-                🔷 Synapse-Lite
-            </h1>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Navigation
-        st.markdown("### Navigation")
-        selected_page = st.radio(
-            "Choose a page:",
-            list(PAGES.keys()),
-            format_func=lambda x: f"{PAGES[x]} {x}",
-            label_visibility="collapsed"
+        st.markdown(
+            '''<div style="display:flex;align-items:center;gap:0.5rem;padding:1.5rem 0 1.5rem 0;">
+                <span style="font-size:2rem;line-height:1;">🔷</span>
+                <span style="font-weight:700;font-size:1.25rem;color:#222;letter-spacing:-0.01em;">Synapse-Lite</span>
+            </div>''',
+            unsafe_allow_html=True
         )
-        
-        st.markdown("---")
-        
-        # System status
-        st.markdown("### System Status")
-        
-        # Mock status indicators
-        neo4j_status = random.choice(["online", "online", "warning"])
-        kafka_status = random.choice(["online", "online", "offline"]) 
-        ai_status = random.choice(["online", "warning", "online"])
-        
-        st.markdown(create_status_indicator(neo4j_status, "Neo4j Database"), unsafe_allow_html=True)
-        st.markdown(create_status_indicator(kafka_status, "Kafka Stream"), unsafe_allow_html=True)
-        st.markdown(create_status_indicator(ai_status, "AI Service"), unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
+        selected_page = st.radio(
+            "",
+            list(PAGES.keys()),
+            format_func=lambda x: f"{page_icons.get(x, '')}  {PAGES[x]}",
+            label_visibility="collapsed",
+            index=0,
+            key="main_nav"
+        )
+        st.markdown(
+            '''<style>
+            [data-testid="stSidebar"] {
+                background: #fff !important;
+                border-right: 1px solid #f0f3f7;
+                min-width: 220px;
+                max-width: 260px;
+                padding-top: 0 !important;
+            }
+            [data-testid="stSidebar"] .stRadio > div { gap: 0.5rem; }
+            [data-testid="stSidebar"] label {
+                font-size: 1.08rem;
+                font-weight: 500;
+                color: #222 !important;
+                padding: 0.5rem 0.75rem;
+                border-radius: 8px;
+                margin-bottom: 0.25rem;
+                transition: background 0.15s;
+            }
+            [data-testid="stSidebar"] label[data-selected="true"] {
+                background: #eaf1ff !important;
+                color: #0052ff !important;
+                font-weight: 700;
+            }
+            [data-testid="stSidebar"] .stRadio > div > div { width: 100%; }
+            </style>''',
+            unsafe_allow_html=True
+        )
+        # System status as small footer
+        st.markdown('<div style="height:2rem;"></div>', unsafe_allow_html=True)
+        st.markdown(
+            '''<div style="position:absolute;bottom:2rem;left:1.5rem;font-size:0.95rem;color:#888;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:6px;"></span> Neo4j
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#0a7cff;margin:0 6px 0 18px;"></span> Kafka
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e42;margin:0 6px 0 18px;"></span> AI
+            </div>''',
+            unsafe_allow_html=True
+        )
     return selected_page
