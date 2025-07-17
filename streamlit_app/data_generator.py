@@ -33,10 +33,6 @@ def generate_transaction_data(count=50):
         transactions.append(tx)
     
     df = pd.DataFrame(transactions)
-    if df.empty:
-        st.warning("No transaction data generated!")
-    else:
-        st.write("Generated transactions:", df.head())
     return df
 
 def generate_alert_data(count=15):

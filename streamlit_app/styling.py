@@ -141,6 +141,25 @@ def apply_custom_css():
                 border-top: 1px solid #232b3b;
             }
         }
+        /* Badges */
+        .risk-badge, .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 2px;
+        }
+        /* Risk badges */
+        .risk-badge.critical { background: #ef4444; color: white; }
+        .risk-badge.high { background: #f97316; color: white; }
+        .risk-badge.medium { background: #eab308; color: white; }
+        .risk-badge.low { background: #22c55e; color: white; }
+        /* Status badges */
+        .status-badge.confirmed { background: #22c55e; color: white; }
+        .status-badge.pending { background: #eab308; color: white; }
+        .status-badge.flagged { background: #ef4444; color: white; }
         /* Responsive */
         @media (max-width: 900px) {
             .brand-header { font-size: 1.5rem; }
@@ -197,6 +216,10 @@ def create_alert_card(title, description, level="info"):
 def create_risk_badge(risk_level):
     """Create a risk level badge"""
     return f'<span class="risk-badge {risk_level.lower()}">{risk_level}</span>'
+
+def create_status_badge(status):
+    """Create a status badge"""
+    return f'<span class="status-badge {status.lower()}">{status}</span>'
 
 def apply_styling():
     """Apply all styling configurations"""
