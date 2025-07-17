@@ -6,7 +6,7 @@ from config import APP_TITLE, APP_ICON
 # Removed apply_page_config since st.set_page_config is now called at the top of streamlit_app.py
 
 def apply_custom_css():
-    """Apply the Coinbase-inspired CSS styling and hide default Streamlit sidebar nav header. Update sidebar and main background colors for Coinbase palette and high contrast. Ensure text is visible in both light and dark mode."""
+    """Apply the Coinbase-inspired CSS styling and hide default Streamlit sidebar nav header. Update sidebar and main background colors for Coinbase palette and high contrast. Ensure all text is visible in both light and dark mode."""
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -31,6 +31,10 @@ def apply_custom_css():
         h1, h2, h3, h4, h5, h6, .stMarkdown, .stText, .stSubheader {
             color: #1a1a1a !important;
         }
+        /* Secondary text, axis labels, and widget labels */
+        .stMarkdown, .stText, .stSubheader, .stCaption, .stMetricLabel, .stMetricDelta, .stRadio label, .stSelectbox label, .stSlider label, .stDataFrame, .stTable, .stPlotlyChart, .stPlotlyChart * {
+            color: #1a1a1a !important;
+        }
         /* High contrast for dark mode */
         @media (prefers-color-scheme: dark) {
             section[data-testid="stSidebar"] {
@@ -47,6 +51,9 @@ def apply_custom_css():
                 border-color: #2d3a54 !important;
             }
             h1, h2, h3, h4, h5, h6, .stMarkdown, .stText, .stSubheader {
+                color: #fff !important;
+            }
+            .stMarkdown, .stText, .stSubheader, .stCaption, .stMetricLabel, .stMetricDelta, .stRadio label, .stSelectbox label, .stSlider label, .stDataFrame, .stTable, .stPlotlyChart, .stPlotlyChart * {
                 color: #fff !important;
             }
             /* Plotly chart text in dark mode */

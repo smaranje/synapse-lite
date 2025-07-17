@@ -12,6 +12,29 @@ from data_generator import (
     generate_geographic_data,
     generate_time_series_data
 )
+import streamlit as st
+
+def get_plotly_theme():
+    try:
+        dark_mode = st.get_option("theme.base") == "dark"
+    except Exception:
+        dark_mode = False
+    if dark_mode:
+        return dict(
+            plot_bgcolor='#181c24',
+            paper_bgcolor='#181c24',
+            font=dict(color='#fff', family="Inter, sans-serif"),
+            xaxis=dict(color='#fff', title_font=dict(color='#fff'), tickfont=dict(color='#fff')),
+            yaxis=dict(color='#fff', title_font=dict(color='#fff'), tickfont=dict(color='#fff'))
+        )
+    else:
+        return dict(
+            plot_bgcolor='#fff',
+            paper_bgcolor='#fff',
+            font=dict(color='#1a1a1a', family="Inter, sans-serif"),
+            xaxis=dict(color='#1a1a1a', title_font=dict(color='#1a1a1a'), tickfont=dict(color='#1a1a1a')),
+            yaxis=dict(color='#1a1a1a', title_font=dict(color='#1a1a1a'), tickfont=dict(color='#1a1a1a'))
+        )
 
 def create_hourly_volume_chart():
     """Create hourly transaction volume chart"""
@@ -35,9 +58,7 @@ def create_hourly_volume_chart():
         yaxis_title="Transactions",
         showlegend=False,
         height=400,
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Inter, sans-serif")
+        **get_plotly_theme()
     )
     
     return fig
@@ -63,7 +84,7 @@ def create_risk_distribution_pie():
         height=400,
         showlegend=True,
         legend=dict(orientation="v", yanchor="middle", y=0.5),
-        font=dict(family="Inter, sans-serif")
+        **get_plotly_theme()
     )
     
     return fig
@@ -91,9 +112,7 @@ def create_risk_trend_chart():
         yaxis_title='Risk Score (%)',
         height=400,
         showlegend=False,
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Inter, sans-serif")
+        **get_plotly_theme()
     )
     
     return fig
@@ -116,9 +135,7 @@ def create_alert_volume_chart():
         yaxis_title="Alert Count",
         height=400,
         showlegend=False,
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Inter, sans-serif")
+        **get_plotly_theme()
     )
     
     return fig
@@ -162,9 +179,7 @@ def create_weekly_trends_chart():
         yaxis_title='Transaction Count',
         height=400,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Inter, sans-serif")
+        **get_plotly_theme()
     )
     
     return fig
@@ -187,9 +202,7 @@ def create_detection_accuracy_chart():
         yaxis_title="Detection Rate (%)",
         height=400,
         showlegend=False,
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Inter, sans-serif")
+        **get_plotly_theme()
     )
     
     return fig
@@ -227,9 +240,7 @@ def create_volume_vs_risk_scatter():
     
     fig.update_layout(
         height=400,
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Inter, sans-serif")
+        **get_plotly_theme()
     )
     
     return fig
