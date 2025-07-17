@@ -32,23 +32,3 @@ def create_status_indicator(status="online", label="System Status"):
         ">{label}: {text}</span>
     </div>
     """
-
-def format_currency(amount, currency="USD"):
-    """Format currency amounts"""
-    if currency == "BTC":
-        return f"₿{amount:.8f}"
-    elif currency == "USD":
-        return f"${amount:,.2f}"
-    else:
-        return f"{amount:,.2f} {currency}"
-
-def format_risk_level(risk_score):
-    """Format risk score into level"""
-    if risk_score >= 80:
-        return "Critical"
-    elif risk_score >= 60:
-        return "High"
-    elif risk_score >= 40:
-        return "Medium"
-    else:
-        return "Low"
