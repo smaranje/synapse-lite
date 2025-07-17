@@ -144,5 +144,10 @@ def generate_sar():
         print(f"Error generating content from LLM: {e}")
         return jsonify({"error": f"Failed to generate SAR draft from LLM: {e}"}), 500
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for Docker health checks"""
+    return jsonify({"status": "healthy", "service": "flask-llm-service"}), 200
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
