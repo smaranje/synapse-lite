@@ -1,35 +1,34 @@
-"""Utility functions for the Streamlit fraud detection app."""
+# Utility functions for Streamlit app
 
-def get_risk_level(ml_score, is_smurfing_rule):
-    """Determine risk level based on ML score and smurfing rule."""
-    ml_score = ml_score if ml_score is not None else 0.0
-    is_smurfing_rule = is_smurfing_rule if is_smurfing_rule is not None else False
-    if is_smurfing_rule or ml_score >= 0.9:
-        return "Critical"
-    elif ml_score >= 0.7:
-        return "High"
-    elif ml_score >= 0.4:
-        return "Medium"
-    return "Low"
+import streamlit as st
 
-def create_metric_card(label, value, delta=None, delta_type="neutral"):
-    """Create a beautiful metric card"""
-    delta_class = f"metric-delta {delta_type}" if delta else ""
-    delta_html = f'<div class="{delta_class}">{delta}</div>' if delta else ""
+def create_status_indicator(status="online", label="System Status"):
+    """Create a status indicator with colored circle and label"""
+    if status.lower() == "online":
+        color = "#10b981"
+        text = "Online"
+    elif status.lower() == "offline":
+        color = "#ef4444"
+        text = "Offline"
+    elif status.lower() == "warning":
+        color = "#f59e0b" 
+        text = "Warning"
+    else:
+        color = "#6b7280"
+        text = "Unknown"
     
     return f"""
-    <div class="metric-card">
-        <div class="metric-label">{label}</div>
-        <div class="metric-value">{value}</div>
-        {delta_html}
+    <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+        <div style="
+            width: 8px; 
+            height: 8px; 
+            border-radius: 50%; 
+            background-color: {color};
+        "></div>
+        <span style="
+            font-size: 0.875rem;
+            color: #374151;
+            font-weight: 500;
+        ">{label}: {text}</span>
     </div>
     """
-
-def create_status_indicator(status, text):
-    """Create a status indicator badge"""
-    return f'<span class="status-indicator status-{status}">● {text}</span>'
-
-def create_risk_badge(risk_level, score=None):
-    """Create a risk level badge"""
-    score_text = f" ({int(score*100)}%)" if score else ""
-    return f'<span class="risk-badge {risk_level.lower()}">{risk_level}{score_text}</span>'

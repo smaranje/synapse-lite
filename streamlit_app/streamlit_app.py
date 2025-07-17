@@ -7,40 +7,26 @@ and AI-powered fraud detection capabilities.
 """
 
 import streamlit as st
+import sys
+import os
 
-def main():
-    """Main application entry point."""
-    
-    # Import configuration and apply page settings
-    from config import configure_page
-    configure_page()
-    
-    # Apply styling
-    from styling import apply_styling
-    apply_styling()
-    
-    # Render sidebar and get selected page
-    from sidebar import render_sidebar
-    selected_page = render_sidebar()
-    
-    # Route to the appropriate page based on selection
-    if selected_page == "Dashboard":
-        from pages.dashboard import render_dashboard
-        render_dashboard()
-    elif selected_page == "Transactions":
-        from pages.transactions import render_transactions
-        render_transactions()
-    elif selected_page == "Alerts":
-        from pages.alerts import render_alerts
-        render_alerts()
-    elif selected_page == "Analytics":
-        from pages.analytics import render_analytics
-        render_analytics()
-    elif selected_page == "Settings":
-        from pages.settings import render_settings
-        render_settings()
-    
-    # Footer
+# Add the current directory to the Python path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Import core modules
+from config import configure_page
+from styling import apply_styling
+from sidebar import render_sidebar
+
+# Import page modules
+from pages.dashboard import render_dashboard
+from pages.transactions import render_transactions
+from pages.alerts import render_alerts
+from pages.analytics import render_analytics
+from pages.settings import render_settings
+
+def render_footer():
+    """Render the application footer"""
     st.markdown("---")
     st.markdown("""
     <div class="footer">
@@ -48,6 +34,35 @@ def main():
         <p>Real-time Bitcoin transaction monitoring and AI-powered threat detection</p>
     </div>
     """, unsafe_allow_html=True)
+
+def main():
+    """Main application function with routing"""
+    # Configure page settings
+    configure_page()
+    
+    # Apply styling
+    apply_styling()
+    
+    # Render sidebar and get selected page
+    selected_page = render_sidebar()
+    
+    # Route to the appropriate page based on selection
+    if selected_page == "Dashboard":
+        render_dashboard()
+    elif selected_page == "Transactions":
+        render_transactions()
+    elif selected_page == "Alerts":
+        render_alerts()
+    elif selected_page == "Analytics":
+        render_analytics()
+    elif selected_page == "Settings":
+        render_settings()
+    else:
+        # Default to dashboard if unknown page
+        render_dashboard()
+    
+    # Render footer
+    render_footer()
 
 if __name__ == "__main__":
     main()

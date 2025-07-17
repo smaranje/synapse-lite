@@ -1,1 +1,1 @@
-# Pages package
+# Pages package initialization
