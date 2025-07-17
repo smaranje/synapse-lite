@@ -1,4 +1,4 @@
-# ai_service/app.py - Fresh clean version
+# ai_service/app.py - Updated for Neo4j context
 from flask import Flask, request, jsonify
 import os
 import json
@@ -69,6 +69,8 @@ def fetch_neo4j_context(transaction_hash):
                 output_addresses = [item['address'] for item in result["outputs"] if item['address']]
                 if output_addresses:
                     context_data.append(f"Involved output addresses: {', '.join(output_addresses)}")
+                
+                # You could add more complex queries here, e.g., finding common counterparties
                 
                 return "\n".join(context_data)
             else:
