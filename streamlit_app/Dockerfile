@@ -1,5 +1,5 @@
 # streamlit_app/Dockerfile
-FROM python:3.9-slim-buster
+FROM python:3.9-slim-bullseye
 
 WORKDIR /app
 
