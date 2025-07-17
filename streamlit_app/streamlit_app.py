@@ -7,75 +7,172 @@ and AI-powered fraud detection capabilities.
 """
 
 import streamlit as st
-from config import APP_TITLE, APP_ICON
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import altair as alt
+from datetime import datetime, timedelta
 
+# Page configuration
 st.set_page_config(
+    page_title="Simple Streamlit App",
+    page_icon="🎈",
     layout="wide",
-    page_title=APP_TITLE,
-    page_icon=APP_ICON,
     initial_sidebar_state="expanded"
 )
 
-import sys
-import os
+# Title and description
+st.title("🎈 Simple Streamlit Application")
+st.markdown("""
+Welcome to this simple Streamlit application! This app demonstrates various Streamlit features including:
+- Interactive widgets
+- Data visualization
+- File upload functionality
+- Real-time updates
+""")
 
-# Add the current directory to the Python path for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# Import core modules
-from config import configure_page
-from styling import apply_styling
-from sidebar import render_sidebar
-
-# Import page modules
-from pages.dashboard import render_dashboard
-from pages.transactions import render_transactions
-from pages.alerts import render_alerts
-from pages.analytics import render_analytics
-from pages.settings import render_settings
-
-def render_footer():
-    """Render the application footer"""
-    st.markdown("---")
-    st.markdown(
-        """
-        <div class="footer">
-            <p>Synapse-Lite Fraud Detection System | Built with Streamlit</p>
-            <p>Real-time Bitcoin transaction monitoring and AI-powered threat detection</p>
-            <p style='font-size:0.9rem; color:#6b7280;'>Made by Smaranjeet Singh</p>
-        </div>
-        """,
-        unsafe_allow_html=True
+# Sidebar
+with st.sidebar:
+    st.header("⚙️ Configuration")
+    
+    # User input
+    user_name = st.text_input("Enter your name:", "User")
+    
+    # Slider
+    num_points = st.slider("Number of data points:", 10, 1000, 100)
+    
+    # Select box
+    chart_type = st.selectbox(
+        "Select chart type:",
+        ["Line Chart", "Bar Chart", "Scatter Plot"]
     )
+    
+    # Color picker
+    chart_color = st.color_picker("Pick a color for the chart:", "#1f77b4")
 
-def main():
-    """Main application function with routing"""
-    # Configure page settings
-    # configure_page()  # No longer needed, handled by st.set_page_config
-    
-    # Apply styling
-    apply_styling()
-    
-    # Render sidebar and get selected page
-    selected_page = render_sidebar()
-    
-    # Route to the appropriate page based on selection
-    if selected_page == "Dashboard":
-        render_dashboard()
-    elif selected_page == "Transactions":
-        render_transactions()
-    elif selected_page == "Alerts":
-        render_alerts()
-    elif selected_page == "Analytics":
-        render_analytics()
-    elif selected_page == "Settings":
-        render_settings()
-    else:
-        # Default to dashboard if unknown page
-        render_dashboard()
-    
-    # Render footer
-    render_footer()
+# Main content area
+col1, col2 = st.columns(2)
 
-if __name__ == "__main__":
-    main()
+with col1:
+    st.header("📊 Data Visualization")
+    
+    # Generate sample data
+    dates = pd.date_range(
+        start=datetime.now() - timedelta(days=num_points),
+        end=datetime.now(),
+        periods=num_points
+    )
+    
+    data = pd.DataFrame({
+        'Date': dates,
+        'Value': np.cumsum(np.random.randn(num_points)) + 100,
+        'Volume': np.random.randint(50, 200, size=num_points)
+    })
+    
+    # Display chart based on selection
+    if chart_type == "Line Chart":
+        fig = px.line(data, x='Date', y='Value', title=f"Sample Data for {user_name}")
+        fig.update_traces(line_color=chart_color)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    elif chart_type == "Bar Chart":
+        fig = px.bar(data.tail(30), x='Date', y='Volume', title=f"Volume Data (Last 30 Days)")
+        fig.update_traces(marker_color=chart_color)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    else:  # Scatter Plot
+        fig = px.scatter(data, x='Value', y='Volume', title=f"Value vs Volume Correlation")
+        fig.update_traces(marker_color=chart_color)
+        st.plotly_chart(fig, use_container_width=True)
+
+with col2:
+    st.header("📈 Statistics")
+    
+    # Display metrics
+    col2_1, col2_2, col2_3 = st.columns(3)
+    
+    with col2_1:
+        st.metric(
+            label="Current Value",
+            value=f"{data['Value'].iloc[-1]:.2f}",
+            delta=f"{data['Value'].iloc[-1] - data['Value'].iloc[-2]:.2f}"
+        )
+    
+    with col2_2:
+        st.metric(
+            label="Average Volume",
+            value=f"{data['Volume'].mean():.0f}",
+            delta=f"{(data['Volume'].tail(10).mean() - data['Volume'].mean()):.0f}"
+        )
+    
+    with col2_3:
+        st.metric(
+            label="Data Points",
+            value=num_points
+        )
+    
+    # Data table
+    st.subheader("📋 Recent Data")
+    st.dataframe(data.tail(10), use_container_width=True)
+
+# File upload section
+st.header("📁 File Upload")
+uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    st.success(f"File uploaded successfully! Shape: {df.shape}")
+    
+    # Display first few rows
+    st.subheader("Preview of uploaded data:")
+    st.dataframe(df.head(), use_container_width=True)
+    
+    # Basic statistics
+    if st.checkbox("Show statistics"):
+        st.subheader("Data Statistics:")
+        st.write(df.describe())
+
+# Interactive elements
+st.header("🎮 Interactive Elements")
+
+col3, col4 = st.columns(2)
+
+with col3:
+    # Text area
+    text_input = st.text_area("Enter some text:", height=100)
+    if text_input:
+        st.info(f"You entered {len(text_input)} characters")
+        
+    # Buttons
+    if st.button("Click me!"):
+        st.balloons()
+        st.success("Button clicked! 🎉")
+
+with col4:
+    # Checkbox
+    show_raw_data = st.checkbox("Show raw data")
+    if show_raw_data:
+        st.subheader("Raw Data:")
+        st.json(data.tail(5).to_dict())
+    
+    # Radio buttons
+    option = st.radio(
+        "Choose an option:",
+        ["Option A", "Option B", "Option C"]
+    )
+    st.write(f"You selected: {option}")
+
+# Progress bar example
+if st.button("Run simulation"):
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i in range(100):
+        progress_bar.progress(i + 1)
+        status_text.text(f'Progress: {i+1}%')
+    
+    status_text.text('Simulation complete!')
+
+# Footer
+st.markdown("---")
+st.markdown("Made with ❤️ using Streamlit")

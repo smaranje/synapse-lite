@@ -1,101 +1,117 @@
-# Synapse-Lite Fraud Detection System
+# Simple Streamlit Application
 
-A modular Streamlit application for real-time Bitcoin transaction monitoring and AI-powered fraud detection.
+A feature-rich Streamlit application demonstrating various interactive components and data visualization capabilities.
+
+## Features
+
+- 📊 **Interactive Data Visualization**: Line charts, bar charts, and scatter plots using Plotly
+- 📈 **Real-time Statistics**: Dynamic metrics and data tables
+- 📁 **File Upload**: CSV file upload and analysis functionality
+- 🎮 **Interactive Widgets**: Sliders, buttons, text inputs, color pickers, and more
+- 🎨 **Customizable UI**: Sidebar configuration and responsive layout
+
+## Prerequisites
+
+- Python 3.11 or higher
+- Docker (optional, for containerized deployment)
+
+## Installation & Running
+
+### Option 1: Run locally with Python
+
+1. Navigate to the streamlit_app directory:
+   ```bash
+   cd streamlit_app
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Run the application:
+   ```bash
+   streamlit run streamlit_app.py
+   ```
+
+4. Open your browser and navigate to `http://localhost:8501`
+
+### Option 2: Run with Docker
+
+1. Navigate to the streamlit_app directory:
+   ```bash
+   cd streamlit_app
+   ```
+
+2. Build the Docker image:
+   ```bash
+   docker build -t streamlit-app .
+   ```
+
+3. Run the container:
+   ```bash
+   docker run -p 8501:8501 streamlit-app
+   ```
+
+4. Open your browser and navigate to `http://localhost:8501`
+
+## Usage
+
+### Sidebar Configuration
+- Enter your name for personalized charts
+- Adjust the number of data points using the slider
+- Select different chart types
+- Choose custom colors for visualizations
+
+### Main Features
+- **Data Visualization**: View dynamically generated charts based on your configuration
+- **Statistics**: Monitor real-time metrics and recent data
+- **File Upload**: Upload CSV files for analysis and visualization
+- **Interactive Elements**: Experiment with various Streamlit widgets
 
 ## Project Structure
 
-The application has been refactored from a single large file into a modular structure for better maintainability:
-
 ```
 streamlit_app/
-├── streamlit_app.py          # Main application entry point
-├── config.py                 # Configuration constants and settings
-├── styling.py               # CSS styling definitions
-├── utils.py                 # Helper functions and utilities
-├── data_generator.py        # Dummy data generation functions
-├── charts.py                # Chart creation functions (Plotly)
-├── sidebar.py               # Sidebar component
-├── pages/                   # Individual page modules
-│   ├── __init__.py
-│   ├── dashboard.py         # Main dashboard page
-│   ├── transactions.py      # Transaction monitoring page
-│   ├── alerts.py           # Security alerts page
-│   ├── analytics.py        # Analytics and reporting page
-│   └── settings.py         # System settings page
-├── requirements.txt         # Python dependencies
-├── Dockerfile              # Docker configuration
-└── README.md               # This file
+├── streamlit_app.py    # Main application file
+├── requirements.txt    # Python dependencies
+├── Dockerfile         # Docker configuration
+└── README.md         # This file
 ```
 
-## Modules Overview
+## Dependencies
 
-### Core Application Files
+- **streamlit**: Core framework for the web application
+- **pandas**: Data manipulation and analysis
+- **numpy**: Numerical computing
+- **plotly**: Interactive data visualization
+- **altair**: Declarative visualization library
 
-- **`streamlit_app.py`**: Main entry point that orchestrates the entire application
-- **`config.py`**: Contains all configuration constants (BTC rate, page settings, navigation)
-- **`styling.py`**: Centralized CSS styling with Coinbase-inspired design
-- **`utils.py`**: Utility functions for UI components and risk calculations
-- **`sidebar.py`**: Reusable sidebar component with navigation and system status
+## Customization
 
-### Data and Visualization
+You can easily extend this application by:
+- Adding new chart types in the visualization section
+- Implementing additional file formats for upload
+- Creating new interactive widgets
+- Adding database connectivity for persistent data
+- Implementing user authentication
 
-- **`data_generator.py`**: Functions for generating dummy transaction and alert data
-- **`charts.py`**: Plotly chart creation functions for analytics dashboards
+## Troubleshooting
 
-### Page Modules
+If you encounter any issues:
 
-Each page is a separate module with its own `render_*()` function:
+1. **Port already in use**: Change the port by running:
+   ```bash
+   streamlit run streamlit_app.py --server.port 8502
+   ```
 
-- **`dashboard.py`**: Main overview with metrics, charts, and recent activity
-- **`transactions.py`**: Real-time transaction monitoring and filtering
-- **`alerts.py`**: Security alerts management and investigation
-- **`analytics.py`**: Advanced analytics with trends and pattern analysis
-- **`settings.py`**: System configuration and preferences
+2. **Module not found**: Ensure all dependencies are installed:
+   ```bash
+   pip install -r requirements.txt --upgrade
+   ```
 
-## Benefits of Modular Structure
+3. **Docker build fails**: Make sure Docker is running and you have sufficient permissions
 
-1. **Maintainability**: Each component has a single responsibility
-2. **Scalability**: Easy to add new pages or modify existing ones
-3. **Reusability**: Components can be reused across different parts of the app
-4. **Team Development**: Multiple developers can work on different modules
-5. **Testing**: Individual modules can be tested in isolation
-6. **Performance**: Lazy loading of page-specific functionality
+## License
 
-## Running the Application
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
-streamlit run streamlit_app.py
-```
-
-## Docker Support
-
-```bash
-# Build the image
-docker build -t synapse-lite .
-
-# Run the container
-docker run -p 8501:8501 synapse-lite
-```
-
-## Adding New Pages
-
-To add a new page:
-
-1. Create a new file in `pages/` directory (e.g., `pages/reports.py`)
-2. Implement a `render_reports()` function
-3. Add the page to `PAGES` dict in `config.py`
-4. Import and route the page in `streamlit_app.py`
-
-## Code Organization Principles
-
-- **Separation of Concerns**: Each file has a specific purpose
-- **Import Management**: Relative imports prevent circular dependencies
-- **Configuration Centralization**: All constants in `config.py`
-- **UI Consistency**: Shared styling and utility functions
-- **Data Abstraction**: Data generation separated from presentation
-
-This modular structure makes the codebase much more manageable and sets up a strong foundation for future development.
+This is a sample application for demonstration purposes.
