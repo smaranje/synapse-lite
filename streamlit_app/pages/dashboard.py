@@ -14,7 +14,23 @@ from charts import (
     create_risk_trend_chart,
     create_alert_volume_chart
 )
-from styling import create_metric_card
+try:
+    from styling import create_metric_card
+except ImportError:
+    # Fallback if function doesn't exist in styling.py
+    def create_metric_card(title, value, delta=None, delta_color="normal"):
+        """Fallback metric card implementation"""
+        delta_html = ""
+        if delta:
+            delta_html = f'<div style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">{delta}</div>'
+        
+        return f"""
+        <div style="background: white; border: 1px solid #f0f3f7; border-radius: 8px; padding: 0.75rem 1rem; margin: 0.25rem 0;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">{title}</div>
+            <div style="font-size: 1.875rem; font-weight: 600; color: #1a1a1a;">{value}</div>
+            {delta_html}
+        </div>
+        """
 
 def render_dashboard():
     """Render the main dashboard page"""

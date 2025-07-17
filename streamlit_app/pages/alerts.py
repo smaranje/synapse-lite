@@ -8,7 +8,20 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data_generator import generate_alert_data, format_hash
-from styling import create_risk_badge
+try:
+    from styling import create_risk_badge
+except ImportError:
+    # Fallback if function doesn't exist in styling.py
+    def create_risk_badge(risk_level):
+        """Fallback risk badge implementation"""
+        colors = {
+            "critical": "#dc2626",
+            "high": "#ea580c", 
+            "medium": "#0052ff",
+            "low": "#059669"
+        }
+        color = colors.get(risk_level.lower(), "#6b7280")
+        return f'<span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: {color}; color: white;">{risk_level}</span>'
 from charts import create_alert_type_distribution
 
 def render_alerts():
