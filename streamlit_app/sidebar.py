@@ -13,13 +13,6 @@ from utils import create_status_indicator
 
 def render_sidebar():
     """Render the enterprise-style sidebar navigation and return selected page"""
-    page_icons = {
-        "Dashboard": "🏠",
-        "Analytics": "📊",
-        "Transactions": "💸",
-        "Alerts": "⚠️",
-        "Settings": "⚙️"
-    }
     with st.sidebar:
         st.markdown(
             '''<div style="display:flex;align-items:center;gap:0.5rem;padding:1.5rem 0 1.5rem 0;">
@@ -31,7 +24,7 @@ def render_sidebar():
         selected_page = st.radio(
             "",
             list(PAGES.keys()),
-            format_func=lambda x: f"{page_icons.get(x, '')}  {PAGES[x]}",
+            format_func=lambda x: f"{PAGES[x]}",
             label_visibility="collapsed",
             index=0,
             key="main_nav"
