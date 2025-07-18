@@ -12,7 +12,8 @@ RUN pip install --no-cache-dir \
     aiohttp==3.9.1 \
     asyncio==3.4.3 \
     neo4j==5.19.0 \
-    requests==2.31.0
+    requests==2.31.0 \
+    six
 
 # Copy application files
 COPY streaming_app_optimized.py /app/
