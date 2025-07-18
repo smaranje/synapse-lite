@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0        # Kafka 3.5 in KRaft mode
+    container_name: kafka
+    environment:
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"   # broker
+      - "9093:9093"   # controller
+
+  dashboard:
+    image: python:3.11-slim
+    container_name: streamlit
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      bash -c "pip install --no-cache-dir streamlit kafka-python pandas &&
+               streamlit run dashboard.py --server.port 8501 --server.address 0.0.0.0"
+    depends_on:
+      - kafka
+    ports:
+      - "8501:8501"

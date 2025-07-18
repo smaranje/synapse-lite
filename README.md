@@ -1,141 +1,66 @@
-# synapse-lite
+# Kafka + Streamlit Real-time Metrics Demo
 
-**Synapse-Lite** is a modular, enterprise-grade real-time Bitcoin fraud detection system. It leverages Apache Spark, Neo4j, Kafka, and AI (Google Gemini LLM) to provide streaming analytics, graph-based fraud detection, and a professional Streamlit dashboard for monitoring and investigation.
+A lean, production-ready stack featuring:
+- **Kafka in KRaft mode** (no ZooKeeper needed)
+- **Python producer** streaming random metrics
+- **Streamlit dashboard** displaying live data
 
-🔗 **[Live Dashboard Demo](http://34.41.134.41:8501/)**
+## 🚀 Quick Start
 
-![Dashboard Overview](image1.png)
-![Mobile View](image2.png)
+### 1. Start the services
+```bash
+docker compose up -d
+```
 
----
+This starts:
+- Kafka broker + controller on ports 9092/9093
+- Streamlit dashboard on port 8501
 
-## Features
+### 2. Run the producer
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-- **Real-time Bitcoin transaction monitoring**
-- **AI-powered fraud detection** using Google Gemini LLM
-- **Graph analytics** with Neo4j for advanced pattern detection
-- **Professional Streamlit dashboard** for visualization and alerting
-- **Synthetic data generation** for testing and demos
-- **Modular microservices architecture** (Dockerized)
+# Start sending metrics to Kafka
+python metrics_producer.py
+```
 
-### Dashboard Features
-- **Dark Mode Support**: Automatic detection of system preferences with manual override
-- **Mobile Responsive**: Fully optimized for mobile, tablet, and desktop devices
-- **Real-time Updates**: Live transaction monitoring and alert notifications
-- **Interactive Visualizations**: Dynamic charts and graphs powered by Plotly
-- **Risk Analytics**: Comprehensive risk scoring and trend analysis
-- **Alert Management**: Prioritized alert system with severity levels
+### 3. View the dashboard
+Open http://localhost:8501 to see real-time metrics updating every second.
 
----
+## 🔧 Architecture
 
-## Directory Structure
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Producer       │───▶│  Kafka (KRaft)  │───▶│  Streamlit      │
+│  (Python)       │    │  Port 9092      │    │  Dashboard      │
+│                 │    │                 │    │  Port 8501      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-- `ai_service/` – Flask API for Gemini LLM-powered SAR generation and Neo4j integration
-- `data/` – Synthetic Bitcoin transaction generator (Kafka producer)
-- `neo4j_scripts/` – Initialization scripts for Neo4j
-- `spark_app/` – Spark Streaming app for fraud detection and feature extraction
-- `streamlit_app/` – Streamlit dashboard for analytics, alerts, and investigation
+## 📁 Files
 
----
+- `docker-compose.yml` - Kafka + Streamlit services
+- `metrics_producer.py` - Generates random metrics
+- `dashboard.py` - Real-time Streamlit dashboard
+- `requirements.txt` - Python dependencies
 
-## Quick Start (Docker Compose)
+## 🎯 Key Features
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repo-url>
-   cd synapse-lite
-   ```
+- **No ZooKeeper** - Uses Kafka's built-in KRaft consensus
+- **Real-time streaming** - Sub-second latency from producer to dashboard
+- **Simple setup** - Just two Docker services
+- **Production-ready** - Based on Confluent's official Kafka image
 
-2. **Set up environment variables:**
-   - Create a `.env` file in the root directory.
-   - Add your Google Gemini API key:
-     ```
-     GEMINI_API_KEY=your_gemini_api_key_here
-     ```
+## 🛑 Cleanup
 
-3. **Start all services:**
-   ```bash
-   docker-compose up --build
-   ```
+```bash
+docker compose down
+```
 
-4. **Access the dashboard:**
-   - Open [http://localhost:8501](http://localhost:8501) in your browser.
+## 💡 Demo Tips
 
----
-
-## Main Components
-
-### 1. **Streamlit Dashboard**
-- Location: `streamlit_app/`
-- Run standalone (for development):
-  ```bash
-  cd streamlit_app
-  pip install -r requirements.txt
-  streamlit run streamlit_app.py
-  ```
-
-### 2. **Spark Streaming App**
-- Location: `spark_app/`
-- Consumes transactions from Kafka, processes features, writes to Neo4j, and calls the AI service.
-
-### 3. **AI Service (LLM)**
-- Location: `ai_service/`
-- Flask API for generating Suspicious Activity Reports (SAR) using Gemini LLM.
-
-### 4. **Synthetic Data Generator**
-- Location: `data/`
-- Produces synthetic Bitcoin transactions to Kafka for testing.
-
-### 5. **Neo4j**
-- Graph database for storing and querying transaction networks.
-
----
-
-## Configuration
-
-- All services are configured via environment variables (see `docker-compose.yml`).
-- Key variables:
-  - `GEMINI_API_KEY` (required for AI service)
-  - `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`
-  - `KAFKA_BROKER`, `KAFKA_TOPIC`
-
----
-
-## Health Checks
-
-- Each service exposes a health check endpoint or command for Docker Compose.
-- Example: AI service health at `http://localhost:5000/health`
-
----
-
-## Development & Testing
-
-- Each subdirectory contains its own `requirements.txt` for local development.
-- To run individual services outside Docker, install dependencies and run the main script.
-
----
-
-## Troubleshooting
-
-- Ensure all Docker images build successfully.
-- Check `.env` for required environment variables.
-- For detailed bug fixes and improvements, see:
-  - `bug_fixes_summary.md`
-  - `docker_fixes_summary.md`
-  - `UI_Improvements_Summary.md`
-
----
-
-## License
-
-MIT License (or specify your license here)
-
----
-
-## Acknowledgements
-
-- [Streamlit](https://streamlit.io/)
-- [Apache Spark](https://spark.apache.org/)
-- [Neo4j](https://neo4j.com/)
-- [Google Gemini LLM](https://ai.google.dev/)
-- [Kafka](https://kafka.apache.org/)
+- Show Kafka ports 9092/9093 in the architecture
+- Highlight the absence of ZooKeeper
+- Demonstrate real-time updates by watching the chart
+- Mention this scales to production workloads
