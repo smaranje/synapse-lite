@@ -20,6 +20,7 @@ volumes:
     driver: local
   redis_data:
     driver: local
+  neo4j-data:
 
 ####################
 # Service Definitions
