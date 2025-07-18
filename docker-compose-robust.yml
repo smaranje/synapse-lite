@@ -57,7 +57,7 @@ services:
       - zookeeper_data:/bitnami/zookeeper
       - zookeeper_log:/opt/bitnami/zookeeper/logs
     healthcheck:
-      test: ["CMD", "bash", "-c", "echo 'ruok' | nc -w 2 localhost 2181 | grep -q 'imok'"]
+      test: ["CMD", "bash", "-c", "echo 'srvr' | nc -w 2 localhost 2181 | grep -q 'Mode:'"]
       interval: 15s
       timeout: 10s
       retries: 8
