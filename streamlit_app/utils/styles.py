@@ -99,6 +99,55 @@ def apply_custom_css():
             }
         }
         
+        /* Light mode specific fixes */
+        @media (prefers-color-scheme: light) {
+            /* Fix chart text visibility in light mode */
+            .js-plotly-plot .plotly text {
+                fill: #050f19 !important;
+            }
+            
+            /* Fix pie chart text in light mode */
+            .js-plotly-plot .plotly .pie text {
+                fill: #050f19 !important;
+                stroke: rgba(255,255,255,0.8) !important;
+                stroke-width: 2px !important;
+                font-weight: 600 !important;
+            }
+            
+            /* Ensure axis lines are visible */
+            .js-plotly-plot .plotly .crisp {
+                stroke: #e5e7eb !important;
+            }
+            
+            /* Fix grid lines */
+            .js-plotly-plot .plotly .gridlayer line {
+                stroke: #f0f2f5 !important;
+            }
+            
+            /* Fix sidebar text visibility in light mode */
+            [data-testid="stSidebar"] {
+                background: #fafbfc !important;
+            }
+            
+            [data-testid="stSidebar"] .stRadio > div > label {
+                color: #050f19 !important;
+            }
+            
+            [data-testid="stSidebar"] h3, 
+            [data-testid="stSidebar"] h4 {
+                color: #050f19 !important;
+            }
+            
+            /* Fix metric values in sidebar */
+            [data-testid="stSidebar"] [data-testid="metric-container"] label {
+                color: #5e6278 !important;
+            }
+            
+            [data-testid="stSidebar"] [data-testid="metric-container"] [data-testid="stMetricValue"] {
+                color: #050f19 !important;
+            }
+        }
+        
         /* Hide Streamlit branding */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
@@ -265,6 +314,8 @@ def apply_custom_css():
             box-shadow: var(--shadow-primary);
             transition: all 0.3s ease;
             margin-bottom: 1rem;
+            position: relative;
+            background-image: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
         }
         
         @media (min-width: 769px) {
@@ -290,8 +341,9 @@ def apply_custom_css():
         .kpi-label {
             font-size: 13px;
             font-weight: 500;
-            opacity: 0.9;
+            opacity: 0.95;
             margin-bottom: 4px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
         @media (min-width: 769px) {
@@ -306,6 +358,7 @@ def apply_custom_css():
             font-weight: 700;
             line-height: 1.2;
             margin-bottom: 4px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.15);
         }
         
         @media (min-width: 769px) {
@@ -324,7 +377,8 @@ def apply_custom_css():
         .kpi-delta {
             font-size: 12px;
             font-weight: 500;
-            opacity: 0.85;
+            opacity: 0.9;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
         @media (min-width: 769px) {

@@ -138,8 +138,19 @@ def show():
             paper_bgcolor='rgba(0,0,0,0)',
             margin=dict(l=0, r=0, t=0, b=0),
             height=300,
-            xaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)'),
-            yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+            xaxis=dict(
+                showgrid=True, 
+                gridcolor='rgba(128,128,128,0.2)',
+                linecolor='rgba(128,128,128,0.4)',
+                tickfont=dict(color='#5e6278')
+            ),
+            yaxis=dict(
+                showgrid=True, 
+                gridcolor='rgba(128,128,128,0.2)',
+                linecolor='rgba(128,128,128,0.4)',
+                tickfont=dict(color='#5e6278')
+            ),
+            font=dict(color='#050f19')
         )
         st.plotly_chart(fig, use_container_width=True)
     
@@ -169,8 +180,18 @@ def show():
             paper_bgcolor='rgba(0,0,0,0)',
             margin=dict(l=0, r=0, t=0, b=0),
             height=300,
-            xaxis=dict(showgrid=False),
-            yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
+            xaxis=dict(
+                showgrid=False,
+                linecolor='rgba(128,128,128,0.4)',
+                tickfont=dict(color='#5e6278')
+            ),
+            yaxis=dict(
+                showgrid=True, 
+                gridcolor='rgba(128,128,128,0.2)',
+                linecolor='rgba(128,128,128,0.4)',
+                tickfont=dict(color='#5e6278')
+            ),
+            font=dict(color='#050f19')
         )
         st.plotly_chart(fig, use_container_width=True)
     
