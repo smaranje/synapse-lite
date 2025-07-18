@@ -184,10 +184,24 @@ if st.session_state.last_refresh < datetime.now() - timedelta(seconds=REFRESH_IN
     st.session_state.transactions, st.session_state.alerts = fetch_data()
     st.session_state.last_refresh = datetime.now()
 
-# Top header with branding
+# Professional header with clean title
 st.markdown("""
-<div style="position: fixed; top: 0; right: 20px; z-index: 999; padding: 10px 0;">
-    <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; font-size: 13px; color: #6b7280; letter-spacing: 0.5px;">SMARAN TECH</span>
+<div style="text-align: center; padding: 20px 0 30px 0; border-bottom: 1px solid #e5e7eb;">
+    <h1 style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+               font-weight: 600; 
+               font-size: 32px; 
+               color: #1f2937; 
+               margin: 0; 
+               letter-spacing: -0.025em;">
+        Synapse-Lite
+    </h1>
+    <p style="font-family: 'Inter', sans-serif; 
+              font-size: 16px; 
+              color: #6b7280; 
+              margin: 8px 0 0 0; 
+              font-weight: 400;">
+        Fraud Detection System
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -195,11 +209,7 @@ st.markdown("""
 with st.sidebar:
     # Logo
     st.image("coinbase.svg", width=80)
-    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-    
-    st.markdown("### **Synapse-Lite**")
-    st.markdown("Fraud Detection System")
-    st.markdown("---")
+    st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
     
     # Navigation menu (moved up)
     pages_list = ["Dashboard", "Transactions", "Alerts", "Analytics", "Settings"]
@@ -270,6 +280,12 @@ elif st.session_state.selected_page == "Settings":
 # Footer
 st.markdown("""
 <div style="text-align: center; padding: 20px 0; margin-top: 50px; border-top: 1px solid #e5e7eb;">
-    <span style="font-family: 'Inter', sans-serif; font-size: 12px; color: #6b7280;">Made by Smaranjeet Singh</span>
+    <span style="font-family: 'Inter', sans-serif; font-size: 12px; color: #6b7280; font-weight: 500;">
+        SMARAN TECH
+    </span>
+    <br>
+    <span style="font-family: 'Inter', sans-serif; font-size: 11px; color: #9ca3af; margin-top: 4px; display: inline-block;">
+        Made by Smaranjeet Singh
+    </span>
 </div>
 """, unsafe_allow_html=True)
