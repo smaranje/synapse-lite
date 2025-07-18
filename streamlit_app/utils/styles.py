@@ -19,7 +19,6 @@ def apply_custom_css():
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
-<<<<<<< HEAD
         /* Hide default pages section */
         [data-testid="stSidebarNav"] {
             display: none !important;
@@ -49,13 +48,19 @@ def apply_custom_css():
             padding-top: 2rem;
         }
         
-=======
+
         /* Main container */
         .main {
             padding-top: 2rem;
         }
         
->>>>>>> e963c2a791501151e6793bcd356464557ad649e9
+
+        /* Main container */
+        .main {
+            padding-top: 2rem;
+        }
+        
+
         /* KPI Cards - Coinbase style */
         .kpi-card {
             background: #0052FF;
