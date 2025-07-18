@@ -1,7 +1,5 @@
 # docker-compose-robust.yml - Robust Configuration Addressing Cascade of Misconfigurations
 
-version: "3.8"
-
 ####################
 # Networks & Volumes
 ####################
@@ -194,6 +192,25 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_AUTH_SECRET=testing
       - SPARK_SSL_ENABLED=no
+
+      spark-app:
+    image: synapse-lite-spark-app
+    depends_on:
+      spark-master:
+        condition: service_healthy
+      spark-worker:
+        condition: service_healthy
+    networks:
+      - synapse-net
+    environment:
+      SPARK_MASTER_URL: spark://spark-master:7077
+      # any other env your job needs…
+    command: >
+      spark-submit
+      --master ${SPARK_MASTER_URL}
+      --deploy-mode cluster
+      /app/streaming_app_optimized.py
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 15s
@@ -303,6 +320,7 @@ services:
   ############################################################
   # Spark Application - Core streaming job
   ############################################################
+
   spark-app:
     build:
       context: ./spark_app
@@ -310,24 +328,29 @@ services:
     container_name: spark-app
     networks:
       - synapse-net
-    depends_on:
-      spark-worker:
-        condition: service_healthy
-      neo4j-initializer:
-        condition: service_completed_successfully
-      flask-llm-service:
-        condition: service_healthy
-      data-generator:
-        condition: service_started
+-   depends_on:
+-     spark-worker:
+-       condition: service_healthy
++   depends_on:
++     spark-master:
++       condition: service_healthy
++     spark-worker:
++       condition: service_healthy
+     neo4j-initializer:
+       condition: service_completed_successfully
+     flask-llm-service:
+       condition: service_healthy
+     data-generator:
+       condition: service_started
     volumes:
       - ./spark_app:/app
     command: >
       spark-submit
-      --master spark://spark-master:7077
-      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6
-      --jars /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
-      --conf spark.sql.streaming.checkpointLocation=/tmp/checkpoints
-      /app/streaming_app_robust.py
+        --master spark://spark-master:7077
+        --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6
+        --jars /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
+        --conf spark.sql.streaming.checkpointLocation=/tmp/checkpoints
+        /app/streaming_app_robust.py
     restart: unless-stopped
 
   ############################################################
