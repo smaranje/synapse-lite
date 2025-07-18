@@ -1,19 +1,14 @@
-# neo4j_scripts/Dockerfile  (use this exact path in your repo)
-
-FROM neo4j:5.26.9-community      # matches the tag you already pulled
+FROM bitnami/neo4j:5.26.9         # or the tag you’re using
 WORKDIR /app
 
-# Optional: tiny util that’s handy for “nc”‑style checks
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends netcat-traditional \
-    && rm -rf /var/lib/apt/lists/*
+# optional: netcat, etc.
+RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
 
-# Copy the single init script (no renaming)
-COPY init_neo4j_optimized.sh /app/
-
-# Make sure it’s executable
-RUN chmod +x /app/init_neo4j_optimized.sh
-
-# Run it and exit
-ENTRYPOINT ["/app/init_neo4j_optimized.sh"]
+# ───────────────────────────────────────────────────────────────
+# 1. copy with the name you’ll run
+COPY init_neo4j_optimized.sh /app/init_neo4j.sh
+# 2. make it executable
+RUN chmod +x /app/init_neo4j.sh
+# 3. run it
+ENTRYPOINT ["/app/init_neo4j.sh"]
 
