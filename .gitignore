@@ -1,0 +1,91 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Docker
+.dockerignore
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Neo4j
+neo4j_data/
+
+# Kafka/Zookeeper data
+kafka_data/
+zookeeper_data/
+zookeeper_log/
+
+# Spark
+spark_master_data/
+spark-warehouse/
+metastore_db/
+
+# Redis
+redis_data/
+dump.rdb
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
