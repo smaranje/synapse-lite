@@ -4,6 +4,8 @@ USER root
 
 # Install Python dependencies for async support
 RUN pip install --no-cache-dir \
+    kafka-python==2.0.2 \
+    lz4==4.3.2 \
     aiohttp==3.9.1 \
     asyncio==3.4.3 \
     neo4j==5.19.0 \
