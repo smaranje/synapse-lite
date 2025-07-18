@@ -115,31 +115,7 @@ with st.sidebar:
     st.markdown("Fraud Detection System")
     st.markdown("---")
     
-    # Service status indicators
-    st.markdown("#### Service Status")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.session_state.service_status.get('neo4j', False):
-            st.success("Neo4j ✓")
-        else:
-            st.error("Neo4j ✗")
-    
-    with col2:
-        if st.session_state.service_status.get('kafka', False):
-            st.success("Kafka ✓")
-        else:
-            st.error("Kafka ✗")
-    
-    with col3:
-        if st.session_state.service_status.get('llm', False):
-            st.success("LLM ✓")
-        else:
-            st.error("LLM ✗")
-    
-    st.markdown("---")
-    
-    # Navigation menu
+    # Navigation menu (moved up)
     pages_list = ["Dashboard", "Transactions", "Alerts", "Analytics", "Settings"]
     selected_page = st.radio("Navigation", pages_list, label_visibility="collapsed")
     st.session_state.selected_page = selected_page
@@ -167,7 +143,31 @@ with st.sidebar:
     else:
         st.success("Connected to Services")
     
+    # Service status indicators (moved down)
+    st.markdown("---")
+    st.markdown("#### Service Status")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.session_state.service_status.get('neo4j', False):
+            st.success("Neo4j ✓")
+        else:
+            st.error("Neo4j ✗")
+    
+    with col2:
+        if st.session_state.service_status.get('kafka', False):
+            st.success("Kafka ✓")
+        else:
+            st.error("Kafka ✗")
+    
+    with col3:
+        if st.session_state.service_status.get('llm', False):
+            st.success("LLM ✓")
+        else:
+            st.error("LLM ✗")
+    
     # Refresh button
+    st.markdown("---")
     if st.button("Refresh Data", use_container_width=True):
         st.session_state.transactions, st.session_state.alerts = fetch_data()
         st.session_state.last_refresh = datetime.now()
