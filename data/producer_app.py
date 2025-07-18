@@ -6,7 +6,7 @@ import random
 import sys
 from kafka import KafkaProducer
 
-KAFKA_BROKER = os.environ.get('KAFKA_BROKER', 'kafka:29092')
+KAFKA_BROKER = os.environ.get('KAFKA_BROKER', 'kafka:9092')
 KAFKA_TOPIC = os.environ.get('KAFKA_TOPIC', 'transactions')
 
 def generate_transaction_data():

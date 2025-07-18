@@ -14,7 +14,7 @@ from neo4j import GraphDatabase, basic_auth
 import time
 
 # --- Environment Variables ---
-KAFKA_BROKER = os.environ.get('KAFKA_BROKER', 'kafka:29092')
+KAFKA_BROKER = os.environ.get('KAFKA_BROKER', 'kafka:9092')
 KAFKA_TOPIC = os.environ.get('KAFKA_TOPIC', 'transactions')
 NEO4J_URI = os.environ.get('NEO4J_URI', 'bolt://neo4j:7687')
 NEO4J_USERNAME = os.environ.get('NEO4J_USERNAME', 'neo4j')
@@ -63,6 +63,9 @@ if not neo4j_pool:
 
 # --- Spark Session Initialization ---
 print("Initializing Spark Session...")
+print(f"Kafka Broker Configuration: {KAFKA_BROKER}")
+print(f"Kafka Topic: {KAFKA_TOPIC}")
+
 spark = SparkSession.builder \
     .appName("BitcoinFraudDetection_Optimized") \
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6") \
@@ -113,13 +116,15 @@ async def call_llm_batch_async(batch_data):
 
 # --- Read Data from Kafka ---
 print(f"Reading from Kafka topic '{KAFKA_TOPIC}' on broker '{KAFKA_BROKER}'...")
+
 kafka_df = spark \
     .readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", KAFKA_BROKER) \
     .option("subscribe", KAFKA_TOPIC) \
     .option("startingOffsets", "latest") \
-    .option("maxOffsetsPerTrigger", BATCH_SIZE) \
+    .option("maxOffsetsPerTrigger", str(BATCH_SIZE)) \
+    .option("failOnDataLoss", "false") \
     .load()
 
 # Parse JSON and extract features
@@ -138,12 +143,17 @@ features_df = parsed_df.withColumn("fee_per_byte", col("fee") / col("size")) \
 def process_batch_optimized(df, epoch_id):
     """Optimized batch processing with connection pooling and batched operations"""
     
+    print(f"Batch {epoch_id}: Received batch with {df.count()} records")
+    
     # Filter valid records
     filtered_df = df.filter(col("hash").isNotNull() & (col("hash") != ""))
     
-    if filtered_df.rdd.isEmpty():
-        print(f"Batch {epoch_id}: No valid data to process.")
+    filtered_count = filtered_df.count()
+    if filtered_count == 0:
+        print(f"Batch {epoch_id}: No valid data to process after filtering.")
         return
+    
+    print(f"Batch {epoch_id}: {filtered_count} valid records after filtering")
     
     # Collect data for batch processing
     batch_data = filtered_df.collect()
