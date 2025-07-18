@@ -1,4 +1,4 @@
-# docker-compose.yml - Final Configuration for Gemini-Only Fraud Analysis
+# docker-compose-optimized.yml - Optimized Configuration for Efficient Data Engineering
 
 networks:
   synapse-net:
@@ -15,8 +15,26 @@ volumes:
     driver: local
   neo4j_data:
     driver: local
+  redis_data:
+    driver: local
 
 services:
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    networks: [synapse-net]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   zookeeper:
     image: bitnami/zookeeper:3.9.2
     container_name: zookeeper
@@ -47,6 +65,10 @@ services:
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       - ALLOW_PLAINTEXT_LISTENER=yes
+      # Optimized Kafka settings
+      - KAFKA_CFG_NUM_PARTITIONS=4
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1
+      - KAFKA_CFG_COMPRESSION_TYPE=lz4
     volumes:
       - kafka_data:/bitnami/kafka
     depends_on:
@@ -87,6 +109,8 @@ services:
       - SPARK_AUTH_SECRET=testing
       - SPARK_LOCAL_STORAGE_DB=false
       - SPARK_SSL_ENABLED=no
+      # Optimized Spark settings
+      - SPARK_MASTER_OPTS=-Dspark.deploy.defaultCores=4
     volumes:
       - spark_master_data:/bitnami/spark/data
     healthcheck:
@@ -113,11 +137,11 @@ services:
       - SPARK_LOCAL_STORAGE_DB=false
       - SPARK_SSL_ENABLED=no
 
-  spark-app:
+  spark-app-optimized:
     build:
       context: ./spark_app
-      dockerfile: Dockerfile
-    container_name: spark-app
+      dockerfile: Dockerfile.optimized
+    container_name: spark-app-optimized
     networks: [synapse-net]
     depends_on:
       spark-master:
@@ -126,7 +150,7 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_started
-      flask-llm-service: # Now depends directly on LLM service
+      flask-llm-service-optimized:
         condition: service_healthy
     environment:
       - SPARK_MODE=client
@@ -136,16 +160,20 @@ services:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=password
-      - LLM_SERVICE_URL=http://flask-llm-service:5000/generate-sar
+      - LLM_SERVICE_URL=http://flask-llm-service-optimized:5000
+      - BATCH_SIZE=100
+      - LLM_BATCH_SIZE=10
     volumes:
-      - ./spark_app/streaming_app.py:/app/streaming_app.py
+      - ./spark_app/streaming_app_optimized.py:/app/streaming_app_optimized.py
       - ./spark_app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar:/app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
     command: >
       spark-submit
       --master spark://spark-master:7077
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6
       --jars /app/neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar
-      /app/streaming_app.py
+      --conf spark.sql.adaptive.enabled=true
+      --conf spark.sql.adaptive.coalescePartitions.enabled=true
+      /app/streaming_app_optimized.py
 
   data-generator:
     build:
@@ -170,10 +198,14 @@ services:
       - "7687:7687"
     environment:
       - NEO4J_AUTH=neo4j/password
-      - NEO4bms_connector_bolt_advertised__address=localhost:7687
-      - NEO4J_dbms_memory_heap_initial__size=512M
-      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_dbms_connector_bolt_advertised__address=localhost:7687
+      - NEO4J_dbms_memory_heap_initial__size=1G
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      # Optimized Neo4j settings
+      - NEO4J_dbms_query__cache__size=100
+      - NEO4J_dbms_connector_bolt_thread__pool__max__size=400
     volumes:
       - neo4j_data:/data
     healthcheck:
@@ -194,52 +226,56 @@ services:
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=password
     volumes:
-      - ./neo4j_scripts/init_neo4j.sh:/app/init_neo4j.sh
-    command: ["bash", "/app/init_neo4j.sh"]
+      - ./neo4j_scripts/init_neo4j_optimized.sh:/app/init_neo4j_optimized.sh
+    command: ["bash", "/app/init_neo4j_optimized.sh"]
 
-  flask-llm-service:
+  flask-llm-service-optimized:
     build:
       context: ./ai_service
-      dockerfile: Dockerfile
-    container_name: flask-llm-service
+      dockerfile: Dockerfile.optimized
+    container_name: flask-llm-service-optimized
     networks: [synapse-net]
     ports:
       - "5000:5000"
     environment:
-      - FLASK_APP=app.py
+      - FLASK_APP=app_optimized.py
       - FLASK_RUN_HOST=0.0.0.0
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  streamlit-dashboard:
+  streamlit-dashboard-optimized:
     build:
       context: ./streamlit_app
-      dockerfile: Dockerfile
-    container_name: streamlit-dashboard
+      dockerfile: Dockerfile.optimized
+    container_name: streamlit-dashboard-optimized
     networks: [synapse-net]
     ports:
       - "8501:8501"
     depends_on:
       neo4j:
         condition: service_healthy
-      flask-llm-service:
+      flask-llm-service-optimized:
         condition: service_healthy
-      kafka:
+      redis:
         condition: service_healthy
     environment:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=password
-      - KAFKA_BROKER=kafka:9092
-      - KAFKA_TOPIC=transactions
-      - LLM_SERVICE_URL=http://flask-llm-service:5000
-      - USE_DUMMY_DATA=${USE_DUMMY_DATA:-false}
+      - LLM_SERVICE_URL=http://flask-llm-service-optimized:5000
+      - USE_DUMMY_DATA=false
       - REFRESH_INTERVAL=5
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_TTL=300
     volumes:
       - ./streamlit_app:/app
     command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
