@@ -99,6 +99,19 @@ def apply_custom_css():
             display: none !important;
         }
         
+        /* Logo styling */
+        [data-testid="stSidebar"] [data-testid="stImage"] {
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            margin: 0 auto;
+        }
+        
+        [data-testid="stSidebar"] [data-testid="stImage"] img {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 82, 255, 0.1);
+        }
+        
         /* Main container */
         .main {
             padding-top: 2rem;

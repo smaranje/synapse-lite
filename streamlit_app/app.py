@@ -111,6 +111,10 @@ st.markdown("""
 
 # Sidebar navigation
 with st.sidebar:
+    # Logo
+    st.image("coinbase.svg", width=80)
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    
     st.markdown("### Synapse-Lite")
     st.markdown("Fraud Detection System")
     st.markdown("---")
