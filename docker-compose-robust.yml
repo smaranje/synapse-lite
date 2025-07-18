@@ -57,11 +57,11 @@ services:
       - zookeeper_data:/bitnami/zookeeper
       - zookeeper_log:/opt/bitnami/zookeeper/logs
     healthcheck:
-      test: ["CMD", "bash", "-c", "echo stat | nc localhost 2181 | grep -q 'Mode: standalone'"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      test: ["CMD", "bash", "-c", "echo 'ruok' | nc -w 2 localhost 2181 | grep -q 'imok'"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 45s
     restart: unless-stopped
     deploy:
       resources:
@@ -98,12 +98,12 @@ services:
       zookeeper:
         condition: service_healthy
     healthcheck:
-      # FIXED: Use kafka-topics.sh (not kafka-topics) and robust check
-      test: ["CMD", "bash", "-c", "kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1 && kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
-      interval: 30s
-      timeout: 15s
-      retries: 15
-      start_period: 90s  # Extended start period for Kafka initialization
+      # Simplified and more reliable Kafka health check
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 20s
+      timeout: 10s
+      retries: 12
+      start_period: 60s  # Allow time for Kafka to fully initialize
     restart: unless-stopped
     deploy:
       resources:

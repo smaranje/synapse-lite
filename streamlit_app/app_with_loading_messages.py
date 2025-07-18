@@ -399,7 +399,7 @@ auto_refresh_data()
 # Top header with branding and status
 st.markdown("""
 <div style="position: fixed; top: 0; right: 20px; z-index: 999; padding: 10px 0;">
-    <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; font-size: 13px; color: #6b7280; letter-spacing: 0.5px;">SMARAN TECH</span>
+    <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; font-size: 13px; color: #6b7280; letter-spacing: 0.5px;">SYNAPSE TECH</span>
 </div>
 """, unsafe_allow_html=True)
 
