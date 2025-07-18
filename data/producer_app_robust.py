@@ -140,16 +140,11 @@ class RobustKafkaProducer:
             try:
                 logger.info(f"Attempting to connect to Kafka at {self.broker} (attempt {retry_count + 1}/{MAX_RETRIES})")
                 
-                # Test connection by creating producer and checking broker metadata
+                # Test connection by creating producer and checking bootstrap connectivity
                 test_producer = self._create_producer()
-                
-                # Verify broker connectivity
-                metadata = test_producer.list_topics(timeout=10)
-                logger.info(f"Successfully connected to Kafka. Available topics: {list(metadata.topics)}")
-                
-                # Verify topic exists or can be created
-                if self.topic not in metadata.topics:
-                    logger.warning(f"Topic '{self.topic}' not found in available topics")
+                if not test_producer.bootstrap_connected():
+                    raise Exception("Unable to bootstrap connect to Kafka broker")
+                logger.info("Successfully connected to Kafka broker")
                 
                 self.producer = test_producer
                 self.stats['reconnections'] += 1
@@ -269,7 +264,7 @@ class RobustKafkaProducer:
             "tx_index": random.randint(1, 1000000),
             "double_spend": False,
             "time": current_time,
-            "block_height": random.randint(800000, 820000),  # Recent block heights
+            "block_height": random.randint(800000, 820000),
             "inputs": json.dumps(inputs_list),
             "out": json.dumps(outputs_list)
         }
