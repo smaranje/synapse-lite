@@ -6,6 +6,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY producer_app.py .
+COPY producer_app_robust.py .
 
-CMD ["python", "producer_app.py"]
+CMD ["python", "producer_app_robust.py"]
