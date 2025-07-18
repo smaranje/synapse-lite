@@ -1,5 +1,6 @@
 # neo4j_scripts/Dockerfile
-FROM bitnami/neo4j:5.26.9                   # same base you already use
+FROM neo4j:5.26.9
+RUN apt-get update && apt-get install -y netcat && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

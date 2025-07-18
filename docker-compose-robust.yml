@@ -228,7 +228,9 @@ services:
   # Neo4j Initializer - Sets up database schema
   ############################################################
   neo4j-initializer:
-    image: neo4j:5.19-community
+    build:
+      context: ./neo4j_scripts
+      dockerfile: Dockerfile
     container_name: neo4j-initializer
     networks:
       - synapse-net
@@ -240,11 +242,11 @@ services:
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=password
     volumes:
-      - ./neo4j_scripts/init_neo4j.sh:/app/init_neo4j.sh:ro
+      - ./neo4j_scripts/init_neo4j_optimized.sh:/app/init_neo4j_optimized.sh:ro
     command:
       - bash
       - -c
-      - "/app/init_neo4j.sh"
+      - "/app/init_neo4j_optimized.sh"
     restart: "no"
 
   ############################################################
