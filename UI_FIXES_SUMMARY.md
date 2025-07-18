@@ -2,10 +2,15 @@
 
 ## Issues Fixed:
 
-### 1. Removed "app" text from sidebar
-- Added multiple CSS rules to hide any default Streamlit "app" text that might appear above "Synapse-Lite"
-- Hidden the default pages navigation section completely
-- Added specific selectors to target and hide any element containing just "app" text
+### 1. Removed "app" text and pages navigation from sidebar
+- **Solution**: Renamed the `pages` directory to `modules` to prevent Streamlit from auto-detecting it as a multi-page app
+- Added comprehensive CSS rules to hide any remaining navigation elements
+- Multiple CSS selectors target different aspects of the navigation:
+  - `[data-testid="stSidebarNav"]` - Main navigation container
+  - `[data-testid="stSidebarNavItems"]` - Navigation list items
+  - `[data-testid="stSidebarNavLink"]` - Navigation links
+- Set height to 0 and removed all padding/margins from navigation elements
+- Ensured sidebar content starts from the very top with no gaps
 
 ### 2. Enhanced chart containers with white backgrounds and borders
 - Charts now have white background containers with subtle borders (#e5e7eb)
@@ -45,6 +50,11 @@
 - Added custom styling for download buttons (green color)
 - Added flex-wrap to status indicators for better mobile layout
 
+## Key Changes Made:
+1. **Directory Structure**: Renamed `pages/` to `modules/` to prevent Streamlit's auto-navigation
+2. **Import Updates**: Changed all imports from `from pages import ...` to `from modules import ...`
+3. **CSS Enhancements**: Added aggressive CSS rules to hide navigation elements completely
+
 ## CSS Classes Added/Modified:
 - `.chart-container` - Enhanced with white background and borders
 - Media queries for responsive design at 768px and 1024px breakpoints
@@ -54,6 +64,6 @@
 ## Testing Recommendations:
 1. Test on various screen sizes (mobile: 375px, 414px; tablet: 768px, 1024px)
 2. Verify charts have proper white backgrounds with borders
-3. Check that no "app" text appears in the sidebar
+3. Check that no "app" text or pages navigation appears in the sidebar
 4. Ensure Generate SAR section is not squished on smaller screens
 5. Test all buttons are clickable and properly sized on touch devices

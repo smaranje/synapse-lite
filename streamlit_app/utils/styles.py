@@ -19,19 +19,51 @@ def apply_custom_css():
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
-        /* Hide default pages section and app text */
+        /* Hide default pages section and app text - More aggressive approach */
         [data-testid="stSidebarNav"] {
             display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
         }
         
-        /* Hide any app text in sidebar */
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p:contains("app") {
+        /* Hide the entire navigation list */
+        [data-testid="stSidebarNav"] > ul {
             display: none !important;
         }
         
-        /* Hide streamlit default app header */
-        [data-testid="stSidebar"] > div > div:first-child {
+        /* Hide navigation expander */
+        [data-testid="stSidebarNav"] > div {
             display: none !important;
+        }
+        
+        /* Hide pages navigation container */
+        section[data-testid="stSidebarNav"] {
+            display: none !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* Hide the app pages list items */
+        [data-testid="stSidebarNavItems"] {
+            display: none !important;
+        }
+        
+        /* Hide navigation links */
+        [data-testid="stSidebarNavLink"] {
+            display: none !important;
+        }
+        
+        /* Remove space allocated for navigation */
+        [data-testid="stSidebar"] > div:first-child > div:first-child {
+            display: none !important;
+            height: 0 !important;
+        }
+        
+        /* Ensure sidebar content starts at top */
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+            padding-top: 0 !important;
         }
         
         /* Hide any element containing just "app" text */
@@ -46,6 +78,15 @@ def apply_custom_css():
         
         [data-testid="stSidebar"] > div:first-child {
             padding-top: 0rem !important;
+        }
+        
+        /* Force sidebar content to start at top */
+        [data-testid="stSidebar"] > div {
+            padding-top: 0 !important;
+        }
+        
+        [data-testid="stSidebar"] .element-container:first-child {
+            margin-top: 0 !important;
         }
         
         /* Hide the pages section completely */

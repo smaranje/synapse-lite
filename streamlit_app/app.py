@@ -19,7 +19,7 @@ import hashlib
 import os
 
 # Import page modules
-from pages import dashboard, transactions, alerts, analytics, settings
+from modules import dashboard, transactions, alerts, analytics, settings
 from utils import data_generator, styles, service_integration
 
 # Page configuration
