@@ -7,7 +7,7 @@ import sys
 import logging
 from typing import Optional, Dict, Any
 from kafka import KafkaProducer
-from kafka.errors import KafkaError, KafkaTimeoutError, ConnectionError
+from kafka.errors import KafkaError, KafkaTimeoutError
 import signal
 import threading
 from dataclasses import dataclass
@@ -180,20 +180,21 @@ class RobustKafkaProducer:
             # Wait for send confirmation
             record_metadata = future.get(timeout=10)
             logger.debug(f"Message sent to topic '{record_metadata.topic}', "
-                        f"partition {record_metadata.partition}, offset {record_metadata.offset}")
+                         f"partition {record_metadata.partition}, offset {record_metadata.offset}")
             
             self.stats['messages_sent'] += 1
             return True
             
+        except KafkaTimeoutError as e:
+            logger.error(f"Timeout sending message: {e}")
+            self.stats['messages_failed'] += 1
+            logger.warning("Timeout error detected, will attempt to reconnect")
+            self._close_producer()
+            return False
+            
         except Exception as e:
             logger.error(f"Failed to send message: {e}")
             self.stats['messages_failed'] += 1
-            
-            # Check if we need to reconnect
-            if isinstance(e, (ConnectionError, KafkaTimeoutError)):
-                logger.warning("Connection error detected, will attempt to reconnect")
-                self._close_producer()
-            
             return False
     
     def _close_producer(self):
@@ -277,8 +278,8 @@ class RobustKafkaProducer:
     def _log_stats(self):
         """Log current statistics"""
         logger.info(f"📊 Data Generator Stats - Sent: {self.stats['messages_sent']}, "
-                   f"Failed: {self.stats['messages_failed']}, "
-                   f"Reconnections: {self.stats['reconnections']}")
+                    f"Failed: {self.stats['messages_failed']}, "
+                    f"Reconnections: {self.stats['reconnections']}")
         if self.stats['messages_sent'] > 0:
             logger.info(f"✅ Data is flowing! Last transaction sent successfully.")
     
