@@ -199,7 +199,7 @@ services:
   # Neo4j Database - Properly configured with sufficient memory
   ############################################################
   neo4j:
-    image: neo4j:5.19-community
+    image: bitnami/neo4j:5.19.0
     container_name: neo4j
     environment:
       - NEO4J_AUTH=neo4j/password
@@ -214,11 +214,17 @@ services:
     networks:
       - synapse-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7474/"]
+      test: [
+        "CMD",
+        "cypher-shell",
+        "-u", "neo4j",
+        "-p", "password",
+        "RETURN 1;"
+      ]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 40s
+      retries: 5
+      start_period: 30s
     ports:
       - "7474:7474"
       - "7687:7687"
