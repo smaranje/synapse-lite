@@ -128,7 +128,6 @@ class RobustKafkaProducer:
             max_block_ms=10000,
             batch_size=16384,
             linger_ms=100,
-            compression_type='lz4',
             acks='all'  # Wait for all replicas
         )
     
