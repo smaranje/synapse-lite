@@ -246,7 +246,7 @@ def show():
                         <div class="tx-hash">{tx['hash'][:8]}...{tx['hash'][-6:]}</div>
                         <div class="tx-details">{tx['timestamp'].strftime('%H:%M:%S')} • {tx['total_value_btc']:.6f} BTC</div>
                     </div>
-                    <div class="risk-badge-clean" style="background: {risk_color};">
+                    <div class="risk-badge-clean" data-risk="{tx['risk_level']}">
                         {tx['risk_level']}
                     </div>
                 </div>
@@ -274,7 +274,7 @@ def show():
                         <div class="tx-details">{alert['description'][:50]}...</div>
                         <div class="tx-details">{alert['timestamp'].strftime('%H:%M:%S')} • ${alert['total_value_usd']:,.2f}</div>
                     </div>
-                    <div class="risk-badge-clean" style="background: {risk_color};">
+                    <div class="risk-badge-clean" data-risk="{alert['risk_level']}">
                         {alert['risk_level']}
                     </div>
                 </div>

@@ -121,7 +121,7 @@ def show():
                 
                 with col4:
                     st.markdown(
-                        f'<div class="risk-badge" style="background: {risk_colors[tx["risk_level"]]}; color: white; padding: 4px 12px; border-radius: 20px; text-align: center;">{tx["risk_level"]}</div>',
+                        f'<div class="risk-badge-clean" data-risk="{tx["risk_level"]}">{tx["risk_level"]}</div>',
                         unsafe_allow_html=True
                     )
                 

@@ -301,21 +301,37 @@ def apply_custom_css():
             }
         }
 
-        /* KPI Cards - Responsive with dark mode support */
+        /* KPI Cards - Coinbase style with dark mode support */
         .kpi-card {
-            background: var(--primary-color);
-            color: white;
-            padding: 16px;
-            border-radius: 12px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 20px;
+            border-radius: 8px;
             min-height: 120px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            box-shadow: var(--shadow-primary);
-            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
             margin-bottom: 1rem;
             position: relative;
-            background-image: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            overflow: hidden;
+        }
+        
+        /* Blue accent stripe on left */
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary-color);
+        }
+        
+        .kpi-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
         }
         
         @media (min-width: 769px) {
@@ -340,10 +356,10 @@ def apply_custom_css():
         
         .kpi-label {
             font-size: 13px;
-            font-weight: 500;
-            opacity: 0.95;
-            margin-bottom: 4px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            letter-spacing: 0.01em;
         }
         
         @media (min-width: 769px) {
@@ -354,11 +370,12 @@ def apply_custom_css():
         }
         
         .kpi-value {
-            font-size: 24px;
-            font-weight: 700;
-            line-height: 1.2;
-            margin-bottom: 4px;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            font-size: 28px;
+            font-weight: 600;
+            line-height: 1.1;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
         }
         
         @media (min-width: 769px) {
@@ -375,10 +392,17 @@ def apply_custom_css():
         }
         
         .kpi-delta {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
-            opacity: 0.9;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            color: var(--text-secondary);
+        }
+        
+        .kpi-delta.positive {
+            color: var(--success-color);
+        }
+        
+        .kpi-delta.negative {
+            color: var(--danger-color);
         }
         
         @media (min-width: 769px) {
@@ -416,21 +440,13 @@ def apply_custom_css():
             height: 8px;
             border-radius: 50%;
             background: var(--success-color);
-            animation: pulse 2s infinite;
         }
         
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(0.95); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        
-        /* Chart containers - Enhanced with dark mode support */
+        /* Chart containers - Coinbase style with dark mode support */
         .chart-container {
             background: var(--bg-card);
-            border-radius: 12px;
+            border-radius: 8px;
             padding: 16px;
-            box-shadow: var(--shadow-sm);
             border: 1px solid var(--border-color);
             margin-bottom: 1rem;
         }
@@ -448,14 +464,14 @@ def apply_custom_css():
             }
         }
         
-        /* Transaction cards - Clean design with dark mode */
+        /* Transaction cards - Coinbase style with dark mode */
         .transaction-card {
             background: var(--bg-card);
-            border-radius: 12px;
+            border-radius: 8px;
             padding: 16px;
             margin-bottom: 12px;
-            border: 1px solid var(--border-light);
-            transition: all 0.2s ease;
+            border: 1px solid var(--border-color);
+            transition: all 0.15s ease;
         }
         
         @media (min-width: 769px) {
@@ -465,8 +481,8 @@ def apply_custom_css():
         }
         
         .transaction-card:hover {
-            border-color: var(--border-color);
-            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
         }
         
         .tx-hash {
@@ -495,17 +511,69 @@ def apply_custom_css():
             }
         }
         
-        /* Risk badges - Clean version */
+        /* Risk badges - Coinbase style */
         .risk-badge-clean {
             padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: none;
+            letter-spacing: 0;
             white-space: nowrap;
             display: inline-block;
+            border: 1px solid transparent;
+        }
+        
+        /* Risk level specific styles */
+        .risk-badge-clean[data-risk="Critical"] {
+            background: #FEE4E2;
+            color: #DC2626;
+            border-color: #FECACA;
+        }
+        
+        .risk-badge-clean[data-risk="High"] {
+            background: #FEF3C7;
+            color: #D97706;
+            border-color: #FDE68A;
+        }
+        
+        .risk-badge-clean[data-risk="Medium"] {
+            background: #FEF3C7;
+            color: #D97706;
+            border-color: #FDE68A;
+        }
+        
+        .risk-badge-clean[data-risk="Low"] {
+            background: #D4F4DD;
+            color: #059669;
+            border-color: #A7F3D0;
+        }
+        
+        /* Dark mode risk badges */
+        @media (prefers-color-scheme: dark) {
+            .risk-badge-clean[data-risk="Critical"] {
+                background: rgba(220, 38, 38, 0.2);
+                color: #FCA5A5;
+                border-color: rgba(220, 38, 38, 0.3);
+            }
+            
+            .risk-badge-clean[data-risk="High"] {
+                background: rgba(217, 119, 6, 0.2);
+                color: #FCD34D;
+                border-color: rgba(217, 119, 6, 0.3);
+            }
+            
+            .risk-badge-clean[data-risk="Medium"] {
+                background: rgba(217, 119, 6, 0.2);
+                color: #FCD34D;
+                border-color: rgba(217, 119, 6, 0.3);
+            }
+            
+            .risk-badge-clean[data-risk="Low"] {
+                background: rgba(5, 150, 105, 0.2);
+                color: #6EE7B7;
+                border-color: rgba(5, 150, 105, 0.3);
+            }
         }
         
         @media (min-width: 769px) {
@@ -516,20 +584,20 @@ def apply_custom_css():
             }
         }
         
-        /* Button styling - Responsive with dark mode */
+        /* Button styling - Coinbase style with dark mode */
         .stButton > button {
             background: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: 500;
             font-size: 14px;
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow-sm);
+            transition: all 0.15s ease;
             white-space: nowrap;
             width: 100%;
-            min-height: 44px;
+            min-height: 40px;
+            letter-spacing: 0.01em;
         }
         
         @media (min-width: 769px) {
@@ -542,8 +610,19 @@ def apply_custom_css():
         
         .stButton > button:hover {
             background: var(--primary-hover);
-            box-shadow: var(--shadow-primary);
             transform: translateY(-1px);
+        }
+        
+        /* Secondary button style */
+        .stButton > button[kind="secondary"] {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .stButton > button[kind="secondary"]:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-secondary);
         }
         
         /* Sidebar styling with dark mode */
