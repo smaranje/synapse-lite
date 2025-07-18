@@ -3,8 +3,6 @@ from flask import Flask, request, jsonify
 import os
 import json
 import google.generativeai as genai
-from cassandra.cluster import Cluster
-from cassandra.auth import PlainTextAuthProvider
 from neo4j import GraphDatabase, basic_auth
 
 app = Flask(__name__)
@@ -18,17 +16,6 @@ if GEMINI_API_KEY:
 else:
     model = None
     print("WARNING: GEMINI_API_KEY not set. LLM functionality will be disabled.")
-
-# Cassandra Configuration (optional, if LLM needs to query directly)
-CASSANDRA_CONTACT_POINTS = os.environ.get('CASSANDRA_CONTACT_POINTS', 'cassandra').split(',')
-# auth_provider = PlainTextAuthProvider(username='cassandra', password='cassandra') # Uncomment if you set up auth
-cassandra_cluster = None
-try:
-    cassandra_cluster = Cluster(CASSANDRA_CONTACT_POINTS)
-    # For a simple demo, we won't strictly verify session here, but useful for context.
-    print("Cassandra cluster object created for Flask service.")
-except Exception as e:
-    print(f"Failed to create Cassandra cluster object in Flask service: {e}")
 
 # Neo4j Configuration
 NEO4J_URI = os.environ.get('NEO4J_URI', 'bolt://neo4j:7687')

@@ -1,6 +1,5 @@
 Flask
 requests
 google-generativeai
-cassandra-driver
 neo4j
 gunicorn

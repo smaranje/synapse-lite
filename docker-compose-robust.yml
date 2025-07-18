@@ -187,6 +187,13 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_AUTH_SECRET=testing
       - SPARK_SSL_ENABLED=no
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
   ############################################################
   # Neo4j Database - Properly configured with sufficient memory
@@ -208,12 +215,11 @@ services:
     volumes:
       - neo4j_data:/data
     healthcheck:
-      test:
-        ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:7474"]
       interval: 15s
       timeout: 10s
-      retries: 10
-      start_period: 60s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   ############################################################
@@ -243,23 +249,22 @@ services:
   # Flask LLM Service - AI processing backend
   ############################################################
   flask-llm-service:
-    build:
-      context: ./ai_service
-      dockerfile: Dockerfile
+    image: synapse-lite-flask-llm-service
     container_name: flask-llm-service
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      spark-worker:
+        condition: service_healthy
+      data-generator:
+        condition: service_started
     networks:
       - synapse-net
+    environment:
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      # other env vars…
     ports:
       - "5000:5000"
-    environment:
-      - FLASK_ENV=production
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 15s
-      retries: 5
-      start_period: 30s
     restart: unless-stopped
 
   ############################################################
