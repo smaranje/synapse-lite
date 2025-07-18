@@ -146,14 +146,7 @@ with st.sidebar:
     avg_risk = np.mean([t['ml_score'] for t in st.session_state.transactions]) * 100 if st.session_state.transactions else 0
     st.metric("Avg Risk Score", f"{avg_risk:.1f}%")
     
-    # Data source indicator
-    st.markdown("---")
-    if st.session_state.USE_DUMMY_DATA:
-        st.info("Using Dummy Data")
-    else:
-        st.success("Connected to Services")
-    
-    # Service status indicators (moved down)
+    # Service status indicators
     st.markdown("---")
     st.markdown("#### Service Status")
     col1, col2, col3 = st.columns(3)

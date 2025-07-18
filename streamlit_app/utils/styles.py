@@ -76,6 +76,27 @@ def apply_custom_css():
             .js-plotly-plot .plotly text {
                 fill: var(--text-secondary) !important;
             }
+            
+            /* Fix plotly chart backgrounds in dark mode */
+            .js-plotly-plot .plotly .main-svg {
+                background: transparent !important;
+            }
+            
+            .js-plotly-plot .plotly .svg-container {
+                background: transparent !important;
+            }
+            
+            /* Fix plotly paper and plot backgrounds */
+            .plotly-graph-div {
+                background: transparent !important;
+            }
+            
+            /* Ensure pie chart text is visible */
+            .js-plotly-plot .plotly .pie text {
+                fill: white !important;
+                stroke: rgba(0,0,0,0.5) !important;
+                stroke-width: 0.5px !important;
+            }
         }
         
         /* Hide Streamlit branding */
@@ -673,6 +694,34 @@ def apply_custom_css():
         /* Chart theme dropdown specific fix */
         [data-testid="stSelectbox"] > div > div {
             background: var(--bg-card) !important;
+        }
+        
+        /* Fix selectbox dropdown menu visibility */
+        [data-baseweb="popover"] {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            box-shadow: var(--shadow-md) !important;
+        }
+        
+        [data-baseweb="popover"] [role="listbox"] {
+            background: var(--bg-card) !important;
+            max-height: 300px !important;
+            overflow-y: auto !important;
+        }
+        
+        [data-baseweb="popover"] [role="option"] {
+            background: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+            padding: 8px 12px !important;
+        }
+        
+        [data-baseweb="popover"] [role="option"]:hover {
+            background: var(--bg-secondary) !important;
+        }
+        
+        [data-baseweb="popover"] [role="option"][aria-selected="true"] {
+            background: var(--primary-color) !important;
+            color: white !important;
         }
         
         /* Transaction Details section spacing */
