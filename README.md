@@ -2,6 +2,11 @@
 
 **Synapse-Lite** is a modular, enterprise-grade real-time Bitcoin fraud detection system. It leverages Apache Spark, Neo4j, Kafka, and AI (Google Gemini LLM) to provide streaming analytics, graph-based fraud detection, and a professional Streamlit dashboard for monitoring and investigation.
 
+🔗 **[Live Dashboard Demo](http://34.41.134.41:8501/)**
+
+![Dashboard Overview](image1.png)
+![Mobile View](image2.png)
+
 ---
 
 ## Features
@@ -12,6 +17,14 @@
 - **Professional Streamlit dashboard** for visualization and alerting
 - **Synthetic data generation** for testing and demos
 - **Modular microservices architecture** (Dockerized)
+
+### Dashboard Features
+- **Dark Mode Support**: Automatic detection of system preferences with manual override
+- **Mobile Responsive**: Fully optimized for mobile, tablet, and desktop devices
+- **Real-time Updates**: Live transaction monitoring and alert notifications
+- **Interactive Visualizations**: Dynamic charts and graphs powered by Plotly
+- **Risk Analytics**: Comprehensive risk scoring and trend analysis
+- **Alert Management**: Prioritized alert system with severity levels
 
 ---
 
