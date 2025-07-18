@@ -100,11 +100,12 @@ def show():
     # Charts row
     st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
     st.markdown("### Real-time Analytics")
+    
+    # Create three columns for charts
     col1, col2, col3 = st.columns([2, 2, 1])
     
     with col1:
         # Risk Score Trend (24h)
-        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
         st.subheader("Risk Score Trend (24h)")
         
         # Generate time series data
@@ -141,11 +142,9 @@ def show():
             yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
     
     with col2:
         # Transaction Volume (24h)
-        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
         st.subheader("Transaction Volume (24h)")
         
         # Generate hourly volume data
@@ -174,11 +173,9 @@ def show():
             yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
     
     with col3:
         # Alert Distribution
-        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
         st.subheader("Alert Distribution")
         
         risk_counts = pd.DataFrame([
@@ -203,7 +200,6 @@ def show():
             plot_bgcolor='rgba(0,0,0,0)'
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
     
     # Recent activity
     st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
@@ -226,7 +222,7 @@ def show():
             <div class="transaction-card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <div class="tx-hash">{tx['hash'][:16]}...{tx['hash'][-8:]}</div>
+                        <div class="tx-hash">{tx['hash'][:8]}...{tx['hash'][-6:]}</div>
                         <div class="tx-details">{tx['timestamp'].strftime('%H:%M:%S')} • {tx['total_value_btc']:.6f} BTC</div>
                     </div>
                     <div class="risk-badge-clean" style="background: {risk_color};">

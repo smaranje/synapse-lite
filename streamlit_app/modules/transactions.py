@@ -105,7 +105,9 @@ def show():
                 col1, col2, col3, col4, col5 = st.columns([3, 2, 2, 1, 1])
                 
                 with col1:
-                    st.markdown(f"**Hash:** `{tx['hash'][:16]}...{tx['hash'][-8:]}`")
+                    # Make hash more readable with better formatting
+                    hash_display = f"{tx['hash'][:8]}...{tx['hash'][-6:]}"
+                    st.markdown(f"**Hash:** `{hash_display}`")
                     st.caption(f"Time: {tx['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}")
                 
                 with col2:
@@ -124,17 +126,22 @@ def show():
                     )
                 
                 with col5:
-                    if st.button("Details", key=f"details_{i}"):
-                        with st.expander("Transaction Details", expanded=True):
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.metric("Fee", f"{tx['fee']:.8f} BTC")
-                                st.metric("Size", f"{tx.get('size', 'N/A')} bytes")
-                                st.metric("Inputs", tx['num_inputs'])
-                            with col2:
-                                st.metric("Outputs", tx['num_outputs'])
-                                st.metric("Risk Score", f"{tx['ml_score']:.2%}")
-                                st.metric("Smurfing", "Yes" if tx['is_smurfing_rule'] else "No")
+                    if st.button("Details", key=f"details_{i}", use_container_width=True):
+                        st.session_state[f'show_details_{i}'] = True
+                
+                # Show details below the transaction card if button was clicked
+                if st.session_state.get(f'show_details_{i}', False):
+                    with st.expander("Transaction Details", expanded=True):
+                        detail_col1, detail_col2, detail_col3 = st.columns(3)
+                        with detail_col1:
+                            st.metric("Fee", f"{tx['fee']:.8f} BTC")
+                            st.metric("Size", f"{tx.get('size', 'N/A')} bytes")
+                        with detail_col2:
+                            st.metric("Inputs", tx['num_inputs'])
+                            st.metric("Outputs", tx['num_outputs'])
+                        with detail_col3:
+                            st.metric("Risk Score", f"{tx['ml_score']:.2%}")
+                            st.metric("Smurfing", "Yes" if tx['is_smurfing_rule'] else "No")
                 
                 st.markdown("---")
     

@@ -629,6 +629,65 @@ def apply_custom_css():
             background: var(--success-hover);
         }
         
+        /* Fix for Details button and small buttons */
+        .row-widget.stButton {
+            min-width: 80px;
+        }
+        
+        /* Transaction details button specific */
+        [data-testid="column"]:last-child .stButton > button {
+            padding: 8px 16px;
+            font-size: 13px;
+            min-width: 70px;
+        }
+        
+        /* Hash display improvement */
+        code {
+            background-color: rgba(0, 82, 255, 0.1);
+            color: var(--primary-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        /* Fix selectbox dropdown visibility */
+        .stSelectbox > div > div > select {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        /* Ensure dropdown options are visible */
+        .stSelectbox option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 8px;
+        }
+        
+        /* Chart theme dropdown specific fix */
+        [data-testid="stSelectbox"] > div > div {
+            background: var(--bg-card) !important;
+        }
+        
+        /* Transaction Details section spacing */
+        .element-container:has(.stExpander) {
+            margin-top: 8px;
+        }
+        
+        /* Risk badge in column fix */
+        [data-testid="column"] .risk-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+        }
+        
         /* Additional mobile-specific fixes */
         @media (max-width: 768px) {
             /* Hide sidebar on mobile by default */
