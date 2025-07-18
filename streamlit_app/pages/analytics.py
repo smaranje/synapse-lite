@@ -14,7 +14,7 @@ from utils import service_integration
 
 def show():
     """Display the analytics page"""
-    st.title("📊 Analytics Dashboard")
+    st.title("Analytics Dashboard")
     
     # Time range selector
     col1, col2, col3 = st.columns([2, 2, 1])
@@ -37,7 +37,7 @@ def show():
     
     with col3:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Refresh Analytics"):
+        if st.button("Refresh Analytics"):
             st.rerun()
     
     # Get analytics data
@@ -54,7 +54,7 @@ def show():
         }
     
     # Key Statistics Section
-    st.markdown("### 📈 Key Statistics")
+    st.markdown("### Key Statistics")
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -90,7 +90,7 @@ def show():
     st.markdown("---")
     
     # Advanced Charts Section
-    st.markdown("### 📊 Advanced Analytics")
+    st.markdown("### Advanced Analytics")
     
     # Create tabs for different analytics views
     tab1, tab2, tab3, tab4 = st.tabs(["Risk Analysis", "Transaction Patterns", "Network Analysis", "Performance Metrics"])
@@ -477,18 +477,18 @@ def show():
     
     # Export options
     st.markdown("---")
-    st.markdown("### 📥 Export Analytics")
+    st.markdown("### Export Analytics")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("📊 Export Charts as PDF"):
+        if st.button("Export Charts as PDF"):
             st.info("PDF export functionality would be implemented here")
     
     with col2:
-        if st.button("📋 Export Data as Excel"):
+        if st.button("Export Data as Excel"):
             st.info("Excel export functionality would be implemented here")
     
     with col3:
-        if st.button("📈 Generate Report"):
+        if st.button("Generate Report"):
             st.info("Automated report generation would be implemented here")
