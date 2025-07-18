@@ -332,13 +332,15 @@ main() {
     echo
     
     # Phase 1: Foundation services (no dependencies)
-    log_info "🏗️  Phase 1: Foundation Services"
+    log_info "🏗️  Starting foundation services (Redis, Zookeeper)..."
     start_and_wait "redis" "health" 60 || exit 1
     start_and_wait "zookeeper" "health" 120 || exit 1
+    log_success "Foundation services ready!"
     
     # Phase 2: Kafka (depends on Zookeeper)
-    log_info "📡 Phase 2: Message Broker"
+    log_info "📡 Starting message broker (Kafka)..."
     start_and_wait "kafka" "health" 180 || exit 1
+    log_success "Kafka is ready!"
     
     # Phase 3: Topic initialization
     log_info "📝 Phase 3: Topic Initialization"
@@ -362,13 +364,16 @@ main() {
     verify_llm_service
     
     # Phase 7: Data pipeline
-    log_info "🌊 Phase 7: Data Pipeline"
+    log_info "🌊 Starting data pipeline (generator and processing)..."
     start_and_wait "data-generator" "running" 60 || exit 1
+    log_success "Data generator is producing transactions!"
     start_and_wait "spark-app" "running" 120 || exit 1
+    log_success "Spark is processing data!"
     
     # Phase 8: User interface
-    log_info "🖥️  Phase 8: User Interface"
+    log_info "🖥️  Starting dashboard..."
     start_and_wait "streamlit-dashboard" "running" 90 || exit 1
+    log_success "Dashboard is ready!"
     
     # Final verification
     log_step "🔍 Verifying pipeline functionality..."

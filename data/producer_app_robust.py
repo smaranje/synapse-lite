@@ -276,20 +276,23 @@ class RobustKafkaProducer:
     
     def _log_stats(self):
         """Log current statistics"""
-        logger.info(f"Stats - Sent: {self.stats['messages_sent']}, "
+        logger.info(f"📊 Data Generator Stats - Sent: {self.stats['messages_sent']}, "
                    f"Failed: {self.stats['messages_failed']}, "
-                   f"Reconnections: {self.stats['reconnections']}, "
-                   f"Circuit Breaker State: {self.circuit_breaker.state.value}")
+                   f"Reconnections: {self.stats['reconnections']}")
+        if self.stats['messages_sent'] > 0:
+            logger.info(f"✅ Data is flowing! Last transaction sent successfully.")
     
     def run(self):
         """Main producer loop"""
-        logger.info(f"Starting robust Kafka producer - Rate: {PRODUCER_RATE} msg/sec")
-        logger.info(f"Target: {self.broker} -> Topic: {self.topic}")
+        logger.info(f"🚀 Starting data generator - Producing {PRODUCER_RATE} transaction/sec")
+        logger.info(f"📡 Target: {self.broker} -> Topic: {self.topic}")
         
         # Initial connection
         if not self._connect_with_retry():
-            logger.error("Failed to establish initial Kafka connection")
+            logger.error("❌ Failed to establish initial Kafka connection")
             sys.exit(1)
+        
+        logger.info("✅ Data generator ready! Starting to produce transactions...")
         
         message_interval = 1.0 / PRODUCER_RATE if PRODUCER_RATE > 0 else 1.0
         last_stats_time = time.time()

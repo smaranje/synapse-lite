@@ -316,14 +316,15 @@ def call_llm_service_robust(transaction_data: List[Dict]) -> str:
 def process_batch_robust(df, epoch_id):
     """Process batch with comprehensive error handling"""
     try:
-        logger.info(f"Processing batch {epoch_id}")
+        logger.info(f"🔄 Processing batch {epoch_id}")
         
         if df.rdd.isEmpty():
-            logger.info(f"Batch {epoch_id} is empty, skipping")
+            logger.info(f"📭 Batch {epoch_id} is empty, waiting for data...")
             return
         
         count = df.count()
-        logger.info(f"Batch {epoch_id}: Processing {count} records")
+        logger.info(f"📊 Batch {epoch_id}: Processing {count} new transactions")
+        logger.info(f"✅ Data is flowing! Processing transactions through Spark...")
         
         # Collect transactions for processing
         transactions = df.collect()
@@ -356,14 +357,14 @@ def process_batch_robust(df, epoch_id):
                 for tx_data in transaction_data:
                     store_transaction_in_neo4j(tx_data, sar_report)
                 
-                logger.info(f"Successfully processed {len(batch_transactions)} transactions in sub-batch")
+                logger.info(f"✅ Successfully processed {len(batch_transactions)} transactions")
                 
             except Exception as e:
-                logger.error(f"Error processing sub-batch: {e}")
+                logger.error(f"❌ Error processing sub-batch: {e}")
                 # Continue with next sub-batch
                 continue
         
-        logger.info(f"Batch {epoch_id} processing completed")
+        logger.info(f"🎉 Batch {epoch_id} completed! Data saved to Neo4j database.")
         
     except Exception as e:
         logger.error(f"Error in batch processing {epoch_id}: {e}")

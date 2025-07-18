@@ -36,6 +36,44 @@ theme_manager.init_theme()
 # Apply custom CSS
 styles.apply_custom_css()
 
+# Simple loading message CSS
+st.markdown("""
+<style>
+.loading-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    color: #333;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-left: 4px solid #2196F3;
+    z-index: 1000;
+    font-size: 14px;
+}
+
+.success-message {
+    border-left-color: #4CAF50;
+}
+
+.loading-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2196F3;
+    margin-right: 8px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Apply theme override if set
 st.markdown(theme_manager.get_theme_override_css(), unsafe_allow_html=True)
 
@@ -73,12 +111,42 @@ if not st.session_state.USE_DUMMY_DATA:
     st.session_state.service_status['kafka'] = kafka_conn.create_consumer()
     st.session_state.service_status['llm'] = llm_conn.check_health()
 
-# Data fetching function
+# Simple message function
+def show_simple_message(message, is_success=False):
+    """Show a simple loading or success message"""
+    message_class = "loading-message success-message" if is_success else "loading-message"
+    icon = "✅" if is_success else '<div class="loading-dot"></div>'
+    
+    return st.markdown(f"""
+    <div class="{message_class}" id="status-message">
+        {icon} {message}
+    </div>
+    <script>
+        setTimeout(function() {{
+            var msg = document.getElementById('status-message');
+            if (msg) msg.remove();
+        }}, 3000);
+    </script>
+    """, unsafe_allow_html=True)
+
+# Data fetching function with simple messages
 def fetch_data():
     """Fetch data from real services or generate dummy data"""
+    
+    # Show loading message
+    message_placeholder = st.empty()
+    with message_placeholder:
+        show_simple_message("Refreshing data...")
+    
     if st.session_state.USE_DUMMY_DATA:
+        # Small delay to show loading message
+        time.sleep(0.8)
         transactions = data_generator.generate_dummy_transactions(100)
         alerts = data_generator.generate_dummy_alerts(transactions)
+        
+        # Show success message
+        with message_placeholder:
+            show_simple_message(f"Loaded {len(transactions)} transactions", True)
     else:
         # Fetch from Neo4j
         neo4j_conn = service_integration.get_neo4j_connection()
@@ -97,9 +165,17 @@ def fetch_data():
         
         # If still no data, fall back to dummy data
         if not transactions:
-            st.warning("No real data available, using dummy data")
+            with message_placeholder:
+                show_simple_message("Using demo data", True)
             transactions = data_generator.generate_dummy_transactions(100)
             alerts = data_generator.generate_dummy_alerts(transactions)
+        else:
+            with message_placeholder:
+                show_simple_message(f"Loaded {len(transactions)} live transactions", True)
+    
+    # Clear message after a moment
+    time.sleep(1)
+    message_placeholder.empty()
     
     return transactions, alerts
 
@@ -171,7 +247,7 @@ with st.sidebar:
     
     # Refresh button
     st.markdown("---")
-    if st.button("Refresh Data", use_container_width=True):
+    if st.button("🔄 Refresh Data", use_container_width=True):
         st.session_state.transactions, st.session_state.alerts = fetch_data()
         st.session_state.last_refresh = datetime.now()
         st.rerun()
