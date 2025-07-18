@@ -28,10 +28,12 @@ def show():
         )
     
     with col2:
+        # Determine default theme based on dark mode
+        default_theme = "plotly_dark" if st.session_state.get('dark_mode', None) else "plotly_white"
         chart_theme = st.selectbox(
             "Chart Theme",
-            ["plotly", "plotly_white", "plotly_dark"],
-            index=1,
+            ["plotly", "plotly_white", "plotly_dark", "simple_white", "none"],
+            index=["plotly", "plotly_white", "plotly_dark", "simple_white", "none"].index(default_theme) if default_theme in ["plotly", "plotly_white", "plotly_dark", "simple_white", "none"] else 1,
             key="chart_theme"
         )
     
@@ -152,11 +154,20 @@ def show():
                 hole=0.4
             )
             
-            fig.update_traces(textposition='inside', textinfo='percent+label')
+            # Fix text positioning to avoid overlap
+            fig.update_traces(
+                textposition='auto',
+                textinfo='percent+label',
+                textfont_size=12,
+                marker=dict(line=dict(color='#000000', width=1))
+            )
             fig.update_layout(
                 template=chart_theme,
                 height=400,
-                showlegend=True
+                showlegend=True,
+                margin=dict(t=40, b=40, l=40, r=40),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
             )
             
             st.plotly_chart(fig, use_container_width=True)

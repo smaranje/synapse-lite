@@ -111,7 +111,7 @@ if st.session_state.last_refresh < datetime.now() - timedelta(seconds=REFRESH_IN
 # Top header with branding
 st.markdown("""
 <div style="position: fixed; top: 0; right: 20px; z-index: 999; padding: 10px 0;">
-    <span style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px; color: #0052FF;">SMARAN TECH</span>
+    <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; font-size: 13px; color: #6b7280; letter-spacing: 0.5px;">SMARAN TECH</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -121,7 +121,7 @@ with st.sidebar:
     st.image("coinbase.svg", width=80)
     st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
     
-    st.markdown("### Synapse-Lite")
+    st.markdown("### **Synapse-Lite**")
     st.markdown("Fraud Detection System")
     st.markdown("---")
     
@@ -146,14 +146,7 @@ with st.sidebar:
     avg_risk = np.mean([t['ml_score'] for t in st.session_state.transactions]) * 100 if st.session_state.transactions else 0
     st.metric("Avg Risk Score", f"{avg_risk:.1f}%")
     
-    # Data source indicator
-    st.markdown("---")
-    if st.session_state.USE_DUMMY_DATA:
-        st.info("Using Dummy Data")
-    else:
-        st.success("Connected to Services")
-    
-    # Service status indicators (moved down)
+    # Service status indicators
     st.markdown("---")
     st.markdown("#### Service Status")
     col1, col2, col3 = st.columns(3)
