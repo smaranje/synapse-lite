@@ -149,46 +149,27 @@ def show():
             """, unsafe_allow_html=True)
             
             # Action buttons
-            col1, col2, col3, col4 = st.columns([1, 1, 1, 3])
+            col1, col2, col3 = st.columns([1, 1, 1])
             
             with col1:
-                if st.button("Investigate", key=f"investigate_{i}"):
-                    with st.expander("Investigation Details", expanded=True):
-                        # Transaction details
-                        st.markdown("#### Transaction Analysis")
-                        col1, col2, col3 = st.columns(3)
-                        
-                        with col1:
-                            st.metric("Inputs", alert['num_inputs'])
-                            st.metric("Outputs", alert['num_outputs'])
-                        
-                        with col2:
-                            st.metric("Fee", f"{alert['fee']:.8f} BTC")
-                            st.metric("Smurfing", "Yes" if alert['is_smurfing'] else "No")
-                        
-                        with col3:
-                            st.metric("Risk Score", f"{alert['ml_score']:.2%}")
-                            st.metric("Status", alert['status'])
-                        
-                        # Placeholder for graph visualization
-                        st.markdown("#### Transaction Graph")
-                        st.info("Transaction graph visualization would appear here, showing connections between addresses")
-                        
-                        # Update status
-                        new_status = st.selectbox(
-                            "Update Status",
-                            ["Open", "Under Investigation", "Resolved"],
-                            index=["Open", "Under Investigation", "Resolved"].index(alert.get('status', 'Open')),
-                            key=f"status_update_{i}"
-                        )
-                        
-                        if st.button("Update", key=f"update_status_{i}"):
-                            alert['status'] = new_status
-                            st.success(f"Status updated to: {new_status}")
-                            st.rerun()
+                with st.expander("Update Status"):
+                    current_status = alert.get('status', 'Open')
+                    st.write(f"Current: **{current_status}**")
+                    
+                    new_status = st.selectbox(
+                        "New Status",
+                        ["Open", "Under Investigation", "Resolved"],
+                        index=["Open", "Under Investigation", "Resolved"].index(alert.get('status', 'Open')),
+                        key=f"status_update_{i}"
+                    )
+                    
+                    if st.button("Update", key=f"update_status_{i}", use_container_width=True):
+                        alert['status'] = new_status
+                        st.success(f"Status updated to: {new_status}")
+                        st.rerun()
             
             with col2:
-                if st.button("Generate SAR", key=f"sar_{i}"):
+                if st.button("Generate SAR", key=f"sar_{i}", use_container_width=True):
                     with st.spinner("Generating SAR using AI..."):
                         # Generate SAR using the appropriate service
                         if st.session_state.USE_DUMMY_DATA:
@@ -206,26 +187,28 @@ def show():
                                 key=f"sar_text_{i}"
                             )
                             
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
+                            # Use responsive columns for action buttons
+                            action_cols = st.columns([1, 1, 1])
+                            with action_cols[0]:
                                 st.download_button(
-                                    label="📥 Download SAR",
+                                    label="📥 Download",
                                     data=sar_text,
                                     file_name=f"SAR_{alert['alert_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                                     mime="text/plain",
-                                    key=f"download_sar_{i}"
+                                    key=f"download_sar_{i}",
+                                    use_container_width=True
                                 )
                             
-                            with col2:
-                                if st.button("Email SAR", key=f"email_sar_{i}"):
+                            with action_cols[1]:
+                                if st.button("📧 Email", key=f"email_sar_{i}", use_container_width=True):
                                     st.info("Email functionality would be implemented here")
                             
-                            with col3:
-                                if st.button("Copy to Clipboard", key=f"copy_sar_{i}"):
+                            with action_cols[2]:
+                                if st.button("📋 Copy", key=f"copy_sar_{i}", use_container_width=True):
                                     st.info("Copied to clipboard!")
             
             with col3:
-                if st.button("View Details", key=f"details_{i}"):
+                if st.button("View Details", key=f"details_{i}", use_container_width=True):
                     st.session_state.selected_page = "Transactions"
                     st.rerun()
             
