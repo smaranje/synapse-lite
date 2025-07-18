@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  streamlit-dashboard:
+    environment:
+      - USE_DUMMY_DATA=false
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - LLM_SERVICE_URL=http://flask-llm-service:5000
+    depends_on:
+      - neo4j
+      - flask-llm-service
+    
+  kafka:
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'Kafka is running' || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  flask-llm-service:
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'LLM service is running' || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  data-generator:
+    depends_on:
+      - kafka
+    restart: unless-stopped

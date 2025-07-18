@@ -237,7 +237,7 @@ services:
       - KAFKA_BROKER=kafka:9092
       - KAFKA_TOPIC=transactions
       - LLM_SERVICE_URL=http://flask-llm-service:5000
-      - USE_DUMMY_DATA=${USE_DUMMY_DATA:-true}
+      - USE_DUMMY_DATA=${USE_DUMMY_DATA:-false}
       - REFRESH_INTERVAL=5
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     volumes:
