@@ -76,15 +76,14 @@ services:
     container_name: kafka
     networks: [synapse-net]
     ports:
-      - "9092:9092"      # Internal port for container-to-container communication
-      - "29092:29092"    # External port for host-to-container communication
+      - "9092:9092"
+      - "29092:29092"
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       - ALLOW_PLAINTEXT_LISTENER=yes
-      # Performance and reliability optimizations
       - KAFKA_CFG_NUM_PARTITIONS=4
       - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1
       - KAFKA_CFG_COMPRESSION_TYPE=lz4
@@ -98,12 +97,11 @@ services:
       zookeeper:
         condition: service_healthy
     healthcheck:
-      # Simplified and more reliable Kafka health check
       test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 20s
       timeout: 10s
       retries: 12
-      start_period: 60s  # Allow time for Kafka to fully initialize
+      start_period: 60s
     restart: unless-stopped
     deploy:
       resources:
@@ -121,14 +119,14 @@ services:
       kafka:
         condition: service_healthy
     environment:
-      - KAFKA_BROKER=kafka:9092  # FIXED: Use internal port 9092
+      - KAFKA_BROKER=kafka:9092
       - KAFKA_TOPIC=transactions
       - KAFKA_PARTITIONS=4
       - KAFKA_REPLICATION_FACTOR=1
     volumes:
       - ./init_kafka_topic.sh:/init_kafka_topic.sh
     command: ["bash", "/init_kafka_topic.sh"]
-    restart: "no"  # Run once only
+    restart: "no"
 
   # Spark Master - Core processing engine
   spark-master:
@@ -208,7 +206,6 @@ services:
       - NEO4J_dbms_memory_heap_max__size=2G
       - NEO4J_dbms_memory_pagecache_size=1G
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-      # Performance optimizations
       - NEO4J_dbms_query__cache__size=100
       - NEO4J_dbms_connector_bolt_thread__pool__max__size=400
       - NEO4J_dbms_transaction_timeout=30s
@@ -243,7 +240,7 @@ services:
     volumes:
       - ./neo4j_scripts/init_neo4j.sh:/app/init_neo4j.sh
     command: ["bash", "/app/init_neo4j.sh"]
-    restart: "no"  # Run once only
+    restart: "no"
 
   # Flask LLM Service - AI processing service
   flask-llm-service:
@@ -271,7 +268,7 @@ services:
         reservations:
           memory: 512M
 
-  # Data Generator - FIXED: Memory limits and proper Kafka connection with retry
+  # Data Generator - Fixed memory limits and proper Kafka connection
   data-generator:
     build:
       context: ./data
@@ -282,19 +279,19 @@ services:
       kafka-topic-initializer:
         condition: service_completed_successfully
     environment:
-      - KAFKA_BROKER=kafka:9092  # FIXED: Use internal port 9092
+      - KAFKA_BROKER=kafka:9092
       - KAFKA_TOPIC=transactions
-      - PRODUCER_RATE=1  # Messages per second
+      - PRODUCER_RATE=1
     command: python /app/producer_app_robust.py
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 512M  # FIXED: Prevent OOM kills
+          memory: 512M
         reservations:
           memory: 256M
 
-  # Spark Application - FIXED: Robust connection handling and proper dependencies
+  # Spark Application - Fixed dependencies and optimized settings
   spark-app:
     build:
       context: ./spark_app
@@ -311,7 +308,7 @@ services:
       data-generator:
         condition: service_started
     environment:
-      - KAFKA_BROKER=kafka:9092  # FIXED: Use internal port 9092
+      - KAFKA_BROKER=kafka:9092
       - KAFKA_TOPIC=transactions
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USERNAME=neo4j
@@ -360,12 +357,10 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     volumes:
-      - ./streamlit_app:/app
-    command: streamlit run dashboard.py --server.address=0.0.0.0 --server.port=8501
+      - ./streamlit_app:/home/streamlit_app
+    working_dir: /home/streamlit_app
+    command: >
+      streamlit run app.py
+      --server.address=0.0.0.0
+      --server.port=8501
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
