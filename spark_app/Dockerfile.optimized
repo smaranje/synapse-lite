@@ -1,0 +1,22 @@
+FROM bitnami/spark:3.5.6-debian-12-r0
+
+USER root
+
+# Install Python dependencies for async support
+RUN pip install --no-cache-dir \
+    aiohttp==3.9.1 \
+    asyncio==3.4.3 \
+    neo4j==5.19.0 \
+    requests==2.31.0
+
+# Copy application files
+COPY streaming_app_optimized.py /app/
+COPY neo4j-connector-apache-spark_2.12-5.3.8_for_spark_3.jar /app/
+
+# Set working directory
+WORKDIR /app
+
+# Switch back to spark user
+USER 1001
+
+CMD ["spark-submit", "/app/streaming_app_optimized.py"]

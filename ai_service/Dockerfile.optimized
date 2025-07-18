@@ -1,0 +1,32 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies with additional optimized packages
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir \
+    gunicorn==21.2.0 \
+    gevent==23.9.1 \
+    redis==5.0.1
+
+# Copy application files
+COPY app_optimized.py .
+COPY app.py .
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=app_optimized.py
+
+# Expose port
+EXPOSE 5000
+
+# Use gunicorn for production with multiple workers
+CMD ["gunicorn", "--worker-class", "gevent", "--workers", "4", "--bind", "0.0.0.0:5000", "--timeout", "120", "app_optimized:app"]
