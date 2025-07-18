@@ -20,7 +20,7 @@ import os
 
 # Import page modules
 from modules import dashboard, transactions, alerts, analytics, settings
-from utils import data_generator, styles, service_integration
+from utils import data_generator, styles, service_integration, theme_manager
 
 # Page configuration
 st.set_page_config(
@@ -30,8 +30,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Initialize theme
+theme_manager.init_theme()
+
 # Apply custom CSS
 styles.apply_custom_css()
+
+# Apply theme override if set
+st.markdown(theme_manager.get_theme_override_css(), unsafe_allow_html=True)
 
 # Configuration
 if 'USE_DUMMY_DATA' not in st.session_state:
@@ -176,6 +182,9 @@ with st.sidebar:
         st.session_state.transactions, st.session_state.alerts = fetch_data()
         st.session_state.last_refresh = datetime.now()
         st.rerun()
+    
+    # Theme toggle
+    theme_manager.render_theme_toggle()
 
 # Main content area based on selected page
 if st.session_state.selected_page == "Dashboard":
