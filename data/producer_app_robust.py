@@ -173,7 +173,7 @@ class RobustKafkaProducer:
             
             # Wait for send confirmation
             record_metadata = future.get(timeout=10)
-            logger.debug(f"Message sent to topic '{record_metadata.topic}', "
+            logger.info(f"Sent message to topic '{record_metadata.topic}', "
                          f"partition {record_metadata.partition}, offset {record_metadata.offset}")
             
             self.stats['messages_sent'] += 1
