@@ -141,11 +141,11 @@ services:
   ############################################################
   # Spark Master - Core processing engine
   ############################################################
+
   spark-master:
     image: bitnami/spark:3.5.6-debian-12-r0
     container_name: spark-master
-    networks:
-      - synapse-net
+    networks: [synapse-net]
     ports:
       - "8080:8080"
       - "7077:7077"
@@ -156,7 +156,14 @@ services:
       - SPARK_AUTH_SECRET=testing
       - SPARK_LOCAL_STORAGE_DB=false
       - SPARK_SSL_ENABLED=no
-      - SPARK_MASTER_OPTS=-Xmx1g
+
+      # <-- Remove this:
+      # - SPARK_MASTER_OPTS=-Xmx1g
+
+      # <-- Add these instead:
+      - SPARK_DAEMON_MEMORY=2g
+      - SPARK_DRIVER_MEMORY=2g
+      - SPARK_EXECUTOR_MEMORY=3g
     volumes:
       - spark_master_data:/bitnami/spark/data
     healthcheck:
