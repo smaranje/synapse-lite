@@ -154,11 +154,6 @@ services:
       - SPARK_AUTH_SECRET=testing
       - SPARK_LOCAL_STORAGE_DB=false
       - SPARK_SSL_ENABLED=no
-
-      # <-- Remove this:
-      # - SPARK_MASTER_OPTS=-Xmx1g
-
-      # <-- Add these instead:
       - SPARK_DAEMON_MEMORY=2g
       - SPARK_DRIVER_MEMORY=2g
       - SPARK_EXECUTOR_MEMORY=3g
@@ -192,32 +187,6 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_AUTH_SECRET=testing
       - SPARK_SSL_ENABLED=no
-
-      spark-app:
-    image: synapse-lite-spark-app
-    depends_on:
-      spark-master:
-        condition: service_healthy
-      spark-worker:
-        condition: service_healthy
-    networks:
-      - synapse-net
-    environment:
-      SPARK_MASTER_URL: spark://spark-master:7077
-      # any other env your job needs…
-    command: >
-      spark-submit
-      --master ${SPARK_MASTER_URL}
-      --deploy-mode cluster
-      /app/streaming_app_optimized.py
-
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
 
   ############################################################
   # Neo4j Database - Properly configured with sufficient memory
@@ -328,20 +297,17 @@ services:
     container_name: spark-app
     networks:
       - synapse-net
--   depends_on:
--     spark-worker:
--       condition: service_healthy
-+   depends_on:
-+     spark-master:
-+       condition: service_healthy
-+     spark-worker:
-+       condition: service_healthy
-     neo4j-initializer:
-       condition: service_completed_successfully
-     flask-llm-service:
-       condition: service_healthy
-     data-generator:
-       condition: service_started
+    depends_on:
+      spark-master:
+        condition: service_healthy
+      spark-worker:
+        condition: service_healthy
+      neo4j-initializer:
+        condition: service_completed_successfully
+      flask-llm-service:
+        condition: service_healthy
+      data-generator:
+        condition: service_started
     volumes:
       - ./spark_app:/app
     command: >
