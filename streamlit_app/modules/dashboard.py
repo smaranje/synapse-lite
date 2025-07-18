@@ -133,12 +133,12 @@ def show():
             xaxis_title="",
             yaxis_title="Risk Score (%)",
             hovermode='x unified',
-            plot_bgcolor='white',
-            paper_bgcolor='white',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
             margin=dict(l=0, r=0, t=0, b=0),
             height=300,
-            xaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
-            yaxis=dict(showgrid=True, gridcolor='#f0f0f0')
+            xaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)'),
+            yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
         )
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -166,12 +166,12 @@ def show():
         fig.update_layout(
             xaxis_title="",
             yaxis_title="Transaction Count",
-            plot_bgcolor='white',
-            paper_bgcolor='white',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
             margin=dict(l=0, r=0, t=0, b=0),
             height=300,
             xaxis=dict(showgrid=False),
-            yaxis=dict(showgrid=True, gridcolor='#f0f0f0')
+            yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.2)')
         )
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -199,7 +199,8 @@ def show():
             showlegend=False,
             margin=dict(l=0, r=0, t=0, b=0),
             height=300,
-            paper_bgcolor='white'
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
         )
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)

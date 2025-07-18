@@ -14,6 +14,70 @@ def apply_custom_css():
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
+        /* CSS Variables for theming */
+        :root {
+            /* Light mode colors */
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafbfc;
+            --bg-card: #ffffff;
+            --text-primary: #050f19;
+            --text-secondary: #5e6278;
+            --text-tertiary: #6b7280;
+            --border-color: #e5e7eb;
+            --border-light: #f0f2f5;
+            --primary-color: #0052FF;
+            --primary-hover: #0041d0;
+            --success-color: #00D395;
+            --success-hover: #00B880;
+            --danger-color: #FF5252;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-primary: 0 4px 12px rgba(0, 82, 255, 0.15);
+            --shadow-primary-hover: 0 8px 24px rgba(0, 82, 255, 0.25);
+        }
+        
+        /* Dark mode colors */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0a0a0a;
+                --bg-secondary: #1a1a1a;
+                --bg-card: #1f1f1f;
+                --text-primary: #ffffff;
+                --text-secondary: #a1a1aa;
+                --text-tertiary: #71717a;
+                --border-color: #27272a;
+                --border-light: #2a2a2a;
+                --primary-color: #3b82f6;
+                --primary-hover: #2563eb;
+                --success-color: #10b981;
+                --success-hover: #059669;
+                --danger-color: #ef4444;
+                --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+                --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+                --shadow-primary: 0 4px 12px rgba(59, 130, 246, 0.3);
+                --shadow-primary-hover: 0 8px 24px rgba(59, 130, 246, 0.4);
+            }
+            
+            /* Dark mode specific adjustments */
+            .stApp {
+                background-color: var(--bg-primary);
+            }
+            
+            /* Ensure plotly charts adapt to dark mode */
+            .js-plotly-plot .plotly {
+                background: var(--bg-card) !important;
+            }
+            
+            .js-plotly-plot .plotly .bg {
+                fill: var(--bg-card) !important;
+            }
+            
+            /* Dark mode for plotly text */
+            .js-plotly-plot .plotly text {
+                fill: var(--text-secondary) !important;
+            }
+        }
+        
         /* Hide Streamlit branding */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
@@ -109,155 +173,174 @@ def apply_custom_css():
         
         [data-testid="stSidebar"] [data-testid="stImage"] img {
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 82, 255, 0.1);
+            box-shadow: var(--shadow-primary);
         }
         
         /* Main container */
         .main {
             padding-top: 2rem;
+            background-color: var(--bg-primary);
         }
         
-        /* Responsive layout adjustments */
-        @media (max-width: 1024px) {
-            /* Tablet view */
-            .block-container {
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-            
-            /* Adjust columns for better tablet layout */
-            [data-testid="column"] {
-                margin-bottom: 1rem;
-            }
-            
-            /* Make buttons more touch-friendly */
-            .stButton > button {
-                min-height: 44px;
-                padding: 12px 20px;
-                font-size: 15px;
-            }
-            
-            /* Adjust KPI cards */
-            .kpi-card {
-                height: auto;
-                min-height: 120px;
-                padding: 20px;
-            }
-            
-            .kpi-value {
-                font-size: 28px;
-            }
+        /* Mobile-first responsive design */
+        /* Base mobile styles */
+        .block-container {
+            padding: 1rem;
+            max-width: 100%;
         }
         
+        /* Ensure columns stack on mobile */
         @media (max-width: 768px) {
-            /* Mobile view */
-            .block-container {
-                padding-left: 0.5rem;
-                padding-right: 0.5rem;
-            }
-            
-            /* Stack columns on mobile */
+            /* Force single column layout on mobile */
             [data-testid="column"] {
                 width: 100% !important;
                 flex: 1 1 100% !important;
+                max-width: 100% !important;
                 margin-bottom: 1rem;
             }
             
-            /* Mobile-friendly buttons */
-            .stButton > button {
-                width: 100%;
-                min-height: 48px;
-                font-size: 16px;
+            /* Override Streamlit's column behavior */
+            .row-widget.stHorizontal {
+                flex-direction: column !important;
+                gap: 1rem;
             }
             
-            /* Adjust KPI cards for mobile */
-            .kpi-card {
-                padding: 16px;
+            /* Ensure proper spacing between stacked columns */
+            .row-widget.stHorizontal > [data-testid="column"] {
+                min-width: 100% !important;
+            }
+        }
+        
+        /* Tablet styles */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .block-container {
+                padding: 1.5rem;
             }
             
-            .kpi-value {
-                font-size: 24px;
+            /* Two-column layout on tablets for 4-column sections */
+            [data-testid="column"]:nth-child(odd) {
+                margin-right: 1rem;
             }
-            
-            .kpi-label {
-                font-size: 13px;
-            }
-            
-            /* Make text areas responsive */
-            .stTextArea textarea {
-                font-size: 14px;
-            }
-            
-            /* Adjust chart containers */
-            .chart-container {
-                padding: 16px;
-            }
-            
-            /* Make transaction cards more compact */
-            .transaction-card {
-                padding: 16px;
+        }
+        
+        /* Desktop styles */
+        @media (min-width: 1025px) {
+            .block-container {
+                padding: 2rem;
+                max-width: 1400px;
             }
         }
 
-        /* KPI Cards - Coinbase style */
+        /* KPI Cards - Responsive with dark mode support */
         .kpi-card {
-            background: #0052FF;
+            background: var(--primary-color);
             color: white;
-            padding: 24px;
-            border-radius: 16px;
-            height: 140px;
+            padding: 16px;
+            border-radius: 12px;
+            min-height: 120px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            box-shadow: 0 4px 12px rgba(0, 82, 255, 0.15);
+            box-shadow: var(--shadow-primary);
             transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        @media (min-width: 769px) {
+            .kpi-card {
+                padding: 20px;
+                border-radius: 16px;
+                height: 140px;
+                margin-bottom: 0;
+            }
+        }
+        
+        @media (min-width: 1025px) {
+            .kpi-card {
+                padding: 24px;
+            }
         }
         
         .kpi-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 82, 255, 0.25);
+            box-shadow: var(--shadow-primary-hover);
         }
         
         .kpi-label {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             opacity: 0.9;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+        }
+        
+        @media (min-width: 769px) {
+            .kpi-label {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
         }
         
         .kpi-value {
-            font-size: 32px;
+            font-size: 24px;
             font-weight: 700;
             line-height: 1.2;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+        }
+        
+        @media (min-width: 769px) {
+            .kpi-value {
+                font-size: 28px;
+                margin-bottom: 8px;
+            }
+        }
+        
+        @media (min-width: 1025px) {
+            .kpi-value {
+                font-size: 32px;
+            }
         }
         
         .kpi-delta {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
             opacity: 0.85;
+        }
+        
+        @media (min-width: 769px) {
+            .kpi-delta {
+                font-size: 13px;
+            }
         }
         
         .kpi-delta.positive::before {
             content: "↑ ";
         }
         
-        /* Status indicators - Clean version */
+        /* Status indicators - Clean version with dark mode support */
         .status-indicator-clean {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: #5e6278;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
             font-weight: 500;
             flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+        
+        @media (min-width: 769px) {
+            .status-indicator-clean {
+                font-size: 14px;
+                gap: 8px;
+                margin-bottom: 0;
+            }
         }
         
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #00D395;
+            background: var(--success-color);
             animation: pulse 2s infinite;
         }
         
@@ -267,113 +350,186 @@ def apply_custom_css():
             100% { opacity: 1; transform: scale(1); }
         }
         
-        /* Chart containers - Enhanced with white background and borders */
+        /* Chart containers - Enhanced with dark mode support */
         .chart-container {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            border: 1px solid #e5e7eb;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
             margin-bottom: 1rem;
         }
         
-        /* Ensure plotly charts have white background */
-        .js-plotly-plot .plotly {
-            background: white !important;
+        @media (min-width: 769px) {
+            .chart-container {
+                border-radius: 16px;
+                padding: 20px;
+            }
         }
         
-        /* Transaction cards - Clean design */
+        @media (min-width: 1025px) {
+            .chart-container {
+                padding: 24px;
+            }
+        }
+        
+        /* Transaction cards - Clean design with dark mode */
         .transaction-card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px;
             margin-bottom: 12px;
-            border: 1px solid #f0f2f5;
+            border: 1px solid var(--border-light);
             transition: all 0.2s ease;
         }
         
+        @media (min-width: 769px) {
+            .transaction-card {
+                padding: 20px;
+            }
+        }
+        
         .transaction-card:hover {
-            border-color: #e5e7eb;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-color: var(--border-color);
+            box-shadow: var(--shadow-md);
         }
         
         .tx-hash {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
-            color: #1a1a1a;
+            color: var(--text-primary);
             margin-bottom: 4px;
             word-break: break-all;
         }
         
+        @media (min-width: 769px) {
+            .tx-hash {
+                font-size: 14px;
+            }
+        }
+        
         .tx-details {
-            font-size: 13px;
-            color: #6b7280;
+            font-size: 12px;
+            color: var(--text-tertiary);
             line-height: 1.5;
+        }
+        
+        @media (min-width: 769px) {
+            .tx-details {
+                font-size: 13px;
+            }
         }
         
         /* Risk badges - Clean version */
         .risk-badge-clean {
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
             font-weight: 600;
             color: white;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             white-space: nowrap;
+            display: inline-block;
         }
         
-        /* Button styling - Coinbase style */
+        @media (min-width: 769px) {
+            .risk-badge-clean {
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+            }
+        }
+        
+        /* Button styling - Responsive with dark mode */
         .stButton > button {
-            background: #0052FF;
+            background: var(--primary-color);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
+            padding: 10px 16px;
+            border-radius: 8px;
             font-weight: 600;
             font-size: 14px;
             transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 82, 255, 0.1);
+            box-shadow: var(--shadow-sm);
             white-space: nowrap;
+            width: 100%;
+            min-height: 44px;
+        }
+        
+        @media (min-width: 769px) {
+            .stButton > button {
+                padding: 12px 24px;
+                border-radius: 12px;
+                width: auto;
+            }
         }
         
         .stButton > button:hover {
-            background: #0041d0;
-            box-shadow: 0 4px 12px rgba(0, 82, 255, 0.25);
+            background: var(--primary-hover);
+            box-shadow: var(--shadow-primary);
             transform: translateY(-1px);
         }
         
-        /* Sidebar styling */
+        /* Sidebar styling with dark mode */
         .css-1d391kg {
-            background: #fafbfc;
-            border-right: 1px solid #e5e7eb;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
         }
         
         [data-testid="stSidebar"] {
-            background: #fafbfc;
-            border-right: 1px solid #e5e7eb;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
         }
         
-        /* Headers */
+        /* Headers with dark mode support */
         h1 {
-            color: #050f19;
+            color: var(--text-primary);
             font-weight: 700;
-            font-size: 32px;
-            margin-bottom: 24px;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+        
+        @media (min-width: 769px) {
+            h1 {
+                font-size: 28px;
+                margin-bottom: 20px;
+            }
+        }
+        
+        @media (min-width: 1025px) {
+            h1 {
+                font-size: 32px;
+                margin-bottom: 24px;
+            }
         }
         
         h2 {
-            color: #050f19;
+            color: var(--text-primary);
             font-weight: 600;
-            font-size: 20px;
-            margin-bottom: 16px;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+        
+        @media (min-width: 769px) {
+            h2 {
+                font-size: 20px;
+                margin-bottom: 16px;
+            }
         }
         
         h3 {
-            color: #050f19;
+            color: var(--text-primary);
             font-weight: 600;
-            font-size: 18px;
-            margin-bottom: 16px;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        
+        @media (min-width: 769px) {
+            h3 {
+                font-size: 18px;
+                margin-bottom: 16px;
+            }
         }
         
         /* Metric containers override */
@@ -384,35 +540,49 @@ def apply_custom_css():
             box-shadow: none;
         }
         
-        /* Radio button styling */
+        /* Radio button styling with dark mode */
         .stRadio > div {
-            gap: 12px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        @media (min-width: 769px) {
+            .stRadio > div {
+                gap: 12px;
+            }
         }
         
         .stRadio > div > label {
             font-weight: 500;
-            color: #5e6278;
+            color: var(--text-secondary);
             transition: all 0.2s ease;
-        }
-        
-        .stRadio > div > label:hover {
-            color: #0052FF;
-        }
-        
-        /* Info and success boxes */
-        .stInfo, .stSuccess {
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-            color: #5e6278;
             font-size: 14px;
         }
         
-        /* Divider */
+        .stRadio > div > label:hover {
+            color: var(--primary-color);
+        }
+        
+        /* Info and success boxes with dark mode */
+        .stInfo, .stSuccess {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        /* Divider with dark mode */
         hr {
             border: none;
-            border-top: 1px solid #e5e7eb;
-            margin: 24px 0;
+            border-top: 1px solid var(--border-color);
+            margin: 16px 0;
+        }
+        
+        @media (min-width: 769px) {
+            hr {
+                margin: 24px 0;
+            }
         }
         
         /* Plotly toolbar hide */
@@ -420,44 +590,102 @@ def apply_custom_css():
             display: none !important;
         }
         
-        /* Page padding */
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-            max-width: 1400px;
-        }
-        
         /* Expander styling for better mobile view */
         .streamlit-expanderHeader {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
+            color: var(--text-primary);
         }
         
-        @media (max-width: 768px) {
+        @media (min-width: 769px) {
             .streamlit-expanderHeader {
-                font-size: 14px;
+                font-size: 16px;
             }
         }
         
-        /* Text area responsive styling */
+        /* Text area responsive styling with dark mode */
         .stTextArea > div > div > textarea {
             font-size: 14px;
             line-height: 1.5;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--border-color);
         }
         
         /* Ensure select boxes are responsive */
         .stSelectbox > div > div {
             min-width: 0;
+            background: var(--bg-card);
+            color: var(--text-primary);
         }
         
         /* Download button styling */
         .stDownloadButton > button {
-            background: #00D395;
+            background: var(--success-color);
             color: white;
         }
         
         .stDownloadButton > button:hover {
-            background: #00B880;
+            background: var(--success-hover);
+        }
+        
+        /* Additional mobile-specific fixes */
+        @media (max-width: 768px) {
+            /* Hide sidebar on mobile by default */
+            [data-testid="stSidebar"] {
+                transform: translateX(-100%);
+            }
+            
+            [data-testid="stSidebar"][data-open="true"] {
+                transform: translateX(0);
+            }
+            
+            /* Adjust main content when sidebar is hidden */
+            .main .block-container {
+                max-width: 100%;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            /* Make tables scrollable on mobile */
+            .stDataFrame {
+                overflow-x: auto;
+            }
+            
+            /* Adjust tab container for mobile */
+            .stTabs [data-baseweb="tab-list"] {
+                gap: 0.5rem;
+                overflow-x: auto;
+            }
+            
+            .stTabs [data-baseweb="tab"] {
+                padding: 0.5rem 1rem;
+                font-size: 14px;
+            }
+        }
+        
+        /* Ensure proper text color in dark mode */
+        @media (prefers-color-scheme: dark) {
+            p, span, div {
+                color: var(--text-primary);
+            }
+            
+            /* Fix input fields in dark mode */
+            input, textarea, select {
+                background: var(--bg-card) !important;
+                color: var(--text-primary) !important;
+                border-color: var(--border-color) !important;
+            }
+            
+            /* Fix dropdown menus in dark mode */
+            [data-baseweb="select"] {
+                background: var(--bg-card) !important;
+            }
+            
+            [data-baseweb="select"] > div {
+                background: var(--bg-card) !important;
+                color: var(--text-primary) !important;
+            }
         }
     </style>
     """, unsafe_allow_html=True)
