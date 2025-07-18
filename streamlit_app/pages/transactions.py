@@ -10,14 +10,14 @@ from utils import service_integration
 
 def show():
     """Display the transactions monitoring page"""
-    st.title("📋 Transaction Monitor")
+    st.title("Transaction Monitor")
     
     # Filters section
     col1, col2, col3, col4 = st.columns([2, 2, 1, 1])
     
     with col1:
         search_query = st.text_input(
-            "🔍 Search by hash or address",
+            "Search by hash or address",
             placeholder="Enter transaction hash or Bitcoin address...",
             key="tx_search"
         )
@@ -38,7 +38,7 @@ def show():
     
     with col4:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Refresh", key="refresh_tx"):
+        if st.button("Refresh", key="refresh_tx"):
             st.rerun()
     
     # Apply filters
@@ -89,7 +89,7 @@ def show():
     st.markdown(f"### Showing {len(filtered_transactions)} transactions")
     
     # Create tabs for different views
-    tab1, tab2, tab3 = st.tabs(["📊 Card View", "📋 Table View", "📈 Analytics"])
+    tab1, tab2, tab3 = st.tabs(["Card View", "Table View", "Analytics"])
     
     with tab1:
         # Card view
@@ -115,7 +115,7 @@ def show():
                 with col3:
                     st.markdown(f"**ML Score:** {tx['ml_score']:.2%}")
                     if tx['is_smurfing_rule']:
-                        st.caption("⚠️ Smurfing detected")
+                        st.caption("Smurfing detected")
                 
                 with col4:
                     st.markdown(
@@ -262,5 +262,5 @@ def show():
         kafka_conn = service_integration.get_kafka_connection()
         if kafka_conn.create_consumer():
             with st.empty():
-                st.info("🔄 Listening for real-time updates from Kafka...")
+                st.info("Listening for real-time updates from Kafka...")
                 # This would be replaced with actual Kafka consumer logic in production

@@ -9,13 +9,13 @@ from utils import service_integration
 
 def show():
     """Display the settings page"""
-    st.title("⚙️ Settings")
+    st.title("Settings")
     
     # Create tabs for different settings categories
     tab1, tab2, tab3, tab4 = st.tabs(["Data Source", "Service Configuration", "Display Settings", "System Info"])
     
     with tab1:
-        st.markdown("### 🔌 Data Source Configuration")
+        st.markdown("### Data Source Configuration")
         
         # Data source toggle
         use_dummy = st.checkbox(
@@ -202,7 +202,7 @@ def show():
             )
     
     with tab3:
-        st.markdown("### 🎨 Display Settings")
+        st.markdown("### Display Settings")
         
         col1, col2 = st.columns(2)
         
@@ -286,28 +286,18 @@ def show():
             )
     
     with tab4:
-        st.markdown("### 📊 System Information")
+        st.markdown("### System Information")
         
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("#### Service Status")
             
-            services = {
-                "Neo4j Database": st.session_state.service_status.get('neo4j', False),
-                "Kafka Streaming": st.session_state.service_status.get('kafka', False),
-                "LLM Service": st.session_state.service_status.get('llm', False),
-                "Data Source": "Dummy" if st.session_state.USE_DUMMY_DATA else "Live"
-            }
-            
-            for service, status in services.items():
-                if isinstance(status, bool):
-                    if status:
-                        st.success(f"✅ {service}: Connected")
-                    else:
-                        st.error(f"❌ {service}: Disconnected")
+            for service, status in st.session_state.service_status.items():
+                if status:
+                    st.success(f"{service}: Connected")
                 else:
-                    st.info(f"📊 {service}: {status}")
+                    st.info(f"{service}: Disconnected")
         
         with col2:
             st.markdown("#### System Metrics")
