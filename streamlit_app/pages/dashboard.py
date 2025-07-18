@@ -12,14 +12,14 @@ import random
 
 def show():
     """Display the main dashboard page"""
-    st.title("🛡️ Fraud Detection Dashboard")
+    st.title("Fraud Detection Dashboard")
     
     # System status indicators
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown("""
-        <div class="status-indicator">
+        <div class="status-indicator-clean">
             <div class="status-dot"></div>
             <span>Monitoring Active</span>
         </div>
@@ -27,7 +27,7 @@ def show():
     
     with col2:
         st.markdown("""
-        <div class="status-indicator">
+        <div class="status-indicator-clean">
             <div class="status-dot"></div>
             <span>API Connected</span>
         </div>
@@ -36,7 +36,7 @@ def show():
     with col3:
         alerts_pending = len([a for a in st.session_state.alerts if a['status'] == 'Open'])
         st.markdown(f"""
-        <div class="status-indicator">
+        <div class="status-indicator-clean">
             <div class="status-dot" style="background: {'#FF5252' if alerts_pending > 0 else '#00D395'}"></div>
             <span>{alerts_pending} Alerts Pending</span>
         </div>
@@ -44,61 +44,67 @@ def show():
     
     with col4:
         st.markdown(f"""
-        <div class="status-indicator">
+        <div class="status-indicator-clean">
             <span>Last Update: {st.session_state.last_refresh.strftime('%H:%M:%S')}</span>
         </div>
         """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
     
-    # Key metrics
+    # Key metrics with Coinbase blue background
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         total_tx = len(st.session_state.transactions)
         prev_total = int(total_tx * 0.88)  # Simulated previous value
-        st.metric(
-            "Total Transactions",
-            f"{total_tx:,}",
-            f"+{total_tx - prev_total} from yesterday",
-            help="Total number of transactions processed in the last 24 hours"
-        )
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Total Transactions</div>
+            <div class="kpi-value">{total_tx:,}</div>
+            <div class="kpi-delta positive">+{total_tx - prev_total} from yesterday</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         active_alerts = len([a for a in st.session_state.alerts if a['status'] == 'Open'])
         critical_alerts = len([a for a in st.session_state.alerts if a['risk_level'] == 'Critical' and a['status'] == 'Open'])
-        st.metric(
-            "Active Alerts",
-            active_alerts,
-            f"{critical_alerts} Critical",
-            help="Number of unresolved alerts requiring attention"
-        )
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Active Alerts</div>
+            <div class="kpi-value">{active_alerts}</div>
+            <div class="kpi-delta">{critical_alerts} Critical</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
         avg_risk = np.mean([t['ml_score'] for t in st.session_state.transactions]) * 100 if st.session_state.transactions else 0
         prev_avg_risk = avg_risk * 0.92  # Simulated previous value
-        st.metric(
-            "Average Risk Score",
-            f"{avg_risk:.1f}%",
-            f"+{avg_risk - prev_avg_risk:.1f}%",
-            help="Average ML fraud score across all transactions"
-        )
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Average Risk Score</div>
+            <div class="kpi-value">{avg_risk:.1f}%</div>
+            <div class="kpi-delta positive">+{avg_risk - prev_avg_risk:.1f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col4:
         detection_rate = (len(st.session_state.alerts) / len(st.session_state.transactions)) * 100 if st.session_state.transactions else 0
-        st.metric(
-            "Detection Rate",
-            f"{detection_rate:.1f}%",
-            "+2.3%",
-            help="Percentage of transactions flagged as suspicious"
-        )
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Detection Rate</div>
+            <div class="kpi-value">{detection_rate:.1f}%</div>
+            <div class="kpi-delta positive">+2.3%</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Charts row
-    st.markdown("### 📊 Real-time Analytics")
+    st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
+    st.markdown("### Real-time Analytics")
     col1, col2, col3 = st.columns([2, 2, 1])
     
     with col1:
         # Risk Score Trend (24h)
+        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
         st.subheader("Risk Score Trend (24h)")
         
         # Generate time series data
@@ -127,15 +133,19 @@ def show():
             xaxis_title="",
             yaxis_title="Risk Score (%)",
             hovermode='x unified',
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='white',
+            paper_bgcolor='white',
             margin=dict(l=0, r=0, t=0, b=0),
-            height=300
+            height=300,
+            xaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
+            yaxis=dict(showgrid=True, gridcolor='#f0f0f0')
         )
         st.plotly_chart(fig, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     
     with col2:
         # Transaction Volume (24h)
+        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
         st.subheader("Transaction Volume (24h)")
         
         # Generate hourly volume data
@@ -156,15 +166,19 @@ def show():
         fig.update_layout(
             xaxis_title="",
             yaxis_title="Transaction Count",
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='white',
+            paper_bgcolor='white',
             margin=dict(l=0, r=0, t=0, b=0),
-            height=300
+            height=300,
+            xaxis=dict(showgrid=False),
+            yaxis=dict(showgrid=True, gridcolor='#f0f0f0')
         )
         st.plotly_chart(fig, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     
     with col3:
         # Alert Distribution
+        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
         st.subheader("Alert Distribution")
         
         risk_counts = pd.DataFrame([
@@ -184,15 +198,18 @@ def show():
         fig.update_layout(
             showlegend=False,
             margin=dict(l=0, r=0, t=0, b=0),
-            height=300
+            height=300,
+            paper_bgcolor='white'
         )
         st.plotly_chart(fig, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     
     # Recent activity
+    st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 🔄 Recent Transactions")
+        st.markdown("### Recent Transactions")
         recent_tx = sorted(st.session_state.transactions, 
                           key=lambda x: x['timestamp'], reverse=True)[:5]
         
@@ -205,13 +222,13 @@ def show():
             }.get(tx['risk_level'], '#00D395')
             
             st.markdown(f"""
-            <div class="alert-card">
+            <div class="transaction-card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <strong>Hash:</strong> {tx['hash'][:16]}...{tx['hash'][-8:]}<br>
-                        <small>{tx['timestamp'].strftime('%H:%M:%S')} • {tx['total_value_btc']:.6f} BTC</small>
+                        <div class="tx-hash">{tx['hash'][:16]}...{tx['hash'][-8:]}</div>
+                        <div class="tx-details">{tx['timestamp'].strftime('%H:%M:%S')} • {tx['total_value_btc']:.6f} BTC</div>
                     </div>
-                    <div class="risk-badge" style="background: {risk_color}; color: white;">
+                    <div class="risk-badge-clean" style="background: {risk_color};">
                         {tx['risk_level']}
                     </div>
                 </div>
@@ -219,7 +236,7 @@ def show():
             """, unsafe_allow_html=True)
     
     with col2:
-        st.markdown("### 🚨 Recent Alerts")
+        st.markdown("### Recent Alerts")
         recent_alerts = sorted([a for a in st.session_state.alerts if a['status'] == 'Open'], 
                              key=lambda x: x['timestamp'], reverse=True)[:5]
         
@@ -232,14 +249,14 @@ def show():
             }.get(alert['risk_level'], '#00D395')
             
             st.markdown(f"""
-            <div class="alert-card">
+            <div class="transaction-card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <strong>{alert['alert_id']}</strong><br>
-                        <small>{alert['description'][:50]}...</small><br>
-                        <small>{alert['timestamp'].strftime('%H:%M:%S')} • ${alert['total_value_usd']:,.2f}</small>
+                        <div class="tx-hash">{alert['alert_id']}</div>
+                        <div class="tx-details">{alert['description'][:50]}...</div>
+                        <div class="tx-details">{alert['timestamp'].strftime('%H:%M:%S')} • ${alert['total_value_usd']:,.2f}</div>
                     </div>
-                    <div class="risk-badge" style="background: {risk_color}; color: white;">
+                    <div class="risk-badge-clean" style="background: {risk_color};">
                         {alert['risk_level']}
                     </div>
                 </div>

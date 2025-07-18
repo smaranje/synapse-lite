@@ -25,7 +25,7 @@ from utils import data_generator, styles, service_integration
 # Page configuration
 st.set_page_config(
     page_title="Synapse-Lite Fraud Detector",
-    page_icon="🛡️",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -102,9 +102,16 @@ if st.session_state.last_refresh < datetime.now() - timedelta(seconds=REFRESH_IN
     st.session_state.transactions, st.session_state.alerts = fetch_data()
     st.session_state.last_refresh = datetime.now()
 
+# Top header with branding
+st.markdown("""
+<div style="position: fixed; top: 0; right: 20px; z-index: 999; padding: 10px 0;">
+    <span style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px; color: #0052FF;">SMARAN TECH</span>
+</div>
+""", unsafe_allow_html=True)
+
 # Sidebar navigation
 with st.sidebar:
-    st.markdown("### 🛡️ Synapse-Lite")
+    st.markdown("### Synapse-Lite")
     st.markdown("Fraud Detection System")
     st.markdown("---")
     
@@ -140,7 +147,7 @@ with st.sidebar:
     st.markdown("---")
     
     # Quick stats
-    st.markdown("### 📊 Quick Stats")
+    st.markdown("### Quick Stats")
     total_alerts = len([a for a in st.session_state.alerts if a['status'] == 'Open'])
     critical_alerts = len([a for a in st.session_state.alerts if a['risk_level'] == 'Critical' and a['status'] == 'Open'])
     
@@ -156,12 +163,12 @@ with st.sidebar:
     # Data source indicator
     st.markdown("---")
     if st.session_state.USE_DUMMY_DATA:
-        st.info("📊 Using Dummy Data")
+        st.info("Using Dummy Data")
     else:
-        st.success("🔌 Connected to Services")
+        st.success("Connected to Services")
     
     # Refresh button
-    if st.button("🔄 Refresh Data", use_container_width=True):
+    if st.button("Refresh Data", use_container_width=True):
         st.session_state.transactions, st.session_state.alerts = fetch_data()
         st.session_state.last_refresh = datetime.now()
         st.rerun()
@@ -177,3 +184,10 @@ elif st.session_state.selected_page == "Analytics":
     analytics.show()
 elif st.session_state.selected_page == "Settings":
     settings.show()
+
+# Footer
+st.markdown("""
+<div style="text-align: center; padding: 20px 0; margin-top: 50px; border-top: 1px solid #e5e7eb;">
+    <span style="font-family: 'Inter', sans-serif; font-size: 12px; color: #6b7280;">Made by Smaranjeet Singh</span>
+</div>
+""", unsafe_allow_html=True)

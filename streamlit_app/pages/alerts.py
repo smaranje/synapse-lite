@@ -11,7 +11,7 @@ from utils import service_integration, data_generator
 
 def show():
     """Display the alerts investigation page"""
-    st.title("🚨 Alert Investigation")
+    st.title("Alert Investigation")
     
     # Alert summary metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -57,9 +57,9 @@ def show():
     col1, col2, col3 = st.columns([2, 2, 1])
     
     with col1:
-        search_alert = st.text_input(
-            "🔍 Search alerts",
-            placeholder="Search by alert ID or transaction hash...",
+        search_query = st.text_input(
+            "Search alerts",
+            placeholder="Search by alert ID, description, or hash...",
             key="alert_search"
         )
     
@@ -81,11 +81,12 @@ def show():
     # Apply filters
     filtered_alerts = st.session_state.alerts.copy()
     
-    if search_alert:
+    if search_query:
         filtered_alerts = [
             alert for alert in filtered_alerts
-            if search_alert.lower() in alert['alert_id'].lower() or
-            search_alert.lower() in alert['transaction_hash'].lower()
+            if search_query.lower() in alert['alert_id'].lower() or
+            search_query.lower() in alert['description'].lower() or
+            search_query.lower() in alert['transaction_hash'].lower()
         ]
     
     if severity_filter:
@@ -103,7 +104,7 @@ def show():
     # Sort by timestamp (most recent first)
     filtered_alerts.sort(key=lambda x: x['timestamp'], reverse=True)
     
-    st.markdown(f"### 📋 Active Alerts ({len(filtered_alerts)})")
+    st.markdown(f"### Active Alerts ({len(filtered_alerts)})")
     
     # Alert list
     for i, alert in enumerate(filtered_alerts[:20]):  # Limit display for performance
@@ -151,7 +152,7 @@ def show():
             col1, col2, col3, col4 = st.columns([1, 1, 1, 3])
             
             with col1:
-                if st.button("🔍 Investigate", key=f"investigate_{i}"):
+                if st.button("Investigate", key=f"investigate_{i}"):
                     with st.expander("Investigation Details", expanded=True):
                         # Transaction details
                         st.markdown("#### Transaction Analysis")
@@ -187,7 +188,7 @@ def show():
                             st.rerun()
             
             with col2:
-                if st.button("📄 Generate SAR", key=f"sar_{i}"):
+                if st.button("Generate SAR", key=f"sar_{i}"):
                     with st.spinner("Generating SAR using AI..."):
                         # Generate SAR using the appropriate service
                         if st.session_state.USE_DUMMY_DATA:
@@ -216,15 +217,15 @@ def show():
                                 )
                             
                             with col2:
-                                if st.button("📧 Email SAR", key=f"email_sar_{i}"):
+                                if st.button("Email SAR", key=f"email_sar_{i}"):
                                     st.info("Email functionality would be implemented here")
                             
                             with col3:
-                                if st.button("📋 Copy to Clipboard", key=f"copy_sar_{i}"):
+                                if st.button("Copy to Clipboard", key=f"copy_sar_{i}"):
                                     st.info("Copied to clipboard!")
             
             with col3:
-                if st.button("📊 View Details", key=f"details_{i}"):
+                if st.button("View Details", key=f"details_{i}"):
                     st.session_state.selected_page = "Transactions"
                     st.rerun()
             
@@ -232,7 +233,7 @@ def show():
     
     # Alert analytics
     if filtered_alerts:
-        st.markdown("### 📈 Alert Analytics")
+        st.markdown("### Alert Analytics")
         
         col1, col2 = st.columns(2)
         
