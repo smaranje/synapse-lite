@@ -251,22 +251,19 @@ services:
   # Flask LLM Service - AI processing backend
   ############################################################
   flask-llm-service:
-    image: synapse-lite-flask-llm-service
+    build:
+      context: ./ai_service
     container_name: flask-llm-service
-    depends_on:
-      neo4j:
-        condition: service_healthy
-      spark-worker:
-        condition: service_healthy
-      data-generator:
-        condition: service_started
     networks:
       - synapse-net
     environment:
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
-      # other env vars…
-    ports:
-      - "5000:5000"
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-dummy}
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
   ############################################################
